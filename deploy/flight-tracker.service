@@ -1,0 +1,19 @@
+[Unit]
+Description=Flight Tracker by Maverick Field Gear
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=/opt/flight-tracker/current
+# lgpio keeps its notify pipes in LG_WD (default: the working directory, root-owned since 1.0.7).
+Environment=LG_WD=/var/cache/flight-tracker
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/usr/bin/python3 /opt/flight-tracker/current/server/flighttracker.py --host 0.0.0.0 --port 8741 --http-port 80 --config /etc/flight-tracker/config.json --cache /var/cache/flight-tracker
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

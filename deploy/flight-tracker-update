@@ -1,0 +1,51 @@
+#!/bin/bash
+# Stable root entry for signed updates. Install copies this outside the
+# release tree so sudoers does not have to follow the current symlink.
+#
+# --install (1.0.4): queue the install as its own transient systemd unit and
+# return at once. The unit runs updater.py directly. 1.0.2 and 1.0.3 re-ran
+# this script inside the unit with an exported flag that systemd-run never
+# passed on, so the child tried to create flight-tracker-apply a second time,
+# failed with "Unit flight-tracker-apply.service already exists", and the web
+# page sat on "Installing..." forever.
+set -euo pipefail
+cmd="${1:-}"
+case "$cmd" in
+  --check|--install|--auto|--harden) ;;
+  *)
+    echo "Usage: flight-tracker-update --check|--install|--auto|--harden" >&2
+    exit 2
+    ;;
+esac
+PYTHON=/usr/bin/python3
+UPDATER=/opt/flight-tracker/current/server/updater.py
+UNIT=flight-tracker-apply.service
+if [[ "$cmd" == "--harden" ]]; then
+  # 1.0.7: one-time move to the ft-server account. It restarts the server, so
+  # run it outside the server's cgroup like --install.
+  UNIT=flight-tracker-harden.service
+fi
+SYSTEMD_RUNTIME="${FT_SYSTEMD_RUNTIME:-/run/systemd/system}"
+
+if [[ "$cmd" == "--install" || "$cmd" == "--harden" ]]; then
+  if [[ -d "$SYSTEMD_RUNTIME" ]]; then
+    state="$(systemctl show -p ActiveState --value "$UNIT" 2>/dev/null || true)"
+    case "$state" in
+      active|activating|deactivating|reloading)
+        echo "An update is already installing ($UNIT is $state). Wait for it to finish." >&2
+        exit 3
+        ;;
+    esac
+    # A unit left over from an earlier failed run would block the name.
+    systemctl reset-failed "$UNIT" 2>/dev/null || true
+    # Outside the display service's cgroup, so the health check survives the
+    # restart. --no-block: return as soon as systemd has accepted the job.
+    exec systemd-run --collect --no-block --quiet --unit="$UNIT" \
+      --description="Flight Tracker signed update" \
+      "$PYTHON" "$UPDATER" "$cmd"
+  fi
+  # No systemd (desktop test): run detached so the caller still returns at once.
+  setsid "$PYTHON" "$UPDATER" "$cmd" >/dev/null 2>&1 < /dev/null &
+  exit 0
+fi
+exec "$PYTHON" "$UPDATER" "$cmd"

@@ -1,0 +1,101 @@
+{
+  "schema": 3,
+  "home": {
+    "name": "KJFK",
+    "lat": 40.6399,
+    "lon": -73.7787
+  },
+  "rangeNm": 20,
+  "rings": 4,
+  "showClock": true,
+  "clockFormat": "24h",
+  "minimalText": true,
+  "units": "aviation",
+  "feed": {
+    "mode": "adsbfi",
+    "localPath": "/run/readsb/aircraft.json",
+    "remoteUrl": "",
+    "host": "",
+    "port": 8080,
+    "fallbackDemo": true
+  },
+  "background": "dark",
+  "weather": {
+    "enabled": true,
+    "opacity": 0.6,
+    "animate": true
+  },
+  "metar": true,
+  "metarStation": "KJFK",
+  "orientation": "north",
+  "facingDeg": 0,
+  "altitudeBand": "all",
+  "brightness": 100,
+  "sweep": {
+    "enabled": false,
+    "periodSec": 8
+  },
+  "watch": {
+    "enabled": false,
+    "tails": []
+  },
+  "alerts": {
+    "watch": false,
+    "military": false,
+    "emergency": false,
+    "chime": false
+  },
+  "trails": {
+    "enabled": false,
+    "minutes": 5
+  },
+  "night": {
+    "mode": "off",
+    "fromHour": 22,
+    "toHour": 6,
+    "from": "2200",
+    "to": "0600",
+    "brightness": 25
+  },
+  "icons": "maverick",
+  "updates": {
+    "url": "https://github.com/MFG001/flight-tracker/releases/latest/download/manifest.json",
+    "repo": "MFG001/flight-tracker",
+    "channel": "stable",
+    "auto": false,
+    "laterAt": "02:00",
+    "laterTz": "America/New_York"
+  },
+  "gpio": {
+    "enabled": false,
+    "pins": {
+      "MAP": 5,
+      "TFC": 6,
+      "WX": 16,
+      "MNU": 17,
+      "NAV": 22,
+      "HDG": 23,
+      "ALT": 24,
+      "BRT": 25
+    },
+    "encoder": {
+      "clk": 12,
+      "dt": 13,
+      "sw": 20
+    }
+  },
+  "fan": {
+    "gpioControl": false,
+    "gpio": 14,
+    "onTempC": 60
+  },
+  "display": {
+    "rotation": 270,
+    "output": "DSI-1",
+    "touchDevice": "10-0014 Goodix Capacitive TouchScreen",
+    "touchMatrix": false
+  },
+  "wifi": {
+    "country": "US"
+  }
+}

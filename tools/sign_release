@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Sign one Flight Tracker release tarball (1.0.7+: two manifests).
+
+The private key stays off this repository and off the Pi. Nothing here prints
+or copies it; OpenSSL reads it in place.
+
+Writes, next to the tarball:
+
+* ``public/manifest.json``  format 2, for the public repo MFG001/flight-tracker.
+  Ed25519 over ``flight-tracker-update-v2\\n`` + canonical JSON of every field
+  (product, channel, version, url, sha256, size, published, expires,
+  minVersion, notes, keys). This is what 1.0.7+ units read, anonymously, from
+  ``releases/latest/download/manifest.json``.
+* ``private/manifest.json`` format 1 (the 1.0.0-1.0.6 layout), for the private
+  repo MFG001/flight-tracker-updates, so units still on 1.0.6 can reach this
+  release. The signed bytes are::
+
+      flight-tracker-update-v1
+      product=flight-tracker
+      version=<version>
+      url=<url>
+      sha256=<sha256>
+      notes=<sha256 of the notes text>
+
+Both manifests are verified against deploy/update-public.pem before they are
+written, and signing stops if the tarball or the notes contain personal data.
+
+Example::
+
+    python3 tools/sign_release --key /path/outside/the/repo/key.pem \\
+        --notes-file NOTES.txt release-out/flight-tracker-1.0.7.tar.gz
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from server import update_trust as trust  # noqa: E402
+from server.updater import build_manifest, file_sha256, read_version_file, verify_manifest  # noqa: E402
+
+PUBLIC_REPO = "MFG001/flight-tracker"
+PRIVATE_REPO = "MFG001/flight-tracker-updates"
+REPO = PRIVATE_REPO  # pre-1.0.7 name, kept for older tooling
+
+
+def _version_from_name(path: Path) -> str:
+    match = re.fullmatch(r"flight-tracker-(\d+(?:\.\d+){1,3})\.tar\.gz", path.name)
+    return match.group(1) if match else ""
+
+
+def scrub_or_exit(tarball: Path, notes: str) -> None:
+    """Refuse to sign a release that carries personal data (scripts/scrub_check.py)."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import scrub_check  # noqa: E402
+
+    found = scrub_check.scan_tarball(tarball, frozenset()) + scrub_check.scan_bytes("release notes", notes.encode(), frozenset())
+    if found:
+        raise SystemExit("Personal data found; not signing:\n  " + "\n  ".join(found))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Sign a Flight Tracker release file")
+    parser.add_argument("release_file")
+    parser.add_argument("--key", default=os.environ.get("FLIGHT_TRACKER_RELEASE_KEY", ""))
+    parser.add_argument("--public-key", default=str(ROOT / "deploy" / "update-public.pem"))
+    parser.add_argument("--version", default="")
+    parser.add_argument("--notes", default="")
+    parser.add_argument("--notes-file", default="")
+    parser.add_argument("--published", default="", help="UTC time like 2026-11-20T16:00:00Z (default: now)")
+    parser.add_argument("--min-version", default="")
+    args = parser.parse_args()
+    if not args.key:
+        raise SystemExit("Set --key or FLIGHT_TRACKER_RELEASE_KEY to the Ed25519 private key. It must not live in the repo.")
+    key = Path(args.key).expanduser().resolve()
+    if not key.is_file():
+        raise SystemExit("Private key not found.")
+    try:
+        key.relative_to(ROOT)
+    except ValueError:
+        pass
+    else:
+        raise SystemExit("Refusing to sign with a private key stored inside the repository.")
+    pub = Path(args.public_key).resolve()
+    release = Path(args.release_file).expanduser().resolve()
+    if not release.is_file():
+        raise SystemExit(f"Release file not found: {release}")
+    version = args.version.strip() or _version_from_name(release) or read_version_file(ROOT)
+    if args.notes_file:
+        notes = Path(args.notes_file).read_text(encoding="utf-8").strip()
+    else:
+        notes = args.notes.strip() or f"Flight Tracker {version} by Maverick Field Gear."
+    scrub_or_exit(release, notes)
+    digest = file_sha256(release)
+    size = release.stat().st_size
+    published = args.published or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    public_doc = {
+        "format": trust.FORMAT,
+        "product": trust.PRODUCT,
+        "channel": trust.DEFAULT_CHANNEL,
+        "version": version,
+        "url": f"https://github.com/{PUBLIC_REPO}/releases/download/v{version}/{release.name}",
+        "sha256": digest,
+        "size": size,
+        "published": published,
+        "expires": "",
+        "minVersion": args.min_version,
+        "notes": notes,
+    }
+    public_doc = trust.sign_document(public_doc, key, pub)
+    ring = trust.load_keyring(Path("/nonexistent"), legacy=pub)
+    trust.verify(public_doc, ring, current="0.0", repo=PUBLIC_REPO)
+
+    private_url = f"https://github.com/{PRIVATE_REPO}/releases/download/v{version}/{release.name}"
+    private_doc = build_manifest(version, notes, private_url, digest, key)
+    verify_manifest(private_doc, pub)
+
+    for folder, doc in (("public", public_doc), ("private", private_doc)):
+        out = release.parent / folder
+        out.mkdir(exist_ok=True)
+        (out / "manifest.json").write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+        print(f"Wrote {out / 'manifest.json'}")
+    print(f"sha256 {digest}")
+    print(f"size {size}")
+    print(f"key {trust.fingerprint(trust.key_id(pub))}")
+
+
+if __name__ == "__main__":
+    main()

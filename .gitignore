@@ -1,0 +1,17 @@
+node_modules/
+data/cache/
+data/config.json
+data/hotspot.json
+data/auth.json
+data/activity
+data/update-status.json
+data/update-token
+update-token
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+.venv/
+*.key
+release-out/
+previews_*/

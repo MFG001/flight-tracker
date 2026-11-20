@@ -1,0 +1,27 @@
+{
+  "name": "flight-tracker",
+  "private": true,
+  "version": "1.0.7",
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Flight Tracker by Maverick Field Gear. Purpose-built. Field-proven.",
+  "author": "Maverick Field Gear",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "python3 server/flighttracker.py --demo --host 0.0.0.0 --port 8741",
+    "test": "python3 -m unittest discover -s server/tests -v",
+    "capture": "node scripts/capture.mjs",
+    "scrub": "python3 scripts/scrub_check.py"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.6",
+    "@fontsource/ibm-plex-sans": "^5.2.6",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.15.0",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5"
+  }
+}

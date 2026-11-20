@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Flight Tracker update check
+
+[Timer]
+OnCalendar=*-*-* 03:10:00
+Persistent=true
+RandomizedDelaySec=20min
+
+[Install]
+WantedBy=timers.target

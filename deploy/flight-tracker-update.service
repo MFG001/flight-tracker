@@ -1,0 +1,9 @@
+[Unit]
+Description=Flight Tracker signed update by Maverick Field Gear
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/flight-tracker-update --auto
+Nice=10

@@ -1,0 +1,84 @@
+Maverick Field Gear Flight Tracker License
+Version 1.0
+
+Copyright (c) 2026 Maverick Field Gear. All rights reserved.
+
+This license covers the Flight Tracker software published by Maverick Field
+Gear: the source code, the built files, the scripts, the documentation and
+the images in this repository and in its official releases (together, "the
+Software"). The Software is source-available. It is not open source.
+
+1. What you may do
+
+   a. Download, install and run the Software, free of charge, on devices you
+      build or own for personal, non-commercial use.
+   b. Read and study the source code.
+   c. Change the settings the Software offers (for example through its setup
+      page or its config.json file). Configuration is not modification.
+   d. Share unmodified official releases, exactly as published by Maverick
+      Field Gear, with others for free, as long as you keep this license and
+      all copyright and credit notices, and you credit "Flight Tracker by
+      Maverick Field Gear" with a link to
+      https://github.com/MFG001/flight-tracker .
+
+2. What you may not do
+
+   a. Modify, adapt, translate or otherwise change the Software, or make
+      works based on it, other than the configuration allowed in 1(c).
+   b. Distribute, publish or share modified versions of the Software, or
+      any work based on it, in any form.
+   c. Use the Software for any commercial purpose. This includes selling,
+      renting or licensing the Software; selling, renting or leasing devices,
+      kits or images with the Software installed or included; and offering
+      it as a paid service.
+   d. Remove or change this license, the copyright notice, the credits, or
+      the update signature checks.
+   e. Distribute anything other than unmodified official releases, or claim
+      that the Software is your own work.
+
+3. Updates
+
+   Updates are provided only as official releases signed by Maverick Field
+   Gear and installed through the Software's own update mechanism or from
+   the official release files. Do not install, publish or distribute
+   unsigned, re-signed or altered updates. Maverick Field Gear has no
+   obligation to provide updates or support.
+
+4. Third-party components and services
+
+   Parts of the Software come from other authors and remain under their own
+   licenses (see THIRD_PARTY_NOTICES.md). Map tiles, weather data, aircraft
+   data and fonts are provided by third parties under their own terms, which
+   you must follow. Nothing in this license limits your rights under those
+   licenses.
+
+5. Case print files
+
+   The 3D-printable case files are published separately under the Creative
+   Commons Attribution-NonCommercial-NoDerivatives 4.0 International license
+   (CC BY-NC-ND 4.0), not under this license.
+
+6. Permission for anything else
+
+   For any use not allowed here, including commercial use or modification,
+   ask Maverick Field Gear for written permission first.
+
+7. Termination
+
+   If you break any term of this license, your rights under it end
+   automatically. You must then stop using the Software and delete your
+   copies.
+
+8. No warranty and limitation of liability
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+   IN NO EVENT SHALL MAVERICK FIELD GEAR BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+   OTHER DEALINGS IN THE SOFTWARE.
+
+   The Software is a hobby display. It is not certified for, and must not
+   be used for, navigation, air traffic separation, collision avoidance or
+   any other safety-of-flight purpose.

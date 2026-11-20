@@ -1,0 +1,12 @@
+[Unit]
+Description=Flight Tracker setup hotspot by Maverick Field Gear
+After=NetworkManager.service flight-tracker.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/flight-tracker/current/scripts/wifi-setup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

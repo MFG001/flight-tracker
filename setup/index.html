@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flight Tracker setup</title>
+    <style>
+      :root { color-scheme: dark; --amber: #e8a23a; --ink: #e7eef4; --muted: #9aabba; --line: rgba(214,226,234,.28); }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #07090c; color: var(--ink); font-family: "IBM Plex Sans", "Segoe UI", sans-serif; }
+      main { max-width: 440px; margin: 0 auto; padding: 20px 16px 48px; }
+      h1 { margin: 0; letter-spacing: .22em; font-size: 14px; color: #ffd089; }
+      h2 { margin: 22px 0 8px; font-size: 13px; letter-spacing: .14em; color: var(--muted); }
+      p.lead { color: var(--muted); font-size: 14px; }
+      form, .card { background: radial-gradient(circle at 50% 40%, #16202a, #10161c 70%); border: 1px solid var(--line); border-radius: 50%; aspect-ratio: 1; width: min(100%, 420px); margin: 16px auto; padding: 0; overflow: hidden; display: grid; place-items: center; }
+      .round-scroll { width: 68%; max-height: 68%; overflow-x: hidden; overflow-y: auto; padding: 4px 8px 14px; scrollbar-width: thin; scrollbar-color: #e8a23a rgba(255,255,255,.16); }
+      .round-scroll::-webkit-scrollbar { width: 8px; }
+      .round-scroll::-webkit-scrollbar-thumb { background: #e8a23a; border-radius: 8px; }
+      /* "More below" hint: a fade with an amber arrow, so it never sits on top of text. */
+      .round-scroll.can-scroll::after { content: "▾"; position: sticky; bottom: -14px; display: block; width: 100%; height: 28px; margin: 6px 0 0; padding-top: 6px; text-align: center; font-size: 18px; line-height: 1; color: #e8a23a; background: linear-gradient(to bottom, rgba(16, 22, 28, 0), #10161c 55%); pointer-events: none; }
+      .round-scroll p, .round-scroll label, .round-scroll h2, .round-scroll button, .round-scroll li, .round-scroll a { overflow-wrap: anywhere; }
+      .foot { color: var(--muted); text-align: center; letter-spacing: .08em; font-size: 12px; margin: 8px 0 24px; }
+      .round-scroll > * { width: 100%; }
+      .preview { width: min(72vw, 280px); aspect-ratio: 1; margin: 12px auto; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #3a424c, #12161b 62%, #07090c); display: grid; place-items: center; box-shadow: inset 0 0 0 10px #1a1f25; }
+      .preview-glass { width: 78%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #123024, #07110e 70%); display: grid; place-items: center; position: relative; overflow: hidden; }
+      .preview-glass span { font-size: 10px; letter-spacing: .16em; color: #ffd089; z-index: 1; }
+      .preview-glass i { position: absolute; inset: 18%; border: 1px solid rgba(51,255,102,.35); border-radius: 50%; }
+      .preview-glass i:nth-child(3) { inset: 30%; }
+      .preview-glass i:nth-child(4) { inset: 42%; }
+      label { display: grid; gap: 4px; margin-top: 10px; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+      input, select, button { font: inherit; color: inherit; }
+      input, select { width: 100%; background: #0b1014; border: 1px solid #31404c; border-radius: 10px; padding: 12px; letter-spacing: 0; font-size: 16px; }
+      input[type="range"] { padding: 0; accent-color: var(--amber); }
+      .row { display: flex; gap: 8px; }
+      .row label { flex: 1; }
+      .check { grid-template-columns: 22px 1fr; align-items: center; color: var(--ink); }
+      .center-group { display: grid; gap: inherit; width: fit-content; max-width: 100%; margin: 0 auto; justify-items: start; }
+      button { border: 1px solid var(--line); background: #17202a; border-radius: 999px; padding: 12px 14px; letter-spacing: .12em; font-size: 13px; font-weight: 600; }
+      button.primary { background: #3a2a12; border-color: var(--amber); color: #ffd89a; width: 100%; margin-top: 14px; }
+      .actions, .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+      .modes button[aria-pressed="true"] { border-color: var(--amber); color: #ffd089; background: #3a2a12; }
+      #location h2 { margin: 4px 0; }
+      #location label { margin-top: 6px; }
+      #location input { padding: 8px; }
+      #location .primary { margin-top: 8px; padding: 8px; }
+      #loc-match, #loc-ll-match, #loc-status { letter-spacing: 0; font-size: 13px; color: var(--ink); min-height: 1.2em; margin: 6px 0; }
+      #watch-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+      #watch-list li { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid #31404c; border-radius: 999px; background: #0b1014; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14px; letter-spacing: .04em; }
+      #watch-list li button { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 14px; letter-spacing: 0; line-height: 1; }
+      #watch-list .empty { border: 0; background: none; color: var(--muted); font-family: inherit; font-size: 13px; padding: 0; }
+      #health p { letter-spacing: 0; font-size: 14px; margin: 4px 0; }
+      #sources { text-align: left; }
+      #sources h2 { margin: 0 0 8px; text-align: center; }
+      #sources p { letter-spacing: 0; font-size: 12px; line-height: 1.35; margin: 0 0 8px; color: var(--ink); }
+      #sources a { color: #ffd089; }
+      #status, #sw-status { margin-top: 12px; min-height: 1.2em; color: #ffd089; font-size: 14px; }
+      #sw-version, #sw-url, #sw-notes { letter-spacing: 0; color: var(--ink); font-size: 14px; }
+      #sw-version { margin: 4px 0 2px; text-align: center; }
+      #sw-version b { color: #ffd089; font-weight: 600; }
+      #sw-url, #sw-notes { color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+      #sw-notes { margin: 6px 0 0; text-align: left; }
+      #sw-install:disabled, #sw-check:disabled { opacity: 0.4; }
+      #sw-source { letter-spacing: 0; font-size: 13px; margin: 6px 0; text-align: center; color: var(--ink); }
+      #sw-key-badge.saved { color: #8fe3a8; }
+      .sw-schedule { margin: 10px 0; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(232, 162, 58, 0.55); background: rgba(58, 42, 18, 0.45); text-align: center; }
+      #sw-schedule { margin: 0 0 8px; color: #ffd089; font-size: 14px; letter-spacing: .02em; }
+      #sw-auto-help { color: var(--muted); font-size: 12px; text-align: center; }
+      #sw-key-badge { margin: 0 0 2px; text-align: center; font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+      /* 1.0.4 Software status box: one clear line for where the update stands. */
+      .sw-banner { margin: 10px 0 4px; padding: 10px 12px; border-radius: 14px; border: 1px solid #31404c; background: #0b1014; text-align: left; letter-spacing: 0; }
+      .sw-banner[hidden] { display: none; }
+      .sw-banner p { margin: 0; }
+      #sw-banner-title { font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+      #sw-banner-detail { font-size: 13px; margin-top: 4px; color: var(--ink); white-space: pre-wrap; }
+      .sw-banner[data-tone="ok"] { border-color: rgba(76, 201, 118, .7); background: rgba(22, 64, 38, .55); }
+      .sw-banner[data-tone="ok"] #sw-banner-title { color: #8fe3a8; }
+      .sw-banner[data-tone="ok"] .sw-progress i { background: linear-gradient(90deg, #3fae68, #8fe3a8); }
+      .sw-banner[data-tone="ready"], .sw-banner[data-tone="busy"] { border-color: rgba(232, 162, 58, .8); background: rgba(58, 42, 18, .6); }
+      .sw-banner[data-tone="ready"] #sw-banner-title, .sw-banner[data-tone="busy"] #sw-banner-title { color: #ffd089; }
+      .sw-banner[data-tone="bad"] { border-color: rgba(225, 80, 70, .85); background: rgba(70, 20, 18, .6); }
+      .sw-banner[data-tone="bad"] #sw-banner-title { color: #ff9a8f; }
+      .sw-banner[data-tone="quiet"] #sw-banner-title { color: var(--ink); }
+      .sw-progress { height: 8px; margin-top: 8px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; }
+      .sw-progress[hidden] { display: none; }
+      .sw-progress i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #e8a23a, #ffd089); transition: width .6s ease; }
+      .sw-banner[data-tone="busy"] .sw-progress i { animation: sw-pulse 1.6s ease-in-out infinite; }
+      @keyframes sw-pulse { 50% { opacity: .65; } }
+      #wifi { margin: 14px 0; }
+      #wifi strong { letter-spacing: .08em; }
+      #results { list-style: none; margin: 8px 0 0; padding: 0; }
+      #results button { width: 100%; text-align: left; border-radius: 10px; margin-top: 6px; letter-spacing: 0; font-weight: 500; }
+      #login { margin-top: 18px; }
+      .hidden { display: none !important; }
+      #nets { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+      #nets button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; text-align: left; border-radius: 10px; padding: 9px 12px; letter-spacing: 0; font-weight: 500; }
+      #nets button[aria-pressed="true"] { border-color: var(--amber); background: #3a2a12; }
+      #nets .net-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+      #nets .net-meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+      #nets .net-bars { font-family: "IBM Plex Mono", ui-monospace, monospace; color: #ffd089; }
+      .note { font-size: 13px; letter-spacing: 0; color: var(--ink); min-height: 1.2em; margin: 8px 0; }
+      .warn { font-size: 12px; letter-spacing: 0; line-height: 1.35; color: #ffd089; margin: 10px 0 0; }
+      .small { font-size: 12px; letter-spacing: 0; color: var(--muted); margin: 4px 0; }
+      /* Save feedback: pressed while saving, then a clear result. */
+      button { transition: background-color .2s ease, border-color .2s ease, color .2s ease; touch-action: manipulation; }
+      button:active { background: #3a2a12; border-color: var(--amber); }
+      button.saving { background: #3a2a12; border-color: var(--amber); color: #ffd89a; opacity: 1; cursor: progress; }
+      button.saved { background: #12361f; border-color: #33ff66; color: #b8ffd4; }
+      button.failed { background: #3a1410; border-color: #ff5d4a; color: #ffd0c8; }
+      button:disabled { cursor: default; }
+      /* Background picker */
+      .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px; margin-top: 6px; }
+      .swatch { display: grid; justify-items: center; gap: 4px; padding: 5px 2px; border-radius: 14px; background: transparent; border: 1px solid transparent; font-size: 10px; letter-spacing: .08em; }
+      .swatch i { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #31404c; display: block; }
+      .swatch[aria-pressed="true"] { border-color: var(--amber); background: #3a2a12; color: #ffd89a; }
+      .swatch[aria-pressed="true"] i { border-color: var(--amber); }
+      .sw-dark { background: radial-gradient(circle at 40% 40%, #4a4f55, #23272b 70%); }
+      .sw-light { background: radial-gradient(circle at 40% 40%, #fbf8f1, #d9d2c3 70%); }
+      .sw-satellite { background: radial-gradient(circle at 35% 35%, #6b7f4a, #2f4a2a 55%, #1d3445 80%); }
+      .sw-sectional { background: repeating-linear-gradient(35deg, #e9dfc2 0 7px, #c9d8e4 7px 9px), #e9dfc2; }
+      .sw-scope { background: radial-gradient(circle, transparent 0 9px, rgba(51,255,102,.6) 10px 11px, transparent 12px 18px, rgba(51,255,102,.6) 19px 20px, #04100a 21px); }
+      /* Watch list */
+      #watch-tail { min-height: 64px; resize: vertical; font: inherit; font-size: 16px; color: inherit; width: 100%; background: #0b1014; border: 1px solid #31404c; border-radius: 10px; padding: 10px 12px; letter-spacing: .02em; }
+      #watch-help { font-size: 12px; letter-spacing: 0; line-height: 1.4; color: var(--muted); margin: 6px 0 0; text-align: left; }
+      #watch-help code { color: #ffd089; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+      #watch .primary { margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>FLIGHT TRACKER</h1>
+      <p class="lead">by Maverick Field Gear · Purpose-built. Field-proven.</p>
+      <div class="preview" aria-hidden="true"><div class="preview-glass"><span>FLIGHT TRACKER</span><i></i><i></i><i></i></div></div>
+      <section id="login" class="card hidden"><div class="round-scroll">
+        <h2>SIGN IN</h2>
+        <label>Password <input id="password" type="password" autocomplete="current-password" /></label>
+        <button class="primary" id="signin" type="button">SIGN IN</button>
+      </div></section>
+      <div id="app" class="hidden">
+        <section id="wifi" class="card"><div class="round-scroll">
+          <h2>WI-FI</h2>
+          <p id="wifi-text" class="note">Checking NetworkManager…</p>
+          <p id="wifi-ips" class="small"></p>
+          <button id="wifi-scan" type="button">REFRESH LIST</button>
+          <ul id="nets" aria-label="Nearby networks"></ul>
+          <label>Network name <input id="wifi-ssid" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="32" /></label>
+          <label class="check"><input id="wifi-hidden" type="checkbox" /> Hidden network (type its name)</label>
+          <label>Password <input id="wifi-pass" type="password" autocomplete="off" maxlength="64" placeholder="Blank for an open network" /></label>
+          <label class="check"><input id="wifi-show" type="checkbox" /> Show password</label>
+          <p class="warn">If this page is open over the same Wi-Fi, it may drop for up to a minute while the Pi switches. Ethernet stays connected. Then reopen http://flighttracker.local/</p>
+          <button id="wifi-join" class="primary" type="button">CONNECT</button>
+          <p id="wifi-status" class="note"></p>
+          <label>Wi-Fi country
+            <select id="wifi-country">
+              <option value="US">United States (US)</option><option value="CA">Canada (CA)</option><option value="MX">Mexico (MX)</option>
+              <option value="GB">United Kingdom (GB)</option><option value="IE">Ireland (IE)</option><option value="DE">Germany (DE)</option>
+              <option value="FR">France (FR)</option><option value="AU">Australia (AU)</option><option value="NZ">New Zealand (NZ)</option>
+            </select>
+          </label>
+          <button id="wifi-country-save" type="button">SAVE COUNTRY</button>
+        </div></section>
+        <section id="background" class="card"><div class="round-scroll">
+          <h2>BACKGROUND</h2>
+          <div class="swatches" role="group" aria-label="Background">
+            <button class="swatch" type="button" data-bg="dark"><i class="sw-dark"></i>DARK MAP</button>
+            <button class="swatch" type="button" data-bg="light"><i class="sw-light"></i>LIGHT MAP</button>
+            <button class="swatch" type="button" data-bg="satellite"><i class="sw-satellite"></i>SATELLITE</button>
+            <button class="swatch" type="button" data-bg="sectional"><i class="sw-sectional"></i>SECTIONAL</button>
+            <button class="swatch" type="button" data-bg="scope"><i class="sw-scope"></i>RADAR SCOPE</button>
+          </div>
+          <p id="bg-status" class="note">The display changes within a few seconds.</p>
+        </div></section>
+        <section id="display-screen" class="card"><div class="round-scroll">
+          <h2>SCREEN</h2>
+          <label>Daytime brightness <span id="brt-label">100%</span><input id="brightness" type="range" min="20" max="100" step="10" /></label>
+          <label>Map orientation
+            <select id="orientation">
+              <option value="north">North Up</option>
+              <option value="track">Track Up</option>
+            </select>
+          </label>
+          <label>Altitude filter
+            <select id="altitude-band">
+              <option value="all">All altitudes</option>
+              <option value="low">Below 10,000 ft</option>
+              <option value="mid">10,000–18,000 ft</option>
+              <option value="high">18,000–35,000 ft</option>
+              <option value="upper">Above 35,000 ft</option>
+            </select>
+          </label>
+          <button id="screen-save" class="primary" type="button">SAVE SCREEN</button>
+          <p id="screen-status" class="note">Brightness changes the backlight as you let go of the slider. Tap SAVE SCREEN for orientation and altitude.</p>
+        </div></section>
+        <section id="location" class="card"><div class="round-scroll">
+          <h2>LOCATION</h2>
+          <div class="modes" role="group" aria-label="Centre mode">
+            <button id="loc-code" type="button" aria-pressed="true">AIRPORT CODE</button>
+            <button id="loc-ll" type="button" aria-pressed="false">LAT / LONG</button>
+          </div>
+          <div id="loc-code-fields">
+            <label>ICAO or IATA <input id="icao" maxlength="4" autocapitalize="characters" placeholder="KJFK or JFK" /></label>
+            <p id="loc-match">Enter a code to look it up.</p>
+          </div>
+          <div id="loc-ll-fields" hidden>
+            <label>Latitude <input id="lat" inputmode="decimal" /></label>
+            <label>Longitude <input id="lon" inputmode="decimal" /></label>
+            <p id="loc-ll-match"></p>
+          </div>
+          <button id="loc-save" class="primary" type="button">SAVE</button>
+          <p id="loc-status"></p>
+        </div></section>
+        <form id="form" class="card"><div class="round-scroll">
+          <h2>DISPLAY</h2>
+          <label>Default range
+            <select id="range">
+              <option>2</option><option>5</option><option>10</option><option>20</option><option>30</option><option>40</option><option>50</option><option>75</option><option>100</option>
+            </select>
+          </label>
+          <label>Range rings
+            <select id="rings">
+              <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+          </label>
+          <p class="small">The display starts at this range and ring count. A range picked on the glass with − / + or the range button is saved here too.</p>
+          <label>Units
+            <select id="units">
+              <option value="aviation">NM · KT · FT</option>
+              <option value="imperial">MI · MPH · FT</option>
+              <option value="metric">KM · KM/H · M</option>
+            </select>
+          </label>
+          <label>Icon set
+            <select id="icons">
+              <option value="maverick">Maverick (default)</option>
+              <option value="linecut">Linecut</option>
+              <option value="classic">Classic</option>
+              <option value="planform">Planform</option>
+              <option value="compact">Compact</option>
+            </select>
+          </label>
+          <label class="check"><input id="show-clock" type="checkbox" /> Show clock on radar screen</label>
+          <label>Clock format
+            <select id="clock-format">
+              <option value="24h">24-hour with Zulu (1319 · 1819Z)</option>
+              <option value="12h">12-hour with Zulu (1:19 PM · 1819Z)</option>
+              <option value="utc">Zulu only (1819Z)</option>
+            </select>
+          </label>
+          <label class="check"><input id="minimal-text" type="checkbox" /> Minimal text while tracking</label>
+          <label class="check"><input id="sweep" type="checkbox" /> Radar sweep</label>
+          <label>Sweep seconds per turn <span id="sweep-label">8</span><input id="sweep-speed" type="range" min="3" max="16" step="1" /></label>
+          <label class="check"><input id="metar" type="checkbox" /> METAR</label>
+          <label>METAR station (blank = nearest) <input id="metar-station" maxlength="4" autocapitalize="characters" placeholder="KJFK" /></label>
+          <h2>ADS-B</h2>
+          <label>Source
+            <select id="feed-mode">
+              <option value="adsbfi">Internet (adsb.fi)</option>
+              <option value="receiver">My receiver (readsb / dump1090)</option>
+              <option value="demo">Demo tracks</option>
+            </select>
+          </label>
+          <p>Internet traffic around home from adsb.fi open data. Receiver fields below are only used with My receiver.</p>
+          <label>readsb / dump1090 host <input id="host" placeholder="receiver.local" /></label>
+          <label>Port <input id="port" inputmode="numeric" /></label>
+          <label>Or full JSON URL <input id="url" placeholder="http://host:8080/data/aircraft.json" /></label>
+          <label>Local file <input id="path" /></label>
+          <button id="test" type="button">TEST CONNECTION</button>
+          <p id="test-result"></p>
+          <button id="form-save" class="primary" type="submit">SAVE</button>
+          <div class="actions">
+            <button id="restart" type="button">RESTART DISPLAY</button>
+            <button id="reset" type="button">RESET DEFAULTS</button>
+          </div>
+          <p id="status"></p>
+        </div></form>
+        <section id="weather" class="card"><div class="round-scroll">
+          <h2>WEATHER</h2>
+          <label class="check"><input id="wx-on" type="checkbox" /> Show weather radar</label>
+          <p id="wx-state" class="note">Checking weather radar…</p>
+          <label>Overlay opacity <span id="wx-label">60%</span><input id="opacity" type="range" min="10" max="100" step="10" /></label>
+          <button id="wx-save" class="primary" type="button">SAVE WEATHER</button>
+          <p id="wx-status" class="note"></p>
+        </div></section>
+        <section id="watch" class="card"><div class="round-scroll">
+          <h2>WATCH</h2>
+          <label class="check"><input id="watch-on" type="checkbox" /> Show only watched aircraft</label>
+          <label for="watch-tail">Add aircraft</label>
+          <textarea id="watch-tail" rows="2" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="N123AB, AAL100, A1B2C3"></textarea>
+          <p id="watch-help">Several at once: <code>N123AB, AAL100, A1B2C3</code><br />Separate with commas, spaces, or new lines. Tail number, callsign / flight, or ICAO hex code.</p>
+          <button id="watch-add" class="primary" type="button">ADD TO WATCH LIST</button>
+          <ul id="watch-list"></ul>
+          <button id="watch-save" class="primary" type="button">SAVE WATCH</button>
+          <p id="watch-status" class="note"></p>
+        </div></section>
+        <section id="alerts" class="card"><div class="round-scroll">
+          <h2>ALERTS</h2>
+          <div class="center-group">
+          <label class="check"><input id="alert-watch" type="checkbox" /> Watched Aircraft</label>
+          <label class="check"><input id="alert-mil" type="checkbox" /> Military Aircraft</label>
+          <label class="check"><input id="alert-emg" type="checkbox" /> Emergency (7500, 7600, 7700)</label>
+          <label class="check"><input id="alert-chime" type="checkbox" /> Chime (if available)</label>
+          </div>
+          <button id="alerts-save" class="primary" type="button">SAVE ALERTS</button>
+          <p id="alerts-status" class="note"></p>
+        </div></section>
+        <section id="trails" class="card"><div class="round-scroll">
+          <h2>TRAILS</h2>
+          <div class="center-group">
+          <label class="check"><input id="trail-on" type="checkbox" /> Fading track history</label>
+          </div>
+          <label>Trail length <span id="trail-label">5 min</span><input id="trail-min" type="range" min="1" max="10" step="1" /></label>
+          <button id="trails-save" class="primary" type="button">SAVE TRAILS</button>
+          <p id="trails-status" class="note"></p>
+        </div></section>
+        <section id="night" class="card"><div class="round-scroll">
+          <h2>NIGHT</h2>
+          <label>Dim
+            <select id="night-mode">
+              <option value="off">Off</option>
+              <option value="sun">Sunrise and sunset</option>
+              <option value="schedule">Fixed hours</option>
+            </select>
+          </label>
+          <div class="row">
+            <label>From (HHMM) <input id="night-from" inputmode="numeric" maxlength="4" pattern="([01][0-9]|2[0-3])[0-5][0-9]" placeholder="2200" /></label>
+            <label>Until (HHMM) <input id="night-to" inputmode="numeric" maxlength="4" pattern="([01][0-9]|2[0-3])[0-5][0-9]" placeholder="0600" /></label>
+          </div>
+          <label>Night brightness <span id="night-label">25%</span><input id="night-level" type="range" min="5" max="80" step="1" /></label>
+          <button id="night-save" class="primary" type="button">SAVE NIGHT</button>
+          <p id="night-status" class="note"></p>
+        </div></section>
+        <section id="health" class="card"><div class="round-scroll">
+          <h2>RECEIVER</h2>
+          <p id="health-text">No data</p>
+        </div></section>
+        <section id="software" class="card"><div class="round-scroll">
+          <h2>SOFTWARE</h2>
+          <p id="sw-version">Currently running Version —</p>
+          <p id="sw-key-badge" class="saved">✓ Signed updates, no key needed</p>
+          <div id="sw-banner" class="sw-banner" data-tone="quiet" role="status" aria-live="polite" hidden>
+            <p id="sw-banner-title"></p>
+            <p id="sw-banner-detail"></p>
+            <div id="sw-progress" class="sw-progress" hidden><i id="sw-progress-bar"></i></div>
+          </div>
+          <p id="sw-notes" hidden></p>
+          <div id="sw-schedule-box" class="sw-schedule" hidden>
+            <p id="sw-schedule"></p>
+            <button id="sw-schedule-cancel" type="button">CANCEL SCHEDULE</button>
+          </div>
+          <button id="sw-install" class="primary" type="button" disabled>INSTALL UPDATE</button>
+          <button id="sw-check" type="button">CHECK FOR UPDATES</button>
+          <p id="sw-source"></p>
+          <label>Install later at <span id="sw-later-zone">(Eastern time)</span>
+            <input id="sw-later-at" type="time" value="02:00" step="60" />
+          </label>
+          <button id="sw-later-save" type="button">SAVE TIME</button>
+          <p id="sw-later-status" class="note"></p>
+          <label class="check"><input id="sw-auto" type="checkbox" /> Install updates automatically</label>
+          <p id="sw-auto-help" class="note">Off: the round screen asks UPDATE NOW or LATER when a new version is found. On: it installs at the Install later time without asking.</p>
+          <p id="sw-status" class="note"></p>
+          <p id="sw-url"></p>
+        </div></section>
+        <section id="sources" class="card"><div class="round-scroll">
+          <h2>SOURCES</h2>
+          <p>Dark map: Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community.</p>
+          <p>Light map: Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, © OpenStreetMap contributors, and the GIS User Community.</p>
+          <p>Satellite: Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community. <a href="https://www.esri.com/">Powered by Esri</a>.</p>
+          <p>Sectional: <a href="https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/vfr/">FAA Aeronautical Information Services</a>. US government work. The black scope uses no map.</p>
+          <p>Weather: <a href="https://www.rainviewer.com/">Weather data by RainViewer</a>. If RainViewer is unreachable, NEXRAD composite via the <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a>.</p>
+          <p>METAR: <a href="https://aviationweather.gov/data/api/">Aviation Weather Center</a>, NOAA/NWS.</p>
+          <p>Live aircraft: <a href="https://adsb.fi/">adsb.fi</a> open data, or your own readsb or dump1090 receiver. Demo tracks are built in.</p>
+        </div></section>
+        <p class="foot">Flight Tracker by Maverick Field Gear<br />Purpose-built. Field-proven.</p>
+      </div>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const say = (text) => { $("status").textContent = text; };
+      let savedWeather = { enabled: true, animate: true };
+      const HHMM = /^([01][0-9]|2[0-3])[0-5][0-9]$/;
+
+      // Every save button: pressed + disabled while working, then SAVED ✓ for
+      // about 2 s, or NOT SAVED with the reason in the section's status line.
+      async function withSave(button, work, statusEl, words) {
+        if (!button || button.dataset.busy === "1") return;
+        const w = Object.assign({ busy: "SAVING…", ok: "SAVED ✓", bad: "NOT SAVED" }, words || {});
+        const label = button.dataset.label || button.textContent;
+        button.dataset.label = label;
+        button.dataset.busy = "1";
+        button.disabled = true;
+        button.classList.remove("saved", "failed");
+        button.classList.add("saving");
+        button.textContent = w.busy;
+        const restore = (delay) => setTimeout(() => {
+          button.classList.remove("saved", "failed", "saving");
+          button.textContent = label;
+          button.disabled = false;
+          button.dataset.busy = "";
+        }, delay);
+        try {
+          const message = await work();
+          button.classList.remove("saving");
+          button.classList.add("saved");
+          button.textContent = w.ok;
+          if (statusEl) statusEl.textContent = message || "";
+          restore(2000);
+          return true;
+        } catch (error) {
+          button.classList.remove("saving");
+          button.classList.add("failed");
+          button.textContent = w.bad;
+          if (statusEl) statusEl.textContent = error.message || String(error);
+          restore(3000);
+          return false;
+        }
+      }
+
+      // Toggles and pickers save at once; show the result next to them.
+      async function quickSave(statusEl, work) {
+        if (statusEl) statusEl.textContent = "Saving…";
+        try { await work(); if (statusEl) statusEl.textContent = "Saved ✓"; }
+        catch (error) { if (statusEl) statusEl.textContent = "Not saved: " + error.message; }
+      }
+
+      function parseWatch(text) {
+        const out = [];
+        for (const raw of String(text || "").split(/[\s,;]+/)) {
+          const token = raw.replace(/-/g, "").toUpperCase();
+          if (!token) continue;
+          if (!/^[A-Z0-9]{2,7}$/.test(token)) continue;
+          if (!out.includes(token)) out.push(token);
+        }
+        return out;
+      }
+
+      async function api(path, options) {
+        const response = await fetch(path, options);
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 401) { showLogin(); throw new Error("Sign in required."); }
+        if (!response.ok && response.status !== 202) throw new Error(body.detail || body.error || (body.errors || []).join(" ") || "Request failed");
+        return body;
+      }
+
+      function showLogin() {
+        $("login").classList.remove("hidden");
+        $("app").classList.add("hidden");
+      }
+
+      let locMode = "code";
+      let resolvedAirport = null;
+
+      function setLocMode(next) {
+        locMode = next;
+        $("loc-code").setAttribute("aria-pressed", String(next === "code"));
+        $("loc-ll").setAttribute("aria-pressed", String(next === "ll"));
+        $("loc-code-fields").hidden = next !== "code";
+        $("loc-ll-fields").hidden = next !== "ll";
+      }
+
+      function showAirport(hit) {
+        resolvedAirport = hit;
+        if (!hit) {
+          $("loc-match").textContent = "No airport with that code.";
+          return;
+        }
+        $("loc-match").textContent = hit.name + " · " + hit.city + " · " + Number(hit.lat).toFixed(4) + ", " + Number(hit.lon).toFixed(4);
+      }
+
+      async function lookupCode() {
+        const q = $("icao").value.trim().toUpperCase();
+        resolvedAirport = null;
+        if (q.length < 3) {
+          $("loc-match").textContent = "Enter an ICAO or IATA code.";
+          return;
+        }
+        const data = await api("/api/airports?q=" + encodeURIComponent(q));
+        const hit = (data.airports || []).find((airport) => airport.icao === q || airport.iata === q);
+        showAirport(hit || null);
+      }
+
+      function readLatLon() {
+        const lat = Number($("lat").value);
+        const lon = Number($("lon").value);
+        if (!Number.isFinite(lat) || lat < -90 || lat > 90) return { error: "Latitude must be between -90 and 90." };
+        if (!Number.isFinite(lon) || lon < -180 || lon > 180) return { error: "Longitude must be between -180 and 180." };
+        return { lat, lon };
+      }
+
+      function showLatLon() {
+        const parsed = readLatLon();
+        $("loc-ll-match").textContent = parsed.error || (parsed.lat.toFixed(4) + ", " + parsed.lon.toFixed(4));
+        return parsed;
+      }
+
+      function fill(cfg) {
+        $("lat").value = cfg.home.lat;
+        $("lon").value = cfg.home.lon;
+        showLatLon();
+        const code = String(cfg.home.name || "").toUpperCase();
+        $("icao").value = code;
+        lookupCode().then(() => {
+          if (resolvedAirport && Math.abs(resolvedAirport.lat - Number(cfg.home.lat)) < 0.05) setLocMode("code");
+          else setLocMode("ll");
+        });
+        savedWeather = cfg.weather || savedWeather;
+        $("range").value = String(cfg.rangeNm);
+        $("rings").value = String(cfg.rings || 4);
+        $("show-clock").checked = cfg.showClock !== false;
+        $("clock-format").value = cfg.clockFormat || "24h";
+        $("minimal-text").checked = cfg.minimalText !== false;
+        $("wx-on").checked = !!(cfg.weather && cfg.weather.enabled);
+        $("wifi-country").value = (cfg.wifi && cfg.wifi.country) || "US";
+        for (const sw of document.querySelectorAll(".swatch")) sw.setAttribute("aria-pressed", String(sw.dataset.bg === cfg.background));
+        $("units").value = cfg.units;
+        $("watch-on").checked = Boolean(cfg.watch && cfg.watch.enabled);
+        renderWatch(cfg.watch ? cfg.watch.tails : []);
+        const alerts = cfg.alerts || {};
+        $("alert-watch").checked = !!alerts.watch;
+        $("alert-mil").checked = !!alerts.military;
+        $("alert-emg").checked = !!alerts.emergency;
+        $("alert-chime").checked = !!alerts.chime;
+        const trails = cfg.trails || { enabled: false, minutes: 5 };
+        $("trail-on").checked = !!trails.enabled;
+        $("trail-min").value = trails.minutes || 5;
+        $("trail-label").textContent = $("trail-min").value + " min";
+        const night = cfg.night || { mode: "off", fromHour: 22, toHour: 6, brightness: 25 };
+        const pad = (h) => String(Math.round(Number(h) || 0)).padStart(2, "0") + "00";
+        $("night-mode").value = night.mode || "off";
+        $("night-from").value = night.from || pad(night.fromHour);
+        $("night-to").value = night.to || pad(night.toHour);
+        $("night-level").value = night.brightness;
+        $("night-label").textContent = $("night-level").value + "%";
+        $("icons").value = cfg.icons || "maverick";
+        $("brightness").value = String(Math.min(100, Math.max(20, Math.round((Number(cfg.brightness) || 100) / 10) * 10)));
+        $("brt-label").textContent = $("brightness").value + "%";
+        $("orientation").value = cfg.orientation === "track" ? "track" : "north";
+        $("altitude-band").value = ["all", "low", "mid", "high", "upper"].includes(cfg.altitudeBand) ? cfg.altitudeBand : "all";
+        $("sweep").checked = Boolean(cfg.sweep && cfg.sweep.enabled);
+        $("sweep-speed").value = cfg.sweep ? cfg.sweep.periodSec : 8;
+        $("sweep-label").textContent = $("sweep-speed").value;
+        $("opacity").value = String(Math.min(100, Math.max(10, Math.round((cfg.weather.opacity || 0.6) * 10) * 10)));
+        $("wx-label").textContent = $("opacity").value + "%";
+        $("metar").checked = cfg.metar;
+        $("metar-station").value = cfg.metarStation || "";
+        $("feed-mode").value = cfg.feed.mode === "demo" || cfg.feed.mode === "adsbfi" ? cfg.feed.mode : "receiver";
+        $("host").value = cfg.feed.host || "";
+        $("port").value = cfg.feed.port || 8080;
+        $("url").value = cfg.feed.remoteUrl || "";
+        $("path").value = cfg.feed.localPath || "";
+      }
+
+      function draftFeed() {
+        const choice = $("feed-mode").value;
+        const url = $("url").value.trim();
+        const host = $("host").value.trim();
+        const mode = choice === "demo" || choice === "adsbfi" ? choice : (url || host ? "remote" : "local");
+        return {
+          mode,
+          localPath: $("path").value.trim(),
+          remoteUrl: url,
+          host,
+          port: Number($("port").value || 8080),
+          fallbackDemo: true,
+        };
+      }
+
+      function payload() {
+        return {
+          rangeNm: Number($("range").value),
+          rings: Number($("rings").value),
+          showClock: $("show-clock").checked,
+          clockFormat: $("clock-format").value,
+          minimalText: $("minimal-text").checked,
+          units: $("units").value,
+          weather: { enabled: $("wx-on").checked, opacity: Number($("opacity").value) / 100, animate: savedWeather.animate },
+          sweep: { enabled: $("sweep").checked, periodSec: Number($("sweep-speed").value) },
+          icons: $("icons").value,
+          metar: $("metar").checked,
+          metarStation: $("metar-station").value.trim().toUpperCase(),
+          feed: draftFeed(),
+        };
+      }
+
+      async function load() {
+        const auth = await api("/api/auth");
+        if (auth.required) {
+          const probe = await fetch("/api/config");
+          if (probe.status === 401) { showLogin(); return; }
+        }
+        $("login").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        fill(await api("/api/config"));
+        await refreshWifi().catch(() => undefined);
+        refreshWeatherState();
+        await refreshSoftware();
+        await refreshHealth();
+        for (const el of document.querySelectorAll(".round-scroll")) {
+          el.classList.toggle("can-scroll", el.scrollHeight > el.clientHeight + 6);
+        }
+      }
+
+      function renderWatch(tails) {
+        $("watch-list").replaceChildren();
+        if (!tails || !tails.length) {
+          const li = document.createElement("li");
+          li.className = "empty";
+          li.textContent = "No aircraft on the watch list yet.";
+          $("watch-list").append(li);
+        }
+        for (const tail of tails || []) {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = tail;
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "×";
+          remove.setAttribute("aria-label", "Remove " + tail);
+          remove.addEventListener("click", async () => {
+            const left = (tails || []).filter((item) => item !== tail);
+            $("watch-status").textContent = "Removing " + tail + "…";
+            try { await saveWatch(left, $("watch-on").checked && left.length > 0); $("watch-status").textContent = "Removed " + tail + ". Saved ✓"; }
+            catch (error) { $("watch-status").textContent = "Not saved: " + error.message; }
+          });
+          li.append(name, remove);
+          $("watch-list").append(li);
+        }
+      }
+      function currentWatch() {
+        return [...$("watch-list").querySelectorAll("li:not(.empty) span")].map((node) => node.textContent);
+      }
+
+      async function saveSlice(patch) {
+        const current = await api("/api/config");
+        Object.assign(current, patch);
+        fill(await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(current) }));
+      }
+
+      async function saveWatch(tails, enabled) {
+        await saveSlice({ watch: { enabled, tails } });
+      }
+
+      async function refreshHealth() {
+        const body = await api("/api/receiver");
+        if (!body.ok) { $("health-text").textContent = "No data"; return; }
+        const rate = body.messageRate == null ? "—" : body.messageRate + "/s";
+        const signal = body.rssi == null ? "not reported" : body.rssi + " dB";
+        const age = body.lastSeenSec == null ? "—" : body.lastSeenSec + " s";
+        $("health-text").textContent = "Messages " + (body.messages ?? "—") + " · rate " + rate + " · aircraft " + body.aircraft + " · signal " + signal + " · last " + age;
+      }
+
+      // ---- Software card (1.0.4) -------------------------------------------
+      // Every /api/updates* answer has the same shape; anything missing keeps
+      // the last value, so the saved-key line and version are never wiped.
+      let swInfo = {};
+      let swPoll = 0;
+      let swPollUntil = 0;
+      const SW_POLL_MS = 1500;
+      const SW_POLL_LIMIT_MS = 3 * 60 * 1000;
+      const SW_DONE = new Set(["installed", "current", "rolled-back", "error"]);
+      const SW_STAGE_PCT = { starting: 2, checking: 6, downloading: 10, verifying: 78, restarting: 88, complete: 100 };
+
+      // 1.0.6: "1.0.3" is never an update for "1.0.5".
+      function swNewer(latest, running) {
+        const a = String(latest || "").split(".").map(Number);
+        const b = String(running || "").split(".").map(Number);
+        if (!a.length || a.some(Number.isNaN) || b.some(Number.isNaN)) return false;
+        for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+          const x = a[i] || 0, y = b[i] || 0;
+          if (x !== y) return x > y;
+        }
+        return false;
+      }
+
+      function swPercent(info) {
+        if (info.stage === "downloading" && info.total > 0) {
+          return Math.round(10 + 65 * Math.min(1, info.received / info.total));
+        }
+        return SW_STAGE_PCT[info.stage] ?? 4;
+      }
+
+      function swBanner(tone, title, detail, pct) {
+        const box = $("sw-banner");
+        box.hidden = false;
+        box.dataset.tone = tone;
+        $("sw-banner-title").textContent = title;
+        $("sw-banner-detail").textContent = detail || "";
+        $("sw-banner-detail").hidden = !detail;
+        $("sw-progress").hidden = pct == null;
+        if (pct != null) $("sw-progress-bar").style.width = Math.max(2, Math.min(100, pct)) + "%";
+      }
+
+      function swButtons(installing, canInstall) {
+        const install = $("sw-install");
+        install.textContent = installing ? "INSTALLING…" : "INSTALL UPDATE";
+        install.disabled = installing || !canInstall;
+        $("sw-check").disabled = installing;
+      }
+
+      function showSoftware(update) {
+        const info = Object.assign({}, swInfo, update || {});
+        swInfo = info;
+        const running = info.version || "—";
+        $("sw-version").innerHTML = "";
+        $("sw-version").append("Currently running ", Object.assign(document.createElement("b"), { textContent: "Version " + running }));
+        $("sw-url").textContent = info.url || "";
+        $("sw-auto").checked = !!info.auto;
+        // 1.0.7: install-later time and any pending schedule.
+        if (info.laterAt && document.activeElement !== $("sw-later-at")) $("sw-later-at").value = info.laterAt;
+        if (info.laterTz) $("sw-later-zone").textContent = info.laterTz === "America/New_York" ? "(Eastern time)" : "(" + (info.laterZone || info.laterTz) + ")";
+        const booked = info.schedule;
+        $("sw-schedule-box").hidden = !booked;
+        $("sw-schedule").textContent = booked
+          ? "Scheduled: Version " + booked.version + " at " + booked.label + (booked.source === "auto" ? " (automatic)" : "")
+          : "";
+        // 1.0.7: tokenless signed updates from the public repo.
+        const prints = Array.isArray(info.keyFingerprints) ? info.keyFingerprints : [];
+        $("sw-key-badge").textContent = "✓ Signed updates from " + (info.source || "github.com/MFG001/flight-tracker");
+        $("sw-key-badge").classList.add("saved");
+        $("sw-source").textContent = prints.length ? "Signing key " + prints.join(", ") : "";
+        const notes = $("sw-notes");
+        notes.hidden = true;
+        const state = info.state || "";
+        const target = info.target || info.latest || "";
+        // Only a strictly newer release can be installed or shown as ready.
+        const canInstall = !!info.available && swNewer(info.latest, running);
+        if (state === "installing") {
+          const step = info.step > 0 ? "Step " + info.step + " of " + (info.steps || 4) + " · " : "";
+          swBanner("busy", "Installing Version " + (target || "update") + "…", step + (info.detail || "Starting update..."), swPercent(info));
+          swButtons(true, false);
+        } else if (state === "installed") {
+          swBanner("ok", "Update complete · Now running Version " + running,
+            "The round screen has been reloaded." + (info.installedAt ? "\nInstalled " + new Date(info.installedAt).toLocaleString() + "." : ""), 100);
+          swButtons(false, false);
+        } else if (state === "rolled-back" || (state === "error" && info.stage === "failed")) {
+          // One clean sentence, then the rollback note: "Update to Version 1.0.4 failed. Rolled back automatically; ..."
+          const raw = String(info.error || info.detail || "The update did not finish.").trim();
+          const reason = /[.!?]$/.test(raw) ? raw : raw + ".";
+          swBanner("bad", "Update failed · Still running Version " + running,
+            state === "rolled-back" ? reason + " Rolled back automatically; your settings are kept." : reason, null);
+          swButtons(false, canInstall);
+        } else if (state === "error") {
+          swBanner("bad", "Could not check for updates", info.error || "Check failed.", null);
+          swButtons(false, canInstall);
+        } else if (canInstall) {
+          swBanner("ready", "Update ready: Version " + (info.latest || "—"),
+            info.schedule && info.schedule.version === info.latest
+              ? "Installs by itself at " + info.schedule.label + ", or tap INSTALL UPDATE now."
+              : "Tap INSTALL UPDATE below.", null);
+          notes.textContent = info.notes || "";
+          notes.hidden = !info.notes;
+          swButtons(false, true);
+        } else if (state === "current" || info.checkedAt) {
+          swBanner("ok", "Up to date · Version " + running, info.checkedAt ? "Checked " + new Date(info.checkedAt).toLocaleString() + "." : "", null);
+          swButtons(false, false);
+        } else {
+          swBanner("quiet", "Not checked yet", "Tap CHECK FOR UPDATES.", null);
+          swButtons(false, false);
+        }
+        if (state === "installing") startSoftwarePoll();
+      }
+
+      // The server restarts during step 4: a dropped request then means
+      // "reconnecting", not an error. Keep asking until it answers.
+      function swReconnecting() {
+        const target = swInfo.target || swInfo.latest || "";
+        swBanner("busy", "Installing Version " + (target || "update") + "…", "Step 4 of 4 · Restarting Flight Tracker, reconnecting…", SW_STAGE_PCT.restarting);
+        swButtons(true, false);
+      }
+
+      function stopSoftwarePoll() {
+        if (swPoll) clearInterval(swPoll);
+        swPoll = 0;
+      }
+
+      function startSoftwarePoll() {
+        if (swPoll) return;
+        swPollUntil = Date.now() + SW_POLL_LIMIT_MS;
+        swPoll = setInterval(pollSoftware, SW_POLL_MS);
+      }
+
+      async function pollSoftware() {
+        if (Date.now() > swPollUntil) {
+          stopSoftwarePoll();
+          swBanner("bad", "No answer from the update after 3 minutes", "Reload this page. If the round screen is dark, restart the Pi; a failed update rolls back on its own.", null);
+          swButtons(false, !!swInfo.available && swNewer(swInfo.latest, swInfo.version));
+          return;
+        }
+        let info;
+        try {
+          const response = await fetch("/api/updates", { cache: "no-store" });
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          info = await response.json();
+        } catch (error) {
+          swReconnecting();
+          return;
+        }
+        showSoftware(info);
+        if (SW_DONE.has(info.state) || info.state !== "installing") stopSoftwarePoll();
+      }
+
+      async function refreshSoftware() {
+        showSoftware(await api("/api/updates"));
+      }
+
+      function bars(signal) {
+        const n = signal >= 75 ? 4 : signal >= 50 ? 3 : signal >= 25 ? 2 : 1;
+        return "▮".repeat(n) + "▯".repeat(4 - n);
+      }
+
+      function showWifiState(wifi) {
+        const lines = [];
+        if (!wifi.nmcli) lines.push(wifi.note || "NetworkManager is not available.");
+        else if (wifi.state === "connected") lines.push("Connected to " + (wifi.connectedSsid || "Wi-Fi") + ".");
+        else if (wifi.state === "portal") lines.push("Phone is on " + wifi.ssid + ". Open " + wifi.setupUrl);
+        else if (wifi.state === "hotspot") lines.push("Hotspot " + wifi.ssid + " is up. Password " + wifi.password);
+        else lines.push(wifi.note || "No Wi-Fi connection.");
+        $("wifi-text").textContent = lines.join(" ");
+        const ips = (wifi.devices || []).filter((d) => d.ip).map((d) => (d.type === "wifi" ? "Wi-Fi " : "Ethernet ") + d.ip + (d.connection ? " (" + d.connection + ")" : ""));
+        $("wifi-ips").textContent = ips.length ? ips.join(" · ") : "";
+      }
+
+      async function scanWifi(rescan) {
+        const nets = await api("/api/wifi/scan" + (rescan ? "" : "?rescan=0")).catch(() => ({ networks: [] }));
+        $("nets").replaceChildren();
+        if (!(nets.networks || []).length) {
+          const li = document.createElement("li");
+          li.className = "small";
+          li.textContent = "No networks found. Tap REFRESH LIST, or type a hidden network below.";
+          $("nets").append(li);
+        }
+        for (const net of nets.networks || []) {
+          const li = document.createElement("li");
+          const button = document.createElement("button");
+          button.type = "button";
+          const name = document.createElement("span");
+          name.className = "net-name";
+          name.textContent = net.ssid;
+          name.style.whiteSpace = "pre";
+          const sig = document.createElement("span");
+          sig.className = "net-bars";
+          sig.textContent = bars(net.signal);
+          const meta = document.createElement("span");
+          meta.className = "net-meta";
+          meta.textContent = net.signal + "% · " + (net.secured ? "Secured (" + net.security + ")" : "Open") + (net.inUse ? " · connected" : "") + (net.ssid !== net.ssid.trim() ? " · name has a space at the start or end" : "");
+          button.append(name, sig, meta);
+          button.setAttribute("aria-pressed", "false");
+          button.addEventListener("click", () => {
+            for (const other of $("nets").querySelectorAll("button")) other.setAttribute("aria-pressed", "false");
+            button.setAttribute("aria-pressed", "true");
+            $("wifi-ssid").value = net.ssid;
+            $("wifi-hidden").checked = false;
+            $("wifi-pass").placeholder = net.secured ? "Wi-Fi password" : "Open network: leave blank";
+            if (net.secured) $("wifi-pass").focus();
+          });
+          li.append(button);
+          $("nets").append(li);
+        }
+      }
+
+      async function refreshWifi() {
+        showWifiState(await api("/api/wifi"));
+        await scanWifi(false);
+      }
+
+      async function refreshWeatherState() {
+        try {
+          const wx = await api("/api/weather");
+          if (wx.ok === false || !(wx.frames || []).length) $("wx-state").textContent = "Weather radar unavailable: " + (wx.error || "no radar frames.");
+          else $("wx-state").textContent = "Radar OK · " + wx.attribution + " · " + wx.frames.length + " frames";
+        } catch (error) { $("wx-state").textContent = "Weather radar unavailable: " + error.message; }
+      }
+
+      $("signin").addEventListener("click", async () => {
+        const response = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: $("password").value }) });
+        if (!response.ok) { $("status").textContent = "Wrong password."; return; }
+        await load();
+      });
+
+      let searchTimer = 0;
+      $("loc-code").addEventListener("click", () => setLocMode("code"));
+      $("loc-ll").addEventListener("click", () => { setLocMode("ll"); showLatLon(); });
+      $("icao").addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => lookupCode().catch((error) => { $("loc-match").textContent = error.message; }), 180);
+      });
+      $("lat").addEventListener("input", showLatLon);
+      $("lon").addEventListener("input", showLatLon);
+      $("loc-save").addEventListener("click", () => withSave($("loc-save"), async () => {
+        let home;
+        if (locMode === "code") {
+          await lookupCode();
+          if (!resolvedAirport) throw new Error("Look up a valid airport code first.");
+          home = { name: resolvedAirport.icao, lat: resolvedAirport.lat, lon: resolvedAirport.lon };
+        } else {
+          const parsed = showLatLon();
+          if (parsed.error) throw new Error(parsed.error);
+          home = { name: "POS", lat: parsed.lat, lon: parsed.lon };
+        }
+        const current = await api("/api/config");
+        current.home = home;
+        await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(current) });
+        return "Saved. NAV recentres the glass here.";
+      }, $("loc-status")));
+
+      $("form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        withSave($("form-save"), async () => {
+          const current = await api("/api/config");
+          const next = Object.assign({}, current, payload());
+          next.feed = Object.assign({}, current.feed, payload().feed);
+          next.weather = Object.assign({}, current.weather, payload().weather);
+          fill(await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) }));
+          return "Saved. The display updates within a few seconds, no reboot.";
+        }, $("status"));
+      });
+      $("sweep-speed").addEventListener("input", () => { $("sweep-label").textContent = $("sweep-speed").value; });
+
+      $("test").addEventListener("click", async () => {
+        try {
+          const result = await api("/api/feed/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draftFeed()) });
+          $("test-result").textContent = result.detail;
+        } catch (error) { $("test-result").textContent = error.message; }
+      });
+
+      $("restart").addEventListener("click", async () => {
+        try { const result = await api("/api/display/restart", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); say(result.detail); }
+        catch (error) { say(error.message); }
+      });
+
+      $("reset").addEventListener("click", async () => {
+        if (!confirm("Reset the display settings to the built-in defaults?")) return;
+        try { fill(await api("/api/config/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })); say("Defaults restored."); }
+        catch (error) { say(error.message); }
+      });
+
+      $("sw-check").addEventListener("click", async () => {
+        const button = $("sw-check");
+        button.disabled = true;
+        button.textContent = "CHECKING…";
+        $("sw-status").textContent = "";
+        try { showSoftware(await api("/api/updates/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })); }
+        catch (error) { $("sw-status").textContent = error.message; }
+        finally {
+          button.textContent = "CHECK FOR UPDATES";
+          button.disabled = swInfo.state === "installing";
+        }
+      });
+      $("sw-install").addEventListener("click", async () => {
+        $("sw-status").textContent = "";
+        showSoftware({ state: "installing", stage: "starting", step: 0, detail: "Starting update...", target: swInfo.latest || "" });
+        stopSoftwarePoll();
+        try {
+          showSoftware(await api("/api/updates/install", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }));
+          startSoftwarePoll();
+        } catch (error) {
+          // The server refused or the helper failed: show the real reason.
+          stopSoftwarePoll();
+          try { await refreshSoftware(); } catch (_) { /* keep the last view */ }
+          if (swInfo.state !== "error" && swInfo.state !== "rolled-back") {
+            swBanner("bad", "Update could not start · Still running Version " + (swInfo.version || "—"), error.message, null);
+            swButtons(false, !!swInfo.available && swNewer(swInfo.latest, swInfo.version));
+          }
+        }
+      });
+      $("sw-later-save").addEventListener("click", () => withSave($("sw-later-save"), async () => {
+        const value = $("sw-later-at").value;
+        const view = await api("/api/updates/later-at", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ laterAt: value }) });
+        showSoftware(view);
+        return "Later installs run at " + view.laterLabel + (view.schedule ? ". Version " + view.schedule.version + " moved to " + view.schedule.label + "." : ".");
+      }, $("sw-later-status")));
+      $("sw-later-at").addEventListener("input", () => { $("sw-later-status").textContent = "Not saved yet. Tap SAVE TIME."; });
+      $("sw-schedule-cancel").addEventListener("click", () => withSave($("sw-schedule-cancel"), async () => {
+        const view = await api("/api/updates/schedule/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        showSoftware(view);
+        return view.detail || "Schedule cancelled.";
+      }, $("sw-later-status"), { busy: "CANCELLING…", ok: "CANCELLED ✓", bad: "NOT CANCELLED" }));
+      $("sw-auto").addEventListener("change", async () => {
+        try { showSoftware(await api("/api/updates/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ auto: $("sw-auto").checked }) })); }
+        catch (error) { $("sw-status").textContent = error.message; }
+      });
+
+      $("watch-on").addEventListener("change", () => pending("watch-status"));
+      $("watch-tail").addEventListener("input", () => { if ($("watch-tail").value.trim()) pending("watch-status"); });
+      // SAVE WATCH: the toggle, the list, and anything still typed in the box.
+      $("watch-save").addEventListener("click", () => withSave($("watch-save"), async () => {
+        const typed = $("watch-tail").value;
+        const added = parseWatch(typed);
+        const skipped = String(typed).split(/[\s,;]+/).filter((raw) => raw && !added.includes(raw.replace(/-/g, "").toUpperCase()));
+        const tails = currentWatch();
+        for (const tail of added) if (!tails.includes(tail)) tails.push(tail);
+        const enabled = $("watch-on").checked;
+        if (enabled && !tails.length) throw new Error("Add at least one aircraft before showing only watched aircraft.");
+        await saveWatch(tails, enabled);
+        if (!skipped.length) $("watch-tail").value = "";
+        const parts = [tails.length + " on the watch list", enabled ? "showing only watched aircraft" : "showing all aircraft"];
+        if (added.length) parts.unshift("Added " + added.join(", "));
+        return parts.join(" · ") + "." + (skipped.length ? " Not recognised: " + skipped.join(", ") : "");
+      }, $("watch-status")));
+      $("watch-add").addEventListener("click", () => withSave($("watch-add"), async () => {
+        const typed = $("watch-tail").value;
+        const added = parseWatch(typed);
+        const skipped = String(typed).split(/[\s,;]+/).filter((raw) => raw && !added.includes(raw.replace(/-/g, "").toUpperCase()));
+        if (!added.length) throw new Error("Enter a tail, callsign, or hex code, e.g. N123AB, AAL100, A1B2C3.");
+        const tails = currentWatch();
+        for (const tail of added) if (!tails.includes(tail)) tails.push(tail);
+        await saveWatch(tails, $("watch-on").checked);
+        $("watch-tail").value = "";
+        return "Added " + added.join(", ") + (skipped.length ? ". Not recognised: " + skipped.join(", ") : ".");
+      }, $("watch-status"), { busy: "ADDING…", ok: "ADDED ✓", bad: "NOT ADDED" }));
+      // Cards with a SAVE button: a change shows "Not saved yet" until it is tapped.
+      function pending(statusId) { $(statusId).textContent = "Not saved yet. Tap SAVE."; }
+      function alertsDraft() {
+        return { watch: $("alert-watch").checked, military: $("alert-mil").checked, emergency: $("alert-emg").checked, chime: $("alert-chime").checked };
+      }
+      for (const id of ["alert-watch", "alert-mil", "alert-emg", "alert-chime"]) $(id).addEventListener("change", () => pending("alerts-status"));
+      $("alerts-save").addEventListener("click", () => withSave($("alerts-save"), async () => {
+        const want = alertsDraft();
+        await saveSlice({ alerts: want });
+        const on = [want.watch && "watched aircraft", want.military && "military", want.emergency && "emergency squawks"].filter(Boolean);
+        return on.length ? "Alerts on for " + on.join(", ") + (want.chime ? ", with chime." : ".") : "All alerts off.";
+      }, $("alerts-status")));
+      // SCREEN: the controls that used to be the BRT, HDG, and ALT keys on the glass.
+      $("brightness").addEventListener("input", () => { $("brt-label").textContent = $("brightness").value + "%"; });
+      const setBrightness = (value) => api("/api/brightness", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ brightness: Number(value) }) });
+      // Live: the backlight follows the slider as soon as it is let go.
+      $("brightness").addEventListener("change", () => quickSave($("screen-status"), () => setBrightness($("brightness").value)));
+      $("orientation").addEventListener("change", () => pending("screen-status"));
+      $("altitude-band").addEventListener("change", () => pending("screen-status"));
+      $("screen-save").addEventListener("click", () => withSave($("screen-save"), async () => {
+        await setBrightness($("brightness").value);
+        await saveSlice({ orientation: $("orientation").value, altitudeBand: $("altitude-band").value });
+        return "Saved: " + $("brightness").value + "% · " + ($("orientation").value === "track" ? "Track Up" : "North Up") + " · " + $("altitude-band").selectedOptions[0].textContent + ".";
+      }, $("screen-status")));
+      $("trail-min").addEventListener("input", () => { $("trail-label").textContent = $("trail-min").value + " min"; });
+      $("trail-on").addEventListener("change", () => pending("trails-status"));
+      $("trail-min").addEventListener("change", () => pending("trails-status"));
+      $("trails-save").addEventListener("click", () => withSave($("trails-save"), async () => {
+        const want = { enabled: $("trail-on").checked, minutes: Number($("trail-min").value) };
+        await saveSlice({ trails: want });
+        return want.enabled ? "Trails on: " + want.minutes + " min behind each aircraft. They build up as aircraft move." : "Trails off.";
+      }, $("trails-status")));
+      $("night-level").addEventListener("input", () => { $("night-label").textContent = $("night-level").value + "%"; });
+      $("opacity").addEventListener("input", () => { $("wx-label").textContent = $("opacity").value + "%"; });
+      $("opacity").addEventListener("change", () => pending("wx-status"));
+      $("wx-save").addEventListener("click", () => withSave($("wx-save"), async () => {
+        await saveSlice({ weather: { enabled: $("wx-on").checked, opacity: Number($("opacity").value) / 100, animate: savedWeather.animate } });
+        await refreshWeatherState();
+        return $("wx-on").checked ? "Weather radar on at " + $("opacity").value + "% opacity." : "Weather radar off.";
+      }, $("wx-status")));
+      $("night-save").addEventListener("click", () => withSave($("night-save"), async () => {
+        const from = $("night-from").value.trim();
+        const to = $("night-to").value.trim();
+        if (!HHMM.test(from) || !HHMM.test(to)) throw new Error("Use 4-digit 24-hour times, like 2200 and 0600.");
+        await saveSlice({ night: { mode: $("night-mode").value, from, to, fromHour: Number(from.slice(0, 2)), toHour: Number(to.slice(0, 2)), brightness: Number($("night-level").value) } });
+        return "Night dimming saved.";
+      }, $("night-status")));
+      $("wx-on").addEventListener("change", () => pending("wx-status"));
+      for (const sw of document.querySelectorAll(".swatch")) {
+        sw.addEventListener("click", () => quickSave($("bg-status"), async () => {
+          for (const other of document.querySelectorAll(".swatch")) other.setAttribute("aria-pressed", String(other === sw));
+          await saveSlice({ background: sw.dataset.bg });
+        }));
+      }
+      $("wifi-scan").addEventListener("click", () => withSave($("wifi-scan"), async () => { await scanWifi(true); return ""; }, $("wifi-status"), { busy: "SCANNING…", ok: "UPDATED ✓", bad: "SCAN FAILED" }));
+      $("wifi-show").addEventListener("change", () => { $("wifi-pass").type = $("wifi-show").checked ? "text" : "password"; });
+      $("wifi-hidden").addEventListener("change", () => { if ($("wifi-hidden").checked) $("wifi-ssid").focus(); });
+      $("wifi-country-save").addEventListener("click", () => withSave($("wifi-country-save"), async () => {
+        const result = await api("/api/wifi/country", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: $("wifi-country").value }) });
+        return result.detail;
+      }, $("wifi-status")));
+      window.setInterval(() => refreshHealth().catch(() => { $("health-text").textContent = "No data"; }), 3000);
+
+      $("wifi-join").addEventListener("click", () => withSave($("wifi-join"), async () => {
+        // Never trim: spaces are part of a network name ("Home Net " has a
+        // trailing space and is a different network from "Home Net").
+        const ssid = $("wifi-ssid").value;
+        if (!ssid) throw new Error("Pick a network from the list or type its name.");
+        const result = await api("/api/wifi/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ssid, password: $("wifi-pass").value, hidden: $("wifi-hidden").checked }) });
+        $("wifi-pass").value = "";
+        if (result.wifi) showWifiState(result.wifi);
+        const ip = ((result.wifi && result.wifi.devices) || []).find((d) => d.type === "wifi" && d.ip);
+        return "Connected to " + ssid + (ip ? ". Wi-Fi address " + ip.ip : "") + ".";
+      }, $("wifi-status"), { busy: "CONNECTING…", ok: "CONNECTED ✓", bad: "NOT CONNECTED" }));
+
+      load().catch((error) => { say(error.message); });
+    </script>
+  </body>
+</html>

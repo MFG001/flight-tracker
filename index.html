@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050607" />
+    <title>Flight Tracker by Maverick Field Gear</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <div id="fit">
+      <div id="device">
+        <div id="legends"></div>
+        <div id="screen">
+          <canvas id="radar"></canvas>
+          <div id="vignette"></div>
+          <div id="hud">
+            <div id="rangectl">
+              <button id="range-minus" class="range-step" type="button" aria-label="Shorter range">−</button>
+              <button id="range" type="button" aria-haspopup="true" aria-expanded="false">20 NM</button>
+              <button id="range-plus" class="range-step" type="button" aria-label="Longer range">+</button>
+            </div>
+            <div id="range-picker" role="menu" hidden></div>
+            <div id="chips">
+              <span id="chip-hdg">N-UP</span>
+              <span id="chip-alt">ALL ALT</span>
+              <span id="chip-watch" hidden>WATCH 0</span>
+              <span id="chip-wx" hidden>WX UNAVAILABLE</span>
+            </div>
+            <div id="alert" hidden>ALERT</div>
+            <div id="idle" hidden>
+              <p id="idle-title">No aircraft in range</p>
+              <p id="idle-clock">--:--:--Z</p>
+              <p id="idle-airport"></p>
+              <p id="idle-metar"></p>
+              <p id="idle-wx" hidden></p>
+            </div>
+            <div id="bottom">
+              <div id="status">ACQUIRING</div>
+              <div id="clock">--:--:--Z</div>
+              <div id="metar" hidden></div>
+              <a id="attrib" href="https://www.esri.com/en-us/legal/terms/data-attributions" target="_blank" rel="noreferrer"></a>
+            </div>
+          </div>
+          <div id="toast" hidden></div>
+          <div id="splash">
+            <div class="splash-copy">
+              <p class="kicker">MAVERICK FIELD GEAR</p>
+              <h1>Flight Tracker</h1>
+              <p>by Maverick Field Gear</p>
+              <p class="tag">Purpose-built. Field-proven.</p>
+            </div>
+          </div>
+          <aside id="detail" class="panel" hidden>
+            <div class="disc">
+              <p class="kicker">SELECTED</p>
+              <h2 id="d-call">—</h2>
+              <dl id="d-grid"></dl>
+              <button id="d-close" type="button">CLOSE</button>
+            </div>
+          </aside>
+          <aside id="traffic" class="panel" hidden>
+            <div class="disc">
+              <p class="kicker">TRAFFIC</p>
+              <h2>IN RANGE</h2>
+              <ul id="traffic-list"></ul>
+              <button id="t-close" type="button">CLOSE</button>
+            </div>
+          </aside>
+          <aside id="menu" class="panel" hidden>
+            <div class="disc">
+              <p class="kicker">ABOUT <i id="update-dot" hidden></i></p>
+              <h2>Flight Tracker</h2>
+              <p class="byline">by Maverick Field Gear</p>
+              <p class="tag">Purpose-built. Field-proven.</p>
+              <p id="about-status"></p>
+              <button id="sweep-toggle" type="button" aria-pressed="false">SWEEP OFF</button>
+              <button id="m-traffic" type="button">TRAFFIC LIST</button>
+              <button id="m-wifi" type="button">WI-FI SETUP</button>
+              <button id="m-touch" type="button">TOUCH TEST</button>
+              <ul id="icon-legend"></ul>
+              <p class="hint">Green outline: military. Cyan ring: watch list. Red flash: emergency.</p>
+              <div class="sources">
+                <p class="kicker">SOURCES</p>
+                <p>Dark map: Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community.</p>
+                <p>Light map: Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, © OpenStreetMap contributors, and the GIS User Community.</p>
+                <p>Satellite: Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community. <a href="https://www.esri.com/" target="_blank" rel="noreferrer">Powered by Esri</a>.</p>
+                <p>Sectional: FAA Aeronautical Information Services. US government work. Scope uses no map.</p>
+                <p>Weather: <a href="https://www.rainviewer.com/" target="_blank" rel="noreferrer">Weather data by RainViewer</a>. If that service is down, NEXRAD composite via the Iowa Environmental Mesonet.</p>
+                <p>METAR: Aviation Weather Center, NOAA/NWS.</p>
+                <p>Live aircraft: data from <a href="https://adsb.fi/" target="_blank" rel="noreferrer">adsb.fi</a> open data (https://adsb.fi/), or your own readsb or dump1090 receiver. Demo tracks are built in.</p>
+              </div>
+              <p class="hint">Settings live at flighttracker.local. Double-tap the map to recenter. Hold the clock for 2 s to open this menu.</p>
+              <button id="m-close" type="button">CLOSE</button>
+            </div>
+          </aside>
+          <aside id="update-pop" class="panel" data-mode="prompt" role="dialog" aria-live="polite" hidden>
+            <div class="disc">
+              <p class="kicker" id="up-kicker">SOFTWARE UPDATE</p>
+              <h2 id="up-title">Update available</h2>
+              <p id="up-line" class="up-line"></p>
+              <p id="up-summary" class="up-summary"></p>
+              <div id="up-bar" class="up-bar" hidden><i id="up-bar-fill"></i></div>
+              <div id="up-actions" class="up-actions">
+                <button id="up-now" class="up-now" type="button">UPDATE NOW</button>
+                <button id="up-later" class="up-later" type="button">LATER</button>
+              </div>
+              <p id="up-hint" class="up-hint"></p>
+              <button id="up-close" class="up-later" type="button" hidden>CLOSE</button>
+            </div>
+          </aside>
+          <aside id="wifi" class="panel wifi-panel" hidden>
+            <div class="disc">
+              <p class="kicker" id="wifi-kicker">WI-FI</p>
+              <h2 id="wifi-title">Join setup network</h2>
+              <div class="qr-card"><canvas id="wifi-qr" width="280" height="280"></canvas></div>
+              <p id="wifi-pass"></p>
+              <ol id="wifi-steps"></ol>
+              <button id="wifi-close" type="button">CLOSE</button>
+            </div>
+          </aside>
+          <div id="touchtest" hidden>
+            <i class="tt-target" data-side="TOP" style="left:50%;top:14%"></i>
+            <i class="tt-target" data-side="RIGHT" style="left:86%;top:50%"></i>
+            <i class="tt-target" data-side="BOTTOM" style="left:50%;top:86%"></i>
+            <i class="tt-target" data-side="LEFT" style="left:14%;top:50%"></i>
+            <div class="tt-copy">
+              <p class="kicker">TOUCH TEST</p>
+              <p id="tt-text">Tap each ring: top, right, bottom, left.</p>
+              <button id="tt-close" type="button">CLOSE</button>
+            </div>
+            <b id="tt-dot" hidden></b>
+          </div>
+          <div id="dim"></div>
+        </div>
+      </div>
+    </div>
+    <div id="sheet" hidden></div>
+    <noscript>Flight Tracker needs JavaScript to draw the scope.</noscript>
+  </body>
+</html>
