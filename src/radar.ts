@@ -636,8 +636,8 @@ export class RadarView {
       const selected = aircraft.id === scene.selectedId;
       const stale = (aircraft.seenSec ?? 0) > 25;
       const line1 = aircraft.callsign;
-      // 1.0.3: altitude always in the block ("3,400 ft", "FL340", "GND"), with
-      // the climb/descent arrow and ground speed after it.
+      // Altitude always in the block ("3,400", "FL340", "GND"), with the
+      // climb/descent arrow and ground speed after it. Feet have no "ft".
       const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);
       ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
       const boxW = Math.min(118, Math.max(86, Math.ceil(ctx.measureText(line2).width) + 14));

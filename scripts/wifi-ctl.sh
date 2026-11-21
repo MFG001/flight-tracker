@@ -12,6 +12,11 @@
 #   boot-hotspot [ssid] [pw] [iface]
 #                        start the setup hotspot only when no client Wi-Fi
 #                        profile is saved (flight-tracker-wifi.service)
+#   test-hotspot [minutes]
+#                        brief, self-reverting setup-hotspot test (default 10,
+#                        max 30). Records the active client profile exactly,
+#                        runs under systemd so SSH can drop, then restores
+#                        that profile. --stop ends the test early.
 #
 # SSIDs are used exactly as given: leading and trailing spaces are part of
 # the name ("Home Net " is not "Home Net") and are never trimmed.
@@ -127,6 +132,227 @@ start_hotspot() {
   nmcli connection modify id "$ssid" connection.autoconnect no >/dev/null 2>&1 || true
 }
 
+
+test_log() {
+  logger -t flight-tracker-wifi-test -- "$*" 2>/dev/null || true
+  printf '%s\n' "$*"
+}
+
+# Currently active client (non-hotspot) Wi-Fi profile, name exactly as saved.
+active_client_profile() {
+  local active name mode
+  active="$(active_names)"
+  while IFS="$SEP" read -r mode name; do
+    [[ -n "$name" ]] || continue
+    is_hotspot_profile "$mode" "$name" && continue
+    if grep -Fxq -- "$name" <<<"$active"; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+  done < <(wifi_profiles)
+  return 1
+}
+
+hotspot_password() {
+  local server
+  server="${FT_SERVER_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../server" && pwd)}"
+  FT_SERVER_DIR="$server" FT_HOTSPOT_JSON="${FT_HOTSPOT_JSON:-/etc/flight-tracker/hotspot.json}" \
+    python3 -c 'import os, sys
+from pathlib import Path
+sys.path.insert(0, os.environ["FT_SERVER_DIR"])
+from wifi_net import load_hotspot
+print(load_hotspot(Path(os.environ["FT_HOTSPOT_JSON"]))["password"], end="")'
+}
+
+test_dir() {
+  printf '%s' "${FT_WIFI_TEST_DIR:-/run/flight-tracker-wifi-test}"
+}
+
+restore_client_profile() {
+  local profile="$1" dir="$2"
+  local i sleep_s="${FT_WIFI_TEST_RETRY_SLEEP:-2}"
+  test_log "Taking the setup hotspot down and bringing the original Wi-Fi profile back."
+  stop_hotspot >/dev/null || true
+  if [[ -z "$profile" ]]; then
+    test_log "No original Wi-Fi profile was recorded."
+    rm -f "$dir/running" "$dir/stop" "$dir/portal-saved"
+    return 1
+  fi
+  for i in 1 2 3 4 5; do
+    if nmcli connection up id "$profile" >/dev/null 2>&1; then
+      if grep -Fxq -- "$profile" <<<"$(active_names)"; then
+        test_log "Restored the original Wi-Fi profile."
+        rm -f "$dir/running" "$dir/stop" "$dir/portal-saved"
+        return 0
+      fi
+    fi
+    sleep "$sleep_s"
+  done
+  test_log "Could not restore the original Wi-Fi profile. NetworkManager should reconnect it on its own. If it does not, wait, then power-cycle the Pi."
+  rm -f "$dir/running" "$dir/stop" "$dir/portal-saved"
+  return 1
+}
+
+hotspot_is_up() {
+  local active
+  active="$(active_names)"
+  grep -Fxq -- "$HOTSPOT_SSID" <<<"$active" || grep -Fxq -- "Hotspot" <<<"$active"
+}
+
+portal_saved_network() {
+  local dir="$1" active name mode
+  [[ -f "$dir/portal-saved" ]] && return 0
+  hotspot_is_up && return 1
+  active="$(active_names)"
+  while IFS="$SEP" read -r mode name; do
+    [[ -n "$name" ]] || continue
+    is_hotspot_profile "$mode" "$name" && continue
+    if grep -Fxq -- "$name" <<<"$active"; then
+      return 0
+    fi
+  done < <(wifi_profiles)
+  return 1
+}
+
+test_hotspot_stop() {
+  local dir profile
+  dir="$(test_dir)"
+  mkdir -p "$dir"
+  : > "$dir/stop"
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl stop flight-tracker-wifi-test >/dev/null 2>&1 || true
+  fi
+  # If no supervised loop is running, revert from the recorded profile here.
+  if [[ ! -f "$dir/running" && -f "$dir/profile" ]]; then
+    IFS= read -r profile < "$dir/profile" || true
+    restore_client_profile "$profile" "$dir" || true
+  fi
+  test_log "Stop requested."
+}
+
+test_hotspot_run() {
+  local minutes="$1"
+  local dir profile password duration start now
+  dir="$(test_dir)"
+  mkdir -p "$dir"
+  profile="${FT_WIFI_TEST_PROFILE-}"
+  if [[ -z "$profile" && -f "$dir/profile" ]]; then
+    IFS= read -r profile < "$dir/profile" || true
+  fi
+  if [[ -z "$profile" ]]; then
+    test_log "No active client Wi-Fi profile to restore. Not starting the test."
+    return 1
+  fi
+  printf '%s\n' "$profile" > "$dir/profile"
+  FT_WIFI_TEST_PROFILE="$profile"
+  export FT_WIFI_TEST_PROFILE
+  : > "$dir/running"
+  rm -f "$dir/stop" "$dir/portal-saved"
+
+  # Profile and test dir are exported / looked up by name so this trap is safe
+  # after the function's local variables go out of scope on EXIT.
+  trap 'rc=$?; trap - EXIT INT TERM; restore_client_profile "${FT_WIFI_TEST_PROFILE}" "$(test_dir)" || true; exit $rc' EXIT INT TERM
+
+  password="$(hotspot_password)" || { test_log "Could not read the setup hotspot password."; return 1; }
+  test_log "Starting the FlightTracker-Setup hotspot for a ${minutes}-minute test."
+  start_hotspot "$HOTSPOT_SSID" "$password" "${FT_WIFI_IFACE:-wlan0}"
+  password=""
+  unset password
+
+  duration="${FT_WIFI_TEST_SECONDS:-$((minutes * 60))}"
+  start="$(date +%s)"
+  # Wait until the hotspot is up before watching for a portal save, so a
+  # still-active home profile at the first instant is not treated as done.
+  while ! hotspot_is_up; do
+    [[ -f "$dir/stop" ]] && break
+    now="$(date +%s)"
+    (( now - start >= duration )) && break
+    # Give up waiting for the AP after 15 seconds and continue the timer.
+    (( now - start >= ${FT_WIFI_TEST_HOTSPOT_WAIT:-15} )) && break
+    sleep "${FT_WIFI_TEST_POLL:-1}"
+  done
+  while true; do
+    [[ -f "$dir/stop" ]] && { test_log "Stop requested."; break; }
+    now="$(date +%s)"
+    if (( now - start >= duration )); then
+      test_log "Test timer ended."
+      break
+    fi
+    if portal_saved_network "$dir"; then
+      test_log "A network was saved from the setup portal."
+      break
+    fi
+    sleep "${FT_WIFI_TEST_POLL:-1}"
+  done
+  trap - EXIT INT TERM
+  restore_client_profile "$profile" "$dir"
+}
+
+test_hotspot_cmd() {
+  local arg="${1:-10}" minutes self server
+  if [[ "$arg" == "--stop" || "$arg" == "stop" ]]; then
+    test_hotspot_stop
+    return 0
+  fi
+  if [[ ! "$arg" =~ ^[0-9]+$ ]] || (( arg < 1 || arg > 30 )); then
+    echo "Usage: sudo flight-tracker-wifi-test [minutes]   (1-30, default 10)" >&2
+    echo "       sudo flight-tracker-wifi-test --stop" >&2
+    return 1
+  fi
+  minutes="$arg"
+
+  if [[ "${FT_WIFI_TEST_SUPERVISED:-}" == "1" ]]; then
+    test_hotspot_run "$minutes"
+    return
+  fi
+
+  local profile dir
+  profile="$(active_client_profile)" || {
+    echo "No active client Wi-Fi profile. Connect to home Wi-Fi first, then retry." >&2
+    return 1
+  }
+  dir="$(test_dir)"
+  mkdir -p "$dir"
+  printf '%s\n' "$profile" > "$dir/profile"
+  FT_WIFI_TEST_PROFILE="$profile"
+  export FT_WIFI_TEST_PROFILE
+
+  if [[ "${FT_WIFI_TEST_FOREGROUND:-}" == "1" ]]; then
+    test_hotspot_run "$minutes"
+    return
+  fi
+
+  if ! command -v systemd-run >/dev/null 2>&1; then
+    echo "systemd-run is not available; cannot start a test that survives a dropped SSH session." >&2
+    return 1
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active --quiet flight-tracker-wifi-test 2>/dev/null; then
+      echo "A Wi-Fi test is already running. Stop it first: sudo flight-tracker-wifi-test --stop" >&2
+      return 1
+    fi
+    systemctl reset-failed flight-tracker-wifi-test >/dev/null 2>&1 || true
+  fi
+
+  self="$(readlink -f "$0" 2>/dev/null || true)"
+  [[ -n "$self" ]] || self="$0"
+  server="${FT_SERVER_DIR:-$(cd "$(dirname "$self")/../server" && pwd)}"
+
+  test_log "Starting a ${minutes}-minute FlightTracker-Setup hotspot test."
+  echo "This unit will leave home Wi-Fi, so this SSH session may drop. The test keeps running."
+  echo "The original Wi-Fi profile will be restored when the timer ends, when you save a network on the setup page, or when you run: sudo flight-tracker-wifi-test --stop"
+  echo "If the Pi does not come back, wait the full ${minutes} minutes, then power-cycle. NetworkManager will reconnect the saved home profile."
+
+  systemd-run --unit=flight-tracker-wifi-test --collect \
+    --setenv=FT_WIFI_TEST_SUPERVISED=1 \
+    --setenv=FT_WIFI_TEST_PROFILE="$profile" \
+    --setenv=FT_WIFI_TEST_DIR="$dir" \
+    --setenv=FT_SERVER_DIR="$server" \
+    --setenv=FT_HOTSPOT_JSON="${FT_HOTSPOT_JSON:-/etc/flight-tracker/hotspot.json}" \
+    --setenv=PATH="${PATH:-/usr/sbin:/usr/bin:/sbin:/bin}" \
+    -- "$self" test-hotspot "$minutes"
+}
+
 case "$cmd" in
   scan)
     if ! nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list --rescan yes 2>/dev/null; then
@@ -165,7 +391,12 @@ case "$cmd" in
       args+=(hidden yes)
     fi
     # nmcli prints the SSID and device on success; it does not print the password.
-    if ! nmcli "${args[@]}"; then
+    if nmcli "${args[@]}"; then
+      test_dir="${FT_WIFI_TEST_DIR:-/run/flight-tracker-wifi-test}"
+      if [[ -f "$test_dir/running" ]]; then
+        : > "$test_dir/portal-saved"
+      fi
+    else
       echo "Could not join \"$ssid\". Check the name (spaces count) and password." >&2
       if [[ -n "$was_up" ]]; then
         # Put the setup hotspot back so the phone can try again.
@@ -196,8 +427,11 @@ case "$cmd" in
     fi
     start_hotspot "${1:-$HOTSPOT_SSID}" "${2:-}" "${3:-wlan0}"
     ;;
+  test-hotspot)
+    test_hotspot_cmd "$@"
+    ;;
   *)
-    echo "Use scan, connect, country, hotspot, client-profiles, or boot-hotspot." >&2
+    echo "Use scan, connect, country, hotspot, client-profiles, boot-hotspot, or test-hotspot." >&2
     exit 1
     ;;
 esac

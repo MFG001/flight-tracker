@@ -168,6 +168,10 @@ let wifiDismissed = false;
 let wifiPinned = false;
 let wifiSeen = "";
 let connectedTimer = 0;
+/** Displayed QR size on the 720 px glass. Canvas pixels are this times devicePixelRatio. */
+const WIFI_QR_CSS_PX = 240;
+const WIFI_QR_MARGIN_MODULES = 4;
+const WIFI_CONNECTED_TIMEOUT_MS = 120_000;
 let mapRequested = false;
 let wxRequested = false;
 const inflight = { map: 0, weather: 0 };
@@ -1211,10 +1215,13 @@ function bindInput(): void {
     syncChrome();
   });
   bindTouchTest();
-  document.querySelector("#wifi-close")!.addEventListener("click", () => {
-    wifiPinned = false;
-    wifiDismissed = true;
-    wifiPanel.hidden = true;
+  document.querySelector("#wifi-close")!.addEventListener("click", (event) => {
+    event.stopPropagation();
+    dismissWifi();
+  });
+  wifiPanel.addEventListener("click", (event) => {
+    const disc = wifiPanel.querySelector(".disc");
+    if (disc && !disc.contains(event.target as Node)) dismissWifi();
   });
   screen.addEventListener(
     "wheel",
@@ -1358,40 +1365,62 @@ const wifiPass = document.querySelector<HTMLElement>("#wifi-pass")!;
 const wifiSteps = document.querySelector<HTMLElement>("#wifi-steps")!;
 const wifiQr = document.querySelector<HTMLCanvasElement>("#wifi-qr")!;
 
+function dismissWifi(): void {
+  wifiPinned = false;
+  wifiDismissed = true;
+  wifiPanel.hidden = true;
+  window.clearTimeout(connectedTimer);
+  connectedTimer = 0;
+}
+
+function armConnectedAutoClose(): void {
+  window.clearTimeout(connectedTimer);
+  connectedTimer = window.setTimeout(() => {
+    dismissWifi();
+  }, WIFI_CONNECTED_TIMEOUT_MS);
+}
+
+async function paintWifiQr(code: string): Promise<void> {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const css = WIFI_QR_CSS_PX;
+  const px = Math.round(css * dpr);
+  await QRCode.toCanvas(wifiQr, code, {
+    width: px,
+    margin: WIFI_QR_MARGIN_MODULES,
+    color: { dark: "#071016", light: "#f7f4ee" },
+  });
+  wifiQr.style.width = `${css}px`;
+  wifiQr.style.height = `${css}px`;
+}
+
 async function renderWifi(view: string, info: WifiInfo): Promise<void> {
   wifiPanel.hidden = false;
   let code = info.joinQr;
-  let steps: string[] = [];
   if (view === "portal") {
     wifiKicker.textContent = "PHONE JOINED";
     wifiTitle.textContent = "Open setup";
     wifiPass.textContent = info.setupUrl;
+    wifiSteps.textContent = "Scan, then save your home Wi-Fi.";
     code = info.setupQr;
-    steps = ["Stay on FlightTracker-Setup.", "Scan this code.", "Enter your home Wi-Fi and save."];
   } else if (view === "connected") {
     wifiKicker.textContent = "CONNECTED";
-    wifiTitle.textContent = "Connected — configure at http://flighttracker.local";
+    wifiTitle.textContent = "Connected";
     wifiPass.textContent = info.configUrl;
+    wifiSteps.textContent = "Scan to open setup.";
     code = info.configQr;
-    steps = ["Home Wi-Fi is up.", "Scan to open the setup page on your phone."];
   } else {
     wifiKicker.textContent = "NO WI-FI";
-    wifiTitle.textContent = "Join FlightTracker-Setup";
+    wifiTitle.textContent = "Join setup";
     wifiPass.textContent = info.password;
+    wifiSteps.textContent = "Scan to join FlightTracker-Setup.";
     code = info.joinQr;
-    steps = ["Scan with the phone camera.", "It joins the WPA setup network.", "The next code appears when the phone connects."];
   }
-  wifiSteps.replaceChildren();
-  for (const step of steps) {
-    const item = document.createElement("li");
-    item.textContent = step;
-    wifiSteps.append(item);
+  await paintWifiQr(code);
+  if (view === "connected") armConnectedAutoClose();
+  else {
+    window.clearTimeout(connectedTimer);
+    connectedTimer = 0;
   }
-  await QRCode.toCanvas(wifiQr, code, {
-    width: 280,
-    margin: 1,
-    color: { dark: "#071016", light: "#f7f4ee" },
-  });
 }
 
 async function pollWifi(): Promise<void> {
@@ -1403,14 +1432,16 @@ async function pollWifi(): Promise<void> {
     return;
   }
   const state = info.state;
-  if ((state === "hotspot" || state === "portal" || state === "failed") && !wifiDismissed) {
+  const outage = state === "hotspot" || state === "portal" || state === "failed";
+  // A new hotspot (including the Wi-Fi QR test after home Wi-Fi) reopens
+  // the join card even if an earlier one was dismissed.
+  if (outage && !["hotspot", "portal", "failed"].includes(wifiSeen)) {
+    wifiDismissed = false;
+  }
+  if (outage && !wifiDismissed) {
     await renderWifi(state === "portal" ? "portal" : "hotspot", info);
   } else if (wifiSeen && ["hotspot", "portal", "failed"].includes(wifiSeen) && state === "connected") {
     await renderWifi("connected", info);
-    window.clearTimeout(connectedTimer);
-    connectedTimer = window.setTimeout(() => {
-      if (!wifiPinned) wifiPanel.hidden = true;
-    }, 8000);
   }
   wifiSeen = state;
 }

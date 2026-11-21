@@ -24,7 +24,7 @@ function offenders() {
   const cx = screen.left + screen.width / 2;
   const cy = screen.top + screen.height / 2;
   const safe = (screen.width / 2) * 0.9;
-  const skip = new Set(["screen", "radar", "hud", "vignette", "keys", "dim", "splash", "fit", "device"]);
+  const skip = new Set(["screen", "radar", "hud", "vignette", "keys", "dim", "splash", "fit", "device", "wifi"]);
   const bad = [];
   function clipped(el) {
     let box = el.getBoundingClientRect();
@@ -168,6 +168,44 @@ async function checkText(name, rootSelector) {
   else console.log("ok", name);
 }
 
+/** QR and CLOSE must be fully on the glass, not clipped by the round card. */
+async function checkWifiFit(name) {
+  const bad = await page.evaluate(() => {
+    const screen = document.querySelector("#screen");
+    const panel = document.querySelector("#wifi .panel, #wifi.panel");
+    const qr = document.querySelector("#wifi-qr");
+    const close = document.querySelector("#wifi-close");
+    const wifi = document.querySelector("#wifi");
+    if (!screen || !wifi || wifi.hidden) return ["wifi panel hidden"];
+    if (!qr || !close) return ["missing qr or close"];
+    const glass = screen.getBoundingClientRect();
+    const cx = glass.left + glass.width / 2;
+    const cy = glass.top + glass.height / 2;
+    const safe = (glass.width / 2) * 0.9;
+    const issues = [];
+    for (const [label, el] of [["qr", qr], ["close", close]]) {
+      const box = el.getBoundingClientRect();
+      if (box.width < 20 || box.height < 20) issues.push(`${label} too small`);
+      const corners = [[box.left, box.top], [box.right, box.top], [box.left, box.bottom], [box.right, box.bottom]];
+      if (corners.some(([x, y]) => Math.hypot(x - cx, y - cy) > safe + 2)) issues.push(`${label} outside safe circle`);
+      if (panel) {
+        const p = panel.getBoundingClientRect();
+        const px = p.left + p.width / 2;
+        const py = p.top + p.height / 2;
+        const pr = Math.min(p.width, p.height) / 2 - 1;
+        if (corners.some(([x, y]) => Math.hypot(x - px, y - py) > pr + 1.5)) issues.push(`${label} cut by wifi card`);
+      }
+    }
+    const qbox = qr.getBoundingClientRect();
+    if (qbox.width < 220 || qbox.width > 260 || Math.abs(qbox.width - qbox.height) > 1) {
+      issues.push(`qr display size ${Math.round(qbox.width)}x${Math.round(qbox.height)}`);
+    }
+    return issues;
+  });
+  if (bad.length) failures.push(`${name}-fit: ${bad.join(", ")}`);
+  else console.log("ok", name + "-fit");
+}
+
 await open(`${base}/?capture=1&bg=dark&wx=0`);
 await check("main");
 // 1.0.8 range control: − / current range / + only (no preset bar).
@@ -212,10 +250,13 @@ await page.evaluate(() => document.querySelector("#traffic-list li")?.click());
 await page.waitForSelector("#detail:not([hidden])", { timeout: 5000 });
 await check("detail");
 await checkText("detail-text", "#detail");
-await open(`${base}/?capture=1&wifi=hotspot`);
-await page.waitForFunction(() => window.__wifiReady === true);
-await check("wifi");
-await checkText("wifi-text", "#wifi");
+for (const view of ["hotspot", "portal", "connected"]) {
+  await open(`${base}/?capture=1&wifi=${view}`);
+  await page.waitForFunction(() => window.__wifiReady === true);
+  await check(`wifi-${view}`);
+  await checkText(`wifi-${view}-text`, "#wifi");
+  await checkWifiFit(`wifi-${view}`);
+}
 await open(`${base}/?capture=1&alert=1`);
 await page.waitForSelector("#alert:not([hidden])");
 await check("alert");

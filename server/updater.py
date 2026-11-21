@@ -712,6 +712,38 @@ def refresh_wrapper(release: Path, wrapper: Path = WRAPPER_PATH) -> bool:
         return False
 
 
+# Plain helpers in deploy/ that must exist in /usr/local/sbin after an OTA, even
+# if this unit never ran install.sh for this version. The update wrapper itself
+# is handled by refresh_wrapper (it must already be present).
+SBIN_HELPERS = ("flight-tracker-wifi", "flight-tracker-brightness", "flight-tracker-wifi-test")
+
+
+def install_helper(release: Path, name: str, dest: Path) -> bool:
+    """Copy deploy/<name> to dest, creating it if it is missing."""
+    source = release / "deploy" / name
+    try:
+        if not source.is_file() or not dest.parent.is_dir() or not os.access(dest.parent, os.W_OK):
+            return False
+        if dest.exists() and not os.access(dest, os.W_OK):
+            return False
+        temporary = dest.with_name(f".{dest.name}.new")
+        shutil.copyfile(source, temporary)
+        temporary.chmod(0o755)
+        os.replace(temporary, dest)
+        return True
+    except OSError:
+        return False
+
+
+def refresh_helpers(release: Path, sbin: Path = Path("/usr/local/sbin")) -> list[str]:
+    """Install or refresh non-update sbin wrappers from the new release."""
+    installed: list[str] = []
+    for name in SBIN_HELPERS:
+        if install_helper(release, name, sbin / name):
+            installed.append(name)
+    return installed
+
+
 def restart_kiosk() -> bool:
     """Reload the round screen into the new release. Best effort; no-op off the Pi."""
     if not shutil.which("systemctl") or not Path("/run/systemd/system").is_dir():
@@ -851,6 +883,7 @@ def apply_update(
             _after_public_install(found["manifest"], state_dir, keys_dir)
         # The new release is healthy: take its root helper and reload the round screen.
         refresh_wrapper(final, wrapper)
+        refresh_helpers(final, wrapper.parent)
         installed = {
             "current": found["version"],
             "version": found["version"],

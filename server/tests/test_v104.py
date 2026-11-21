@@ -119,13 +119,13 @@ class ServerUpdateViewTests(unittest.TestCase):
         self.assertEqual(view["version"], self.ft.running_version())
 
     def test_check_keeps_saved_key_on_success_and_error(self) -> None:
-        found = {"current": "1.0.3", "version": "1.0.10", "notes": "n", "available": True, "sha256": "x", "url": "https://e/x", "downloadUrl": "https://e/x"}
+        found = {"current": "1.0.3", "version": "1.0.11", "notes": "n", "available": True, "sha256": "x", "url": "https://e/x", "downloadUrl": "https://e/x"}
         with mock.patch.object(self.live, "load_keyring", return_value={}), \
              mock.patch.object(self.live, "check_for_update", return_value=found):
             view = self.app.check_updates()
         self.assert_full(view)
         self.assertEqual(view["state"], "available")
-        self.assertEqual(view["latest"], "1.0.10")
+        self.assertEqual(view["latest"], "1.0.11")
         with mock.patch.object(self.live, "load_keyring", side_effect=self.live.UpdateError("offline")):
             view = self.app.check_updates()
         self.assert_full(view)
@@ -157,7 +157,7 @@ class ServerUpdateViewTests(unittest.TestCase):
 
     def test_install_reports_real_launch_failure(self) -> None:
         self.fake_wrapper()
-        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.10", "notes": "n"})
+        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.11", "notes": "n"})
         failed = subprocess.CompletedProcess([], 1, "", "sudo: a password is required\n")
         with mock.patch.object(self.ft.subprocess, "run", return_value=failed) as run:
             ok, detail = self.app.install_update()
@@ -174,7 +174,7 @@ class ServerUpdateViewTests(unittest.TestCase):
 
     def test_install_records_installing_before_launch(self) -> None:
         self.fake_wrapper()
-        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.10", "notes": "n"})
+        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.11", "notes": "n"})
         seen: list[dict] = []
 
         def launch(*_a, **_k):
@@ -189,7 +189,7 @@ class ServerUpdateViewTests(unittest.TestCase):
         self.assertEqual(seen[0]["detail"], "Starting update...")
         view = self.app.update_view()
         self.assertEqual(view["state"], "installing")
-        self.assertEqual(view["target"], "1.0.10")
+        self.assertEqual(view["target"], "1.0.11")
         # A second tap while it runs is refused, and so is a check.
         ok2, detail2 = self.app.install_update()
         self.assertFalse(ok2)
@@ -199,14 +199,14 @@ class ServerUpdateViewTests(unittest.TestCase):
     def test_timeout_is_a_failure(self) -> None:
         self.fake_wrapper()
         # 1.0.6: install needs a checked, newer release first.
-        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.10"})
+        self.live.write_status(self.app.config_path, {"state": "available", "available": True, "version": "1.0.11"})
         with mock.patch.object(self.ft.subprocess, "run", side_effect=subprocess.TimeoutExpired("sudo", 15)):
             ok, detail = self.app.install_update()
         self.assertFalse(ok)
         self.assertIn("15 seconds", detail)
 
     def test_stalled_install_is_reported(self) -> None:
-        self.live.write_status(self.app.config_path, {"state": "installing", "stage": "downloading", "version": "1.0.10"})
+        self.live.write_status(self.app.config_path, {"state": "installing", "stage": "downloading", "version": "1.0.11"})
         body = json.loads(self.live._status_path(self.app.config_path).read_text())
         body["updatedEpoch"] = time.time() - 3600
         self.live._status_path(self.app.config_path).write_text(json.dumps(body))

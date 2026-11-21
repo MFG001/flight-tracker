@@ -108,17 +108,16 @@ class RangeStepTests(unittest.TestCase):
 
 
 class ListAltitudeTests(unittest.TestCase):
-    def test_list_drops_ft_detail_and_map_keep_it(self) -> None:
+    def test_list_drops_ft_detail_keeps_it(self) -> None:
         main = (ROOT / "src/main.ts").read_text()
         fmt = (ROOT / "src/format.ts").read_text()
-        # Only the IN RANGE / TRAFFIC list drops the unit. The selected card
-        # and the on-map data block still show FT / ft.
+        # The IN RANGE / TRAFFIC list drops the unit. The selected card
+        # still shows FT. Map blocks are asserted in test_v1010.
         self.assertIn("alt.textContent = listAltitude(row.item.altFt, row.item.ground, config.units);", main)
         self.assertIn('["ALTITUDE", formatAltitude(item.altFt, item.ground, config.units)]', main)
         self.assertIn('return `${Math.round(ft).toLocaleString("en-US")} FT`;', fmt)
-        self.assertIn('} ft`;', fmt)
         data = run_ts("""
-import { formatAltitude, listAltitude, blockAltitude, formatVertical } from "./src/format.ts";
+import { formatAltitude, listAltitude, formatVertical } from "./src/format.ts";
 const rows = [
   listAltitude(3200, false, "aviation"),
   listAltitude(7600, false, "imperial"),
@@ -127,7 +126,6 @@ const rows = [
   listAltitude(null, false, "aviation"),
   listAltitude(3200, false, "metric"),
   formatAltitude(3200, false, "aviation"),
-  blockAltitude(3400, false, "aviation"),
   formatVertical(800, "aviation"),
 ];
 console.log(JSON.stringify(rows));
@@ -140,7 +138,6 @@ console.log(JSON.stringify(rows));
             "—",
             "975 M",
             "3,200 FT",
-            "3,400 ft",
             "+800 FPM",
         ])
 

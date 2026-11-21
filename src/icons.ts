@@ -33,6 +33,9 @@ const MAVERICK_PATHS: Record<Exclude<MaverickMark, "rotor" | "lighter" | "unknow
 /** Longest side of the source art is 92. On the glass that side is 28 px. */
 const MAVERICK_SCALE = 28 / 92;
 
+/** Helicopter icons are drawn 22% larger than the other kinds, in every set. */
+export const ROTOR_ICON_SCALE = 1.22;
+
 export function iconSetId(value: string | null | undefined): IconSetId {
   if (value === "silhouette") return "linecut";
   if (value === "planform" || value === "compact" || value === "linecut" || value === "classic" || value === "maverick") return value;
@@ -49,6 +52,9 @@ export function paintAircraftIcon(
   const accent = options.emergency ? "#e10600" : options.military ? "#14944A" : dark;
   const mark = options.mark ?? markFromKind(kind);
   ctx.save();
+  if (kind === "rotor" || mark === "rotor") {
+    ctx.scale(ROTOR_ICON_SCALE, ROTOR_ICON_SCALE);
+  }
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   ctx.beginPath();

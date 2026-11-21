@@ -53,15 +53,16 @@ export function shortAltitude(ft: number | null, ground: boolean, units: Units):
 export const TRANSITION_FT = 18000;
 
 /**
- * Altitude for the on-screen data block (1.0.3): "GND", "3,400 ft", "FL340",
- * or "1,040 m" for metric. 1.0.2 showed a bare "034" that did not read as altitude.
+ * Altitude for the on-screen data block: "GND", "3,400", "FL340",
+ * or "1,040 m" for metric. 1.0.10 drops "ft" from feet values; the
+ * selected-aircraft card still uses formatAltitude, which keeps "FT".
  */
 export function blockAltitude(ft: number | null, ground: boolean, units: Units): string {
   if (ground) return "GND";
   if (ft == null || !Number.isFinite(ft)) return "ALT ---";
   if (units === "metric") return `${Math.round(Math.max(0, ft) * 0.3048).toLocaleString("en-US")} m`;
   if (ft >= TRANSITION_FT) return `FL${String(Math.round(ft / 100)).padStart(3, "0")}`;
-  return `${(Math.round(Math.max(0, ft) / 100) * 100).toLocaleString("en-US")} ft`;
+  return `${(Math.round(Math.max(0, ft) / 100) * 100).toLocaleString("en-US")}`;
 }
 
 /** Line 2 of the data block: altitude, climb/descent arrow, ground speed. */

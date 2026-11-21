@@ -44,7 +44,7 @@ from logic import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.9 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.10 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 

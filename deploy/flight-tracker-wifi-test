@@ -1,0 +1,5 @@
+#!/bin/sh
+# Plain entry point for the self-reverting setup-hotspot test:
+#   sudo flight-tracker-wifi-test [minutes]
+#   sudo flight-tracker-wifi-test --stop
+exec /opt/flight-tracker/current/scripts/wifi-ctl.sh test-hotspot "$@"

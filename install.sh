@@ -215,6 +215,7 @@ install -d /usr/local/sbin
 install -m 0755 "$ROOT/deploy/flight-tracker-brightness" /usr/local/sbin/flight-tracker-brightness
 install -m 0755 "$ROOT/deploy/flight-tracker-wifi" /usr/local/sbin/flight-tracker-wifi
 install -m 0755 "$ROOT/deploy/flight-tracker-update" /usr/local/sbin/flight-tracker-update
+install -m 0755 "$ROOT/deploy/flight-tracker-wifi-test" /usr/local/sbin/flight-tracker-wifi-test
 
 if getent group video >/dev/null; then
   usermod -aG video "$TARGET_USER" || true

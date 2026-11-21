@@ -108,14 +108,16 @@
               <button id="up-close" class="up-later" type="button" hidden>CLOSE</button>
             </div>
           </aside>
-          <aside id="wifi" class="panel wifi-panel" hidden>
-            <div class="disc">
-              <p class="kicker" id="wifi-kicker">WI-FI</p>
-              <h2 id="wifi-title">Join setup network</h2>
-              <div class="qr-card"><canvas id="wifi-qr" width="280" height="280"></canvas></div>
-              <p id="wifi-pass"></p>
-              <ol id="wifi-steps"></ol>
-              <button id="wifi-close" type="button">CLOSE</button>
+          <aside id="wifi" class="wifi-overlay" hidden>
+            <div class="panel wifi-panel">
+              <div class="disc">
+                <p class="kicker" id="wifi-kicker">WI-FI</p>
+                <h2 id="wifi-title">Join setup</h2>
+                <div class="qr-card"><canvas id="wifi-qr" width="240" height="240"></canvas></div>
+                <p id="wifi-pass"></p>
+                <p id="wifi-steps"></p>
+                <button id="wifi-close" type="button">CLOSE</button>
+              </div>
             </div>
           </aside>
           <div id="touchtest" hidden>

@@ -23,12 +23,10 @@ import update_schedule as us  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_109_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.9")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.9")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.9", "1.0.9"))
-        self.assertIn("FlightTracker/1.0.9 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_109(self) -> None:
+        # 1.0.10 moved on; test_v1010 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 9))
 
 
 class PromptCopyTests(unittest.TestCase):

@@ -92,7 +92,7 @@ class NoEdgeKeysTests(unittest.TestCase):
         self.assertIn('id="m-touch"', INDEX)
         self.assertIn("#bottom .hold-target", CSS)
         # Automatic Wi-Fi setup QR when not connected stays.
-        self.assertIn('(state === "hotspot" || state === "portal" || state === "failed") && !wifiDismissed', MAIN)
+        self.assertIn('if (outage && !wifiDismissed)', MAIN)
 
     def test_kiosk_applies_every_saved_setting(self) -> None:
         # 1.0.2 compared a fixed field list that missed trails, alerts, watch, night, brightness.
@@ -656,8 +656,8 @@ console.log(JSON.stringify([
   dataBlockLine(0, true, 0, 12, "aviation"), dataBlockLine(5000, false, null, null, "aviation"),
 ]));
 """)
-        self.assertEqual(d, ["3,400 ft", "FL340", "FL180", "GND", "ALT ---", "1,042 m",
-                             "12,500 ft▲ 250", "FL340▼ 466", "GND 12", "5,000 ft"])
+        self.assertEqual(d, ["3,400", "FL340", "FL180", "GND", "ALT ---", "1,042 m",
+                             "12,500▲ 250", "FL340▼ 466", "GND 12", "5,000"])
 
     def test_radar_draws_altitude_line(self) -> None:
         radar = (ROOT / "src/radar.ts").read_text(encoding="utf-8")

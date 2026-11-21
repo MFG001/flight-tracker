@@ -356,21 +356,50 @@ body.sheet #sheet { display: block; }
   letter-spacing: 0.18em;
 }
 
-.wifi-panel { z-index: 6; }
+.wifi-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: rgba(4, 8, 12, 0.28);
+}
+.wifi-overlay[hidden] { display: none !important; }
+.wifi-overlay .wifi-panel { width: 70%; z-index: auto; }
+#wifi .disc {
+  width: 54%;
+  max-height: 76%;
+  overflow: hidden;
+  padding: 6px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  touch-action: manipulation;
+}
 .wifi-panel h2, #menu h2 { font-size: 15px; margin: 2px 0; }
+#wifi .wifi-panel h2 { font-size: 16px; margin: 0; letter-spacing: 0.08em; }
 .qr-card {
-  width: 78%;
-  aspect-ratio: 1;
-  margin: 6px auto;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, #f7f4ee, #ddd4c4 72%);
+  width: 240px;
+  height: 240px;
+  flex: none;
+  margin: 2px auto;
+  border-radius: 12px;
+  background: #f7f4ee;
   display: grid;
   place-items: center;
 }
-#wifi-qr { width: 64%; height: auto; background: transparent; }
-#wifi-pass { margin: 2px 0; font-family: "IBM Plex Mono", ui-monospace, monospace; letter-spacing: 0.14em; font-size: 14px; color: #ffd089; }
-.wifi-panel ol { margin: 6px auto; padding-left: 1.1em; text-align: left; color: var(--muted); font-size: 12px; letter-spacing: 0; }
+#wifi-qr {
+  width: 240px;
+  height: 240px;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  background: #f7f4ee;
+}
+#wifi-pass { margin: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; letter-spacing: 0.08em; font-size: 13px; color: #ffd089; overflow-wrap: anywhere; }
+#wifi-steps { margin: 0; color: var(--muted); font-size: 11px; letter-spacing: 0.02em; }
 #menu button, #wifi button { margin-top: 8px; }
+#wifi .disc > button { margin-top: 6px; min-width: 44%; min-height: 36px; }
 #menu button { margin-top: 4px; }
 .sources { margin-top: 8px; text-align: left; }
 .sources p { margin: 0 0 4px; font-size: 9px; letter-spacing: 0; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
