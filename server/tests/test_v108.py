@@ -21,12 +21,10 @@ except ImportError:
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_108_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.8")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.8")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.8", "1.0.8"))
-        self.assertIn("FlightTracker/1.0.8 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_108(self) -> None:
+        # 1.0.9 moved on; test_v109 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 8))
 
 
 class RangeStepTests(unittest.TestCase):

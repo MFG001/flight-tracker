@@ -596,6 +596,7 @@ body[data-feed="remote"] .local-only { display: none; }
 #update-pop { z-index: 8; width: 70%; }
 #update-pop .disc { width: 66%; max-height: 74%; padding-bottom: 4px; }
 #update-pop h2 { font-size: 22px; letter-spacing: 0.04em; margin: 6px 0 4px; color: #ffe1b0; }
+#update-pop[data-mode="prompt"] h2 { font-size: 26px; margin: 10px 0 6px; letter-spacing: 0.03em; }
 #update-pop .up-line { margin: 2px 0; font-size: 16px; color: var(--ink); letter-spacing: 0.02em; }
 #update-pop .up-summary { margin: 6px 0 2px; font-size: 12px; line-height: 1.35; color: var(--muted); }
 #update-pop .up-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }

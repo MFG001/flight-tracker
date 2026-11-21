@@ -25,8 +25,16 @@ export interface UpdateView {
   prompt?: { show: boolean; version: string; summary: string };
 }
 
+/** Headline on the available-update prompt. */
+export const PROMPT_TITLE = "Update available";
+
 /** Auto-dismiss after this long without a touch; counted as LATER. */
-export const PROMPT_TIMEOUT_MS = 120_000;
+export const PROMPT_TIMEOUT_MS = 300_000;
+
+/** Quiet hint under the UPDATE NOW / LATER buttons. No live countdown. */
+export function promptHint(laterLabel?: string): string {
+  return `LATER installs at ${laterLabel || "2:00 AM ET"}. Closes by itself in 5 min.`;
+}
 
 /**
  * The prompt waits only while an EMERGENCY (squawk 7500/7600/7700) is on the

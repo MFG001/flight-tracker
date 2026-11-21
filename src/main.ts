@@ -11,11 +11,13 @@ import { PollGate, aircraftUrl } from "./aircraftpoll";
 import { wxSummary } from "./wxstatus";
 import {
   PROMPT_TIMEOUT_MS,
+  PROMPT_TITLE,
   installDone,
   installFailed,
   installLine,
   installPercent,
   promptAllowed,
+  promptHint,
   scheduledLine,
   type UpdateView,
 } from "./updatepop";
@@ -1495,7 +1497,8 @@ let popMisses = 0;
 function popShow(mode: PopMode, parts: { kicker?: string; title: string; line: string; summary?: string; hint?: string; percent?: number | null; actions?: boolean; close?: boolean }): void {
   popMode = mode;
   pop.root.dataset.mode = mode;
-  pop.kicker.textContent = parts.kicker ?? "SOFTWARE UPDATE";
+  pop.kicker.textContent = parts.kicker !== undefined ? parts.kicker : "SOFTWARE UPDATE";
+  pop.kicker.hidden = !pop.kicker.textContent;
   pop.title.textContent = parts.title;
   pop.line.textContent = parts.line;
   pop.summary.textContent = parts.summary ?? "";
@@ -1518,10 +1521,11 @@ function popHide(): void {
 function popPrompt(view: UpdateView): void {
   popVersion = view.prompt?.version || view.latest;
   popShow("prompt", {
-    title: "Update available",
+    kicker: "",
+    title: PROMPT_TITLE,
     line: `Version ${popVersion} is ready`,
     summary: view.prompt?.summary || "",
-    hint: `LATER installs at ${view.laterLabel || "2:00 AM ET"}. Closes by itself in 2 min.`,
+    hint: promptHint(view.laterLabel),
     actions: true,
   });
   window.clearTimeout(popTimer);

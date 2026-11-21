@@ -1,7 +1,7 @@
 """Update prompt and "install later" schedule (1.0.7 prototype).
 
 When a newer signed release is found, the round screen asks UPDATE NOW or
-LATER. LATER (or no answer within 2 minutes) books the install for the next
+LATER. LATER (or no answer within 5 minutes) books the install for the next
 "Install later at" time from the Software card. With auto-update on, the
 install is booked for that time without asking.
 
@@ -41,7 +41,7 @@ ZONE_SHORT = {
 }
 CHECK_EVERY_SEC = 6 * 3600
 FIRST_CHECK_AFTER_SEC = 90
-PROMPT_TIMEOUT_SEC = 120
+PROMPT_TIMEOUT_SEC = 300
 HHMM = re.compile(r"^([01][0-9]|2[0-3]):([0-5][0-9])$")
 
 
