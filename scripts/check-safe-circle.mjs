@@ -250,6 +250,10 @@ await page.evaluate(() => document.querySelector("#traffic-list li")?.click());
 await page.waitForSelector("#detail:not([hidden])", { timeout: 5000 });
 await check("detail");
 await checkText("detail-text", "#detail");
+await open(`${base}/?capture=1&owner=long`);
+await page.waitForSelector("#detail:not([hidden])", { timeout: 5000 });
+await check("detail-long-owner");
+await checkText("detail-long-owner-text", "#detail");
 for (const view of ["hotspot", "portal", "connected"]) {
   await open(`${base}/?capture=1&wifi=${view}`);
   await page.waitForFunction(() => window.__wifiReady === true);

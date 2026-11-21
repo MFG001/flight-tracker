@@ -24,7 +24,7 @@ import update_schedule as us  # noqa: E402
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_109(self) -> None:
-        # 1.0.10 moved on; test_v1010 pins the exact number.
+        # 1.0.10 moved on; later tests pin the exact current version.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 9))
 

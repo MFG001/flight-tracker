@@ -27,12 +27,10 @@ SPACED_SSID = "Home Net "
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1010_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.10")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.10")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.10", "1.0.10"))
-        self.assertIn("FlightTracker/1.0.10 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_1010(self) -> None:
+        # 1.0.11 moved on; test_v1011 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 10))
 
 
 class BlockAltitudeTests(unittest.TestCase):

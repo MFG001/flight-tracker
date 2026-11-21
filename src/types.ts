@@ -70,6 +70,8 @@ export interface Aircraft {
   callsign: string;
   registration?: string | null;
   typeCode?: string | null;
+  /** Registered owner/operator (adsb.fi ownOp, or the same field on a local readsb feed). */
+  owner?: string | null;
   lat: number;
   lon: number;
   altFt: number | null;

@@ -60,6 +60,7 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(r["callsign"], "TST101")
         self.assertEqual(r["registration"], "N101TS")
         self.assertEqual(r["typeCode"], "A320")
+        self.assertEqual(r["owner"], "NORTH STAR AIRWAYS INC")
         self.assertEqual(r["altFt"], 36000)
         self.assertFalse(r["ground"])
         self.assertEqual(r["gsKt"], 437.0)
@@ -73,6 +74,7 @@ class ParseTests(unittest.TestCase):
         self.assertTrue(r["ground"])
         self.assertEqual(r["altFt"], 0)
         self.assertEqual(r["track"], 95.0)
+        self.assertEqual(r["owner"], "BLUE RIDGE HELI LLC")
 
     def test_message_source_type_is_not_aircraft_type(self) -> None:
         r = self.rows["A3B4C5"]
@@ -81,6 +83,7 @@ class ParseTests(unittest.TestCase):
         self.assertAlmostEqual(r["track"], 40.0)
         self.assertTrue(r["emergency"])
         self.assertIsNone(self.rows["0D1E2F"]["typeCode"])
+        self.assertIsNone(self.rows["0D1E2F"]["owner"])
         self.assertEqual(self.rows["0D1E2F"]["altFt"], 900)
 
     def test_document_shape(self) -> None:

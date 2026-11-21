@@ -12,7 +12,8 @@
       "gs": 210,
       "baro_rate": -600,
       "category": "A3",
-      "squawk": "4210"
+      "squawk": "4210",
+      "ownOp": "NORTH STAR AIRWAYS INC"
     },
     {
       "hex": "F10002",
@@ -24,7 +25,8 @@
       "gs": 360,
       "baro_rate": 0,
       "category": "A3",
-      "squawk": "3155"
+      "squawk": "3155",
+      "ownOp": "CEDAR LINE AVIATION LLC"
     },
     {
       "hex": "F10003",
@@ -36,7 +38,8 @@
       "gs": 470,
       "baro_rate": 0,
       "category": "A5",
-      "squawk": "2041"
+      "squawk": "2041",
+      "ownOp": "HARBOR CROWN JETS INC"
     },
     {
       "hex": "F10004",
@@ -48,7 +51,8 @@
       "gs": 290,
       "baro_rate": 400,
       "category": "A3",
-      "squawk": "5122"
+      "squawk": "5122",
+      "ownOp": "PRAIRIE EXPRESS LTD"
     },
     {
       "hex": "F10005",
@@ -60,7 +64,8 @@
       "gs": 190,
       "baro_rate": -200,
       "category": "A2",
-      "squawk": "4460"
+      "squawk": "4460",
+      "ownOp": "CASCADE HOPPER CO"
     },
     {
       "hex": "F10006",
@@ -72,7 +77,8 @@
       "gs": 95,
       "baro_rate": 200,
       "category": "A1",
-      "squawk": "1200"
+      "squawk": "1200",
+      "ownOp": "Prairie Wing Flying Club"
     },
     {
       "hex": "F10007",
@@ -84,7 +90,8 @@
       "gs": 350,
       "baro_rate": 0,
       "category": "A3",
-      "squawk": "2734"
+      "squawk": "2734",
+      "ownOp": "ORANGE BANNER AIR LP"
     },
     {
       "hex": "F10008",
@@ -96,7 +103,8 @@
       "gs": 490,
       "baro_rate": 0,
       "category": "A5",
-      "squawk": "6102"
+      "squawk": "6102",
+      "ownOp": "MAPLE GATE JETS INC"
     },
     {
       "hex": "F10009",
@@ -108,7 +116,8 @@
       "gs": 250,
       "baro_rate": 800,
       "category": "A2",
-      "squawk": "3341"
+      "squawk": "3341",
+      "ownOp": "NORTH STAR AIRWAYS INC"
     },
     {
       "hex": "F10010",
@@ -120,7 +129,8 @@
       "gs": 70,
       "baro_rate": 0,
       "category": "A7",
-      "squawk": "1200"
+      "squawk": "1200",
+      "ownOp": "BLUE RIDGE HELI LLC"
     },
     {
       "hex": "F10011",
@@ -132,7 +142,8 @@
       "gs": 430,
       "baro_rate": -100,
       "category": "A5",
-      "squawk": "1550"
+      "squawk": "1550",
+      "ownOp": "IRON GATE CARGO INC"
     },
     {
       "hex": "F10012",
@@ -144,7 +155,8 @@
       "gs": 320,
       "baro_rate": 0,
       "category": "A3",
-      "squawk": "4628"
+      "squawk": "4628",
+      "ownOp": "SEABOARD HOP LLC"
     },
     {
       "hex": "F10013",
@@ -156,7 +168,8 @@
       "gs": 180,
       "baro_rate": -900,
       "category": "A3",
-      "squawk": "2416"
+      "squawk": "2416",
+      "ownOp": "NORTH STAR AIRWAYS INC"
     },
     {
       "hex": "F10014",
@@ -168,7 +181,8 @@
       "gs": 0,
       "baro_rate": 0,
       "category": "A3",
-      "squawk": "4512"
+      "squawk": "4512",
+      "ownOp": "GREAT LAKES HOPPER CO"
     },
     {
       "hex": "A061D9",

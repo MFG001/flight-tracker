@@ -141,3 +141,43 @@ export function sourceLabel(source: string, stale: boolean): string {
   if (stale) return "STALE";
   return "LIVE";
 }
+
+/** Corporate suffixes and common agency acronyms that stay uppercase. */
+const OWNER_ACRONYMS = new Set([
+  "LLC", "INC", "CO", "LP", "LLP", "LTD", "PLC", "CORP",
+  "USA", "US", "UK", "EU", "FAA", "NASA", "DOD",
+]);
+const OWNER_SMALL = new Set(["AND", "OF", "THE", "FOR"]);
+
+function titleOwnerToken(token: string, first: boolean): string {
+  if (token.includes("-")) {
+    return token.split("-").map((part, index) => titleOwnerToken(part, first && index === 0)).join("-");
+  }
+  const match = token.match(/^([^A-Za-z0-9]*)([A-Za-z0-9.]*)([^A-Za-z0-9]*)$/);
+  if (!match) return token;
+  const [, lead, core, trail] = match;
+  const letters = core.replace(/[^A-Za-z]/g, "").toUpperCase();
+  if (!letters) return token;
+  if (OWNER_ACRONYMS.has(core.replace(/\./g, "").toUpperCase()) || OWNER_ACRONYMS.has(letters)) {
+    return lead + letters + (core.endsWith(".") ? "." : "") + trail;
+  }
+  if (OWNER_SMALL.has(letters) && !first) return lead + letters.toLowerCase() + trail;
+  const bare = core.replace(/\./g, "");
+  return lead + bare.charAt(0).toUpperCase() + bare.slice(1).toLowerCase() + trail;
+}
+
+/**
+ * Owner/operator for the selected-aircraft card. Keeps mixed-case registry
+ * text; turns ALL CAPS into title case, leaving LLC/INC/CO and similar
+ * acronyms uppercase. Missing values are an em dash.
+ */
+export function formatOwner(raw: string | null | undefined): string {
+  if (raw == null) return "—";
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return "—";
+  const letters = text.replace(/[^A-Za-z]/g, "");
+  if (!letters) return text;
+  if (letters !== letters.toUpperCase()) return text;
+  return text.split(" ").map((token, index) => titleOwnerToken(token, index === 0)).join(" ");
+}
+

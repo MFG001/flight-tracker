@@ -273,6 +273,12 @@ def normalize_aircraft(raw: Any) -> list[dict[str, Any]]:
         category = _text(row.get("category"), 3).upper()
         registration = _text(row.get("r") or row.get("registration"), 10).upper()
         type_code = _text(row.get("t") or row.get("type"), 8).upper()
+        # ownOp is the adsb.fi / readsb registered owner or operator. Do not
+        # force uppercase; the glass turns ALL CAPS into title case.
+        owner = _text(
+            row.get("ownOp") or row.get("ownop") or row.get("owner") or row.get("operator"),
+            80,
+        )
         flags = row.get("dbFlags", 0)
         try:
             db_flags = int(flags)
@@ -286,6 +292,7 @@ def normalize_aircraft(raw: Any) -> list[dict[str, Any]]:
                 "callsign": callsign,
                 "registration": registration or None,
                 "typeCode": type_code or None,
+                "owner": owner or None,
                 "lat": lat,
                 "lon": lon,
                 "altFt": 0 if ground else alt,

@@ -463,9 +463,20 @@ body.sheet #sheet { display: block; }
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
 }
-#d-grid div { display: grid; }
+#d-grid div { display: grid; min-width: 0; }
 #d-grid dt { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; }
 #d-grid dd { margin: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14px; }
+#d-grid .wide { grid-column: 1 / -1; }
+#d-grid .wide dd {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.25;
+}
 
 #traffic-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 148px; overflow: auto; scrollbar-width: thin; scrollbar-color: #e8a23a rgba(255, 255, 255, 0.16); }
 #traffic-list::-webkit-scrollbar { width: 8px; }

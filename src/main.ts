@@ -28,6 +28,7 @@ import { bearingDeg, haversineNm, offsetNm } from "./geo";
 import {
   bandLabel,
   formatAltitude,
+  formatOwner,
   listAltitude,
   formatClockZulu,
   formatDistance,
@@ -568,10 +569,11 @@ function renderDetail(): void {
   const dist = haversineNm(config.home.lat, config.home.lon, placed.lat, placed.lon);
   const brg = (bearingDeg(config.home.lat, config.home.lon, placed.lat, placed.lon) + 360) % 360;
   callEl.textContent = item.callsign;
-  const fields: [string, string][] = [
+  const fields: [string, string, string?][] = [
     ["REG", item.registration || "—"],
-    ["CLASS", kindLabel(item.kind)],
     ["TYPE", item.typeCode || "—"],
+    ["OWNER", formatOwner(item.owner), "wide"],
+    ["CLASS", kindLabel(item.kind)],
     ["ALTITUDE", formatAltitude(item.altFt, item.ground, config.units)],
     ["SPEED", formatSpeed(item.gsKt, config.units)],
     ["TRACK", formatHeading(item.track)],
@@ -579,8 +581,9 @@ function renderDetail(): void {
     ["FROM", `${formatDistance(dist, config.units)} / ${formatHeading(brg)}`],
   ];
   detailGrid.replaceChildren();
-  for (const [label, value] of fields) {
+  for (const [label, value, kind] of fields) {
     const wrap = document.createElement("div");
+    if (kind) wrap.className = kind;
     const dt = document.createElement("dt");
     const dd = document.createElement("dd");
     dt.textContent = label;
@@ -981,6 +984,31 @@ function frame(now: number): void {
 const aircraftGate = new PollGate();
 let lastPolledRange = NaN;
 
+
+/** Fictional capture-only operator used to prove a long OWNER row stays in the circle. */
+const LONG_OWNER_CAPTURE = "NORTHWOOD AVIATION HOLDINGS LLC OF THE GREAT LAKES AND PRAIRIE STATES";
+
+function applyCaptureTraffic(list: Aircraft[]): void {
+  if (!captureMode) return;
+  const want = params.get("select");
+  if (want) {
+    const hit = list.find(
+      (row) => row.id === want || row.callsign === want || (row.registration || "") === want,
+    );
+    if (hit) selectedId = hit.id;
+  }
+  if (params.get("owner") === "long") {
+    const target = list.find((row) => row.id === selectedId) ?? list[0];
+    if (target) {
+      target.owner = LONG_OWNER_CAPTURE;
+      if (!selectedId) selectedId = target.id;
+    }
+  }
+  if ((want || params.get("owner") === "long") && selectedId && list.some((row) => row.id === selectedId)) {
+    detail.hidden = false;
+  }
+}
+
 async function pollAircraft(): Promise<void> {
   const ticket = aircraftGate.begin();
   const asked = snapRange(rangeNm);
@@ -991,6 +1019,7 @@ async function pollAircraft(): Promise<void> {
   // reply, must not replace the traffic on the glass.
   if (!aircraftGate.accept(ticket)) return;
   aircraft = body.aircraft ?? [];
+  applyCaptureTraffic(aircraft);
   fixMs = performance.now();
   source = body.source;
   stale = body.stale;
