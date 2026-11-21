@@ -191,7 +191,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | HDG | Glass key | North-up or track-up |
 | ALT | Glass key | Next altitude filter |
 | BRT | Glass key | Backlight. Steps 100, 80, 60, 40, 20 percent. The encoder moves it by 5 |
-| Range readout | Glass, under the top key | Steps 2, 5, 10, 20, 30, 40, 50, 75, 100 nm (100 is the maximum). Scroll and pinch do the same. Rings animate; the outer ring is the selected range |
+| Range readout | Glass, under the top key | − and + step 10, 20, 30, 40, 50, 75, 100 nm (100 is the maximum). The value between them is the current range. Scroll and pinch do the same. Rings animate; the outer ring is the selected range |
 | Default range | Setup page only | The range used at startup |
 | Radar sweep | MNU, and the same switch on the setup page | Green sweep line and fading trail on every background. The map keeps its own colours. Off by default |
 | Icon set | Setup page only | Maverick is the default. Linecut, Classic, Planform, and Compact stay available |
@@ -209,7 +209,7 @@ The status chips on the glass (N-UP, altitude band, WATCH count) only show the c
 
 The map fills the round glass. Text and cards stay inside a margin equal to 90 percent of the radius, because the bezel overlaps the edge. Long labels ellipsize.
 
-Range rings are redrawn for the selected range. At 2 nm they read 0.5, 1, 1.5, 2. At 10 nm they read 2.5, 5, 7.5, 10. At 40 nm they read 10, 20, 30, 40. At 100 nm they read 25, 50, 75, 100. Changing range eases the rings and the scale instead of jumping.
+Range rings are redrawn for the selected range. At 10 nm they read 2.5, 5, 7.5, 10. At 30 nm they read 10, 20, 30. At 40 nm they read 10, 20, 30, 40. At 50 nm they read 10, 20, 30, 40, 50. At 75 nm they read 25, 50, 75. At 100 nm they read 25, 50, 75, 100. Auto (the default) picks the ring count so those labels stay even and round; a fixed count of 2–6 can still be set on the setup page. Changing range eases the rings and the scale instead of jumping.
 
 Aircraft icons follow the ADS-B emitter category: A1/A2 light, A3–A6 jet, A7 rotorcraft, B2 lighter-than-air, B6 UAV. Anything else stays a neutral diamond. Maverick, the default set, uses a separate filled silhouette for a light single, a twin, a business or regional jet, an airliner, a fighter, and a drone. Helicopters and airships keep the Linecut shapes. Every aircraft is white with a thin dark outline. Military is a green outline (`#14944A`), distinct from the sweep. A squawk of 7500, 7600, or 7700, or a readsb emergency flag other than none, flashes the icon red about once a second and overrides the green outline. A watched aircraft has a cyan ring while the watch list is on. It comes from readsb `dbFlags` bit 0. An optional `data/military-hex-ranges.json` is used only when you add one; the usual compiled table has no license, so it is not included. An optional `data/aircraft-types.json` can map an ICAO type designator to a class when the category is empty. The legend is in MNU About only.
 

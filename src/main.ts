@@ -21,11 +21,12 @@ import {
 } from "./updatepop";
 import { recordTrails as addTrailPoints, trailLines, type TrailPoint } from "./trails";
 import { ICON_KINDS, ICON_SETS, MAVERICK_LEGEND, iconSetId, paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
-import { MAX_RANGE_NM, RANGE_STEPS, ringCount, snapRange } from "./rings";
+import { MAX_RANGE_NM, MIN_RANGE_NM, RANGE_STEPS, resolveRings, snapRange } from "./rings";
 import { bearingDeg, haversineNm, offsetNm } from "./geo";
 import {
   bandLabel,
   formatAltitude,
+  listAltitude,
   formatClockZulu,
   formatDistance,
   formatHeading,
@@ -65,10 +66,9 @@ const canvas = document.querySelector<HTMLCanvasElement>("#radar")!;
 const radar = new RadarView(canvas);
 const statusEl = document.querySelector<HTMLElement>("#status")!;
 const clockEl = document.querySelector<HTMLElement>("#clock")!;
-const rangeBtn = document.querySelector<HTMLButtonElement>("#range")!;
+const rangeBtn = document.querySelector<HTMLElement>("#range")!;
 const rangeMinus = document.querySelector<HTMLButtonElement>("#range-minus")!;
 const rangePlus = document.querySelector<HTMLButtonElement>("#range-plus")!;
-const rangePicker = document.querySelector<HTMLElement>("#range-picker")!;
 const chipHdg = document.querySelector<HTMLElement>("#chip-hdg")!;
 const chipAlt = document.querySelector<HTMLElement>("#chip-alt")!;
 const metarEl = document.querySelector<HTMLElement>("#metar")!;
@@ -91,7 +91,7 @@ const BRIGHT_STEPS = [100, 80, 60, 40, 20];
 let config: AppConfig = {
   home: { name: "KJFK", lat: 40.6399, lon: -73.7787 },
   rangeNm: 20,
-  rings: 4,
+  rings: 0,
   showClock: true,
   clockFormat: "24h",
   minimalText: true,
@@ -137,7 +137,7 @@ let band: AltitudeBand = config.altitudeBand;
 let brightness = config.brightness;
 let sweepOn = false;
 let sweepPeriod = 8;
-let rings = 4;
+let ringsPref = 0;  // 0 = auto: a count that keeps ring labels round for the selected range
 // Frame cap for the kiosk: Chromium runs with --disable-gpu on the Pi, so
 // every frame is software-rendered. 30 fps keeps the sweep smooth (time-based
 // angle) at about half the CPU of 60 fps.
@@ -236,7 +236,7 @@ function applyQuery(): void {
   if (bg && BACKGROUNDS.some((item) => item.id === bg)) background = bg as BackgroundId;
   if (params.has("wx")) weatherOn = params.get("wx") === "1";
   const range = Number(params.get("range"));
-  if (Number.isFinite(range) && range >= 2) {
+  if (Number.isFinite(range) && range >= MIN_RANGE_NM) {
     rangeNm = snapRange(range);
     if (captureMode) rangeShown = rangeNm;
   }
@@ -253,7 +253,7 @@ function applyConfig(next: AppConfig): void {
   brightness = next.brightness;
   sweepOn = Boolean(next.sweep?.enabled);
   sweepPeriod = next.sweep?.periodSec ?? 8;
-  rings = ringCount(next.rings ?? 4);
+  ringsPref = next.rings === 0 ? 0 : (Number(next.rings) || 0);
   const nextRange = snapRange(next.rangeNm);
   if (Number.isNaN(savedRange)) {
     savedRange = nextRange;
@@ -335,9 +335,6 @@ function syncChrome(): void {
   const step = rangeIndex();
   rangeMinus.disabled = step <= 0;
   rangePlus.disabled = step >= PRESETS.length - 1;
-  rangePicker.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
-    button.setAttribute("aria-pressed", String(Number(button.dataset.nm) === snapRange(rangeNm)));
-  });
   const watchOn = Boolean(config.watch?.enabled);
   const onScope = visible(performance.now());
   const watchCount = onScope.length;
@@ -411,7 +408,7 @@ function persist(): void {
   config.altitudeBand = band;
   config.brightness = brightness;
   config.sweep = { enabled: sweepOn, periodSec: sweepPeriod };
-  // 1.0.3: the range picked on the glass is saved too.
+  // The range stepped on the glass with − / + is saved too.
   config.rangeNm = snapRange(rangeNm);
   savedRange = config.rangeNm;
   localEdits += 1;
@@ -447,42 +444,13 @@ function stepRange(direction: 1 | -1): void {
 }
 
 function pickRange(nm: number): void {
-  closeRangePicker();
   setRange(nm);
   toast(formatDistance(rangeNm, config.units, rangeNm >= 10 ? 0 : 1));
   persist();
 }
 
-function buildRangePicker(): void {
-  rangePicker.replaceChildren();
-  for (const nm of PRESETS) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.nm = String(nm);
-    button.setAttribute("role", "menuitemradio");
-    button.textContent = String(nm);
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      pickRange(nm);
-    });
-    rangePicker.append(button);
-  }
-}
-
-function openRangePicker(): void {
-  rangePicker.hidden = false;
-  rangeBtn.setAttribute("aria-expanded", "true");
-  syncChrome();
-}
-
-function closeRangePicker(): void {
-  if (rangePicker.hidden) return;
-  rangePicker.hidden = true;
-  rangeBtn.setAttribute("aria-expanded", "false");
-}
-
 function setRange(nm: number, snap = true): void {
-  rangeNm = snap ? snapRange(nm) : Math.max(2, Math.min(MAX_RANGE_NM, nm));
+  rangeNm = snap ? snapRange(nm) : Math.max(MIN_RANGE_NM, Math.min(MAX_RANGE_NM, nm));
   noteRangeChange();
   syncChrome();
 }
@@ -575,7 +543,7 @@ function renderList(): void {
     const name = document.createElement("strong");
     name.textContent = row.item.callsign;
     const alt = document.createElement("span");
-    alt.textContent = formatAltitude(row.item.altFt, row.item.ground, config.units);
+    alt.textContent = listAltitude(row.item.altFt, row.item.ground, config.units);
     const meta = document.createElement("em");
     meta.textContent = `${formatSpeed(row.item.gsKt, config.units)}   ${formatDistance(row.dist, config.units)}   ${formatHeading(row.brg)}`;
     li.append(name, alt, meta);
@@ -981,7 +949,7 @@ function frame(now: number): void {
       labels: Boolean(info?.labels),
       sweep: params.get("sweep") === "1" || sweepOn,
       sweepPeriodMs: sweepPeriod * 1000,
-      rings,
+      rings: resolveRings(ringsPref, rangeNm),
       trails: trailPoints(now),
       iconSet: activeIconSet(),
       watchOn: Boolean(config.watch?.enabled),
@@ -1198,12 +1166,6 @@ function bindTouchTest(): void {
 }
 
 function bindInput(): void {
-  buildRangePicker();
-  rangeBtn.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (rangePicker.hidden) openRangePicker();
-    else closeRangePicker();
-  });
   rangeMinus.addEventListener("click", (event) => {
     event.stopPropagation();
     stepRange(-1);
@@ -1212,12 +1174,6 @@ function bindInput(): void {
     event.stopPropagation();
     stepRange(1);
   });
-  // Tap anywhere else closes the preset picker.
-  document.addEventListener("pointerdown", (event) => {
-    const target = event.target;
-    if (target instanceof Element && (target.closest("#range-picker") || target.closest("#range"))) return;
-    closeRangePicker();
-  }, true);
   sweepBtn.addEventListener("click", () => {
     sweepOn = !sweepOn;
     toast(sweepOn ? "SWEEP ON" : "SWEEP OFF");
@@ -1794,7 +1750,7 @@ async function boot(): Promise<void> {
     if (detail.hidden) return;
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (target.closest("#detail") || target.closest("#rangectl") || target.closest("#range-picker") || target.closest(".hold-target")) return;
+    if (target.closest("#detail") || target.closest("#rangectl") || target.closest(".hold-target")) return;
     selectedId = null;
     detail.hidden = true;
     syncChrome();

@@ -35,8 +35,31 @@ def migrate_update_source(cfg: dict[str, Any]) -> None:
     updates.setdefault("channel", "stable")
 
 
+def migrate_range(cfg: dict[str, Any]) -> None:
+    """1.0.8: steps are 10, 20, 30, 40, 50, 75, 100 NM. A saved 2 or 5 (or any
+    other value not in that list) snaps to the nearest remaining step; anything
+    below 10 becomes 10. 1.0.7 can still read 10, so a rollback stays valid."""
+    try:
+        from rings import snap_range
+    except ImportError:
+        from server.rings import snap_range
+    cfg["rangeNm"] = snap_range(cfg.get("rangeNm"))
+
+
+def migrate_rings(cfg: dict[str, Any]) -> None:
+    """1.0.8: the shipped default of 4 rings is now Auto, so 30/50/75 NM get
+    even, round labels (10/20/30, 10/20/30/40/50, 25/50/75). A unit that
+    already chose 2, 3, 5 or 6 keeps it. 0 is stored only after a successful
+    1.0.8 install (a rollback restores the previous file)."""
+    if cfg.get("rings") == 4:
+        cfg["rings"] = 0
+
+
 def migrate_config(cfg: dict[str, Any], path_exists: Any = None) -> dict[str, Any]:
     migrate_update_source(cfg)
+    migrate_range(cfg)
+    migrate_rings(cfg)
+
     schema = int(cfg.get("schema") or 0)
     if schema < 1:
         cfg["schema"] = 1

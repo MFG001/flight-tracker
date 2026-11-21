@@ -212,15 +212,15 @@
           <h2>DISPLAY</h2>
           <label>Default range
             <select id="range">
-              <option>2</option><option>5</option><option>10</option><option>20</option><option>30</option><option>40</option><option>50</option><option>75</option><option>100</option>
+              <option>10</option><option>20</option><option>30</option><option>40</option><option>50</option><option>75</option><option>100</option>
             </select>
           </label>
           <label>Range rings
             <select id="rings">
-              <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+              <option value="0">Auto</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
             </select>
           </label>
-          <p class="small">The display starts at this range and ring count. A range picked on the glass with − / + or the range button is saved here too.</p>
+          <p class="small">The display starts at this range. Auto places evenly spaced rings so the labels stay round for the selected range (for example 10/20/30 at 30 NM). − and + on the glass step the range; the choice is saved here too.</p>
           <label>Units
             <select id="units">
               <option value="aviation">NM · KT · FT</option>
@@ -503,7 +503,7 @@
         });
         savedWeather = cfg.weather || savedWeather;
         $("range").value = String(cfg.rangeNm);
-        $("rings").value = String(cfg.rings || 4);
+        $("rings").value = String(cfg.rings == null ? 0 : cfg.rings);
         $("show-clock").checked = cfg.showClock !== false;
         $("clock-format").value = cfg.clockFormat || "24h";
         $("minimal-text").checked = cfg.minimalText !== false;

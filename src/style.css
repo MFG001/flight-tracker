@@ -82,8 +82,8 @@ body.kiosk #legends { display: none; }
   text-align: center;
 }
 
-/* 1.0.3 range selector: − / range / + with finger-size targets, and a
-   preset bar under it. Inside the safe circle, nothing on the rim. */
+/* 1.0.8 range control: − / current range / + only. No preset bar.
+   Inside the safe circle, nothing on the rim. */
 #rangectl {
   top: 8.5%;
   display: flex;
@@ -91,14 +91,13 @@ body.kiosk #legends { display: none; }
   gap: 6px;
   pointer-events: auto;
 }
-#range, .range-step, #range-picker button {
+#range, .range-step {
   border: 1px solid var(--line);
   /* Opaque so nothing on the map or compass shows through the selector. */
   background: #060b10;
   color: inherit;
   border-radius: 999px;
   font-weight: 600;
-  touch-action: manipulation;
 }
 #range {
   min-width: 78px;
@@ -106,8 +105,11 @@ body.kiosk #legends { display: none; }
   padding: 0 12px;
   letter-spacing: 0.14em;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
-#range[aria-expanded="true"] { border-color: var(--amber); color: #ffe1b0; }
 .range-step {
   width: 40px;
   height: 40px;
@@ -115,32 +117,11 @@ body.kiosk #legends { display: none; }
   font-size: 22px;
   line-height: 1;
   color: #ffd089;
+  cursor: pointer;
+  touch-action: manipulation;
 }
-.range-step:disabled { opacity: 0.3; color: var(--muted); }
-#range:active, .range-step:active:not(:disabled), #range-picker button:active { background: #3a2a12; border-color: var(--amber); }
-#range-picker {
-  position: absolute;
-  top: 16%;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 5px;
-  padding: 5px;
-  border-radius: 16px;
-  border: 1px solid rgba(232, 162, 58, 0.55);
-  background: rgba(5, 10, 14, 0.92);
-  pointer-events: auto;
-  z-index: 6;
-}
-#range-picker[hidden] { display: none; }
-#range-picker button {
-  min-width: 42px;
-  height: 40px;
-  padding: 0 6px;
-  font-size: 14px;
-  letter-spacing: 0.04em;
-}
-#range-picker button[aria-pressed="true"] { background: #3a2a12; border-color: var(--amber); color: #ffe1b0; }
+.range-step:disabled { opacity: 0.3; color: var(--muted); cursor: default; }
+.range-step:active:not(:disabled) { background: #3a2a12; border-color: var(--amber); }
 
 #chips {
   top: 17%;
@@ -395,7 +376,7 @@ body.sheet #sheet { display: block; }
 .sources p { margin: 0 0 4px; font-size: 9px; letter-spacing: 0; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
 .sources a { color: inherit; }
 .hint, #about-status { color: var(--muted); font-size: 11px; letter-spacing: 0.04em; }
-.panel button, .actions button, #range {
+.panel button, .actions button {
   cursor: pointer;
 }
 
@@ -552,7 +533,7 @@ body[data-feed="remote"] .local-only { display: none; }
 #idle-wx[data-tone="warn"] { color: #ffd089; }
 
 /* Panel buttons: clear pressed feedback on touch. */
-.panel button:active, #range:active { background: #3a2a12; border-color: var(--amber); color: #ffe1b0; }
+.panel button:active { background: #3a2a12; border-color: var(--amber); color: #ffe1b0; }
 .panel button { touch-action: manipulation; }
 .disc { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 

@@ -182,7 +182,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(cfg["display"]["rotation"], 270)
         self.assertEqual(cfg["wifi"]["country"], "US")
-        self.assertEqual(cfg["rings"], 4)
+        self.assertEqual(cfg["rings"], 0)  # Auto: round-label count for the selected range
         self.assertTrue(cfg["showClock"])
         self.assertTrue(cfg["minimalText"])
         self.assertEqual(cfg["clockFormat"], "24h")

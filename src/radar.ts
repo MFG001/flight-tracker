@@ -1,6 +1,7 @@
 import { trailAlpha } from "./trails";
 import { bearingDeg, chooseZoom, haversineNm, NM_TO_M, project } from "./geo";
 import { dataBlockLine } from "./format";
+import { leaderAnchor, placeLabels, type Box, type LabelMemory } from "./labelplace";
 import { paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
 import { formatRing, ringDistances, ringLabelMask } from "./rings";
 import type { Aircraft, BackgroundId, TileRequest, Units } from "./types";
@@ -47,13 +48,6 @@ interface Spot {
   y: number;
 }
 
-interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
 const SCOPE = "#04140e";
 
 export interface PlateStats {
@@ -88,6 +82,7 @@ export class RadarView {
   private plate: HTMLCanvasElement | null = null;
   private plateKey = "";
   private plateStats: PlateStats = { mapDrawn: 0, weatherDrawn: 0, weatherEchoes: null };
+  private labelMemory = new Map<string, LabelMemory>();
   private fps = 60;
   /** Drop the sweep glow below this frame rate. main.ts lowers it when frames are capped. */
   liteSweepBelow = 28;
@@ -604,9 +599,21 @@ export class RadarView {
     ringR: number,
     now: number,
   ): void {
-    const placed: Box[] = [];
     const hud = this.bottomHudBox();
-    if (hud) placed.push(hud);
+    type LabelDraft = {
+      id: string;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      selected: boolean;
+      emergency: boolean;
+      distNm: number;
+      line1: string;
+      line2: string;
+      stale: boolean;
+    };
+    const drafts: LabelDraft[] = [];
     const ranked = [...scene.aircraft, ...(scene.beyond ?? [])].sort((a, b) => {
       const da = haversineNm(scene.centerLat, scene.centerLon, a.lat, a.lon);
       const db = haversineNm(scene.centerLat, scene.centerLon, b.lat, b.lon);
@@ -635,46 +642,60 @@ export class RadarView {
       ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
       const boxW = Math.min(118, Math.max(86, Math.ceil(ctx.measureText(line2).width) + 14));
       const boxH = 30;
-      const options = [
-        { ox: 14, oy: -16 },
-        { ox: -boxW - 10, oy: -16 },
-        { ox: 14, oy: 8 },
-        { ox: -boxW - 10, oy: 8 },
-        { ox: -boxW / 2, oy: -36 },
-      ];
-      let box: Box | null = null;
-      for (const option of options) {
-        const candidate = { x: screen.x + option.ox, y: screen.y + option.oy, w: boxW, h: boxH };
-        if (!overlaps(candidate, placed) && inside(candidate, cx, cy, ringR - 4)) {
-          box = candidate;
-          break;
-        }
-      }
-      if (!box && selected) {
-        const fallback = { x: screen.x + 14, y: screen.y - 16, w: boxW, h: boxH };
-        if (!overlaps(fallback, placed)) box = fallback;
-      }
-      if (!box) continue;
-      placed.push(box);
+      drafts.push({
+        id: aircraft.id,
+        x: screen.x,
+        y: screen.y,
+        w: boxW,
+        h: boxH,
+        selected,
+        emergency: Boolean(aircraft.emergency),
+        distNm,
+        line1,
+        line2,
+        stale,
+      });
+    }
+    const placed = placeLabels(drafts, {
+      cx,
+      cy,
+      radius: ringR - 4,
+      obstacles: hud ? [hud] : [],
+      memory: this.labelMemory,
+    });
+    const byId = new Map(placed.map((item) => [item.id, item]));
+    for (const draft of drafts) {
+      const result = byId.get(draft.id);
+      if (!result) continue;
+      const box = result.box;
       ctx.save();
-      ctx.globalAlpha = stale ? 0.45 : 1;
+      if (result.leader) {
+        const tip = leaderAnchor(draft.x, draft.y, box);
+        ctx.beginPath();
+        ctx.moveTo(draft.x, draft.y);
+        ctx.lineTo(tip.x, tip.y);
+        ctx.strokeStyle = draft.selected ? "rgba(232, 162, 58, 0.7)" : "rgba(255, 255, 255, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = draft.stale ? 0.45 : 1;
       roundRect(ctx, box.x, box.y, box.w, box.h, 6);
-      ctx.fillStyle = selected ? "rgba(42, 28, 8, 0.92)" : "rgba(6, 10, 14, 0.82)";
+      ctx.fillStyle = draft.selected ? "rgba(42, 28, 8, 0.92)" : "rgba(6, 10, 14, 0.82)";
       ctx.fill();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = selected ? "#e8a23a" : "rgba(255,255,255,0.14)";
+      ctx.strokeStyle = draft.selected ? "#e8a23a" : "rgba(255,255,255,0.14)";
       ctx.stroke();
       ctx.font = '600 12px "IBM Plex Sans", sans-serif';
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillStyle = "#f4f7fb";
-      ctx.fillText(fitText(ctx, line1, box.w - 10), box.x + 6, box.y + 3);
+      ctx.fillText(fitText(ctx, draft.line1, box.w - 10), box.x + 6, box.y + 3);
       ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(fitText(ctx, line2, box.w - 10), box.x + 6, box.y + 16);
+      ctx.fillText(fitText(ctx, draft.line2, box.w - 10), box.x + 6, box.y + 16);
       ctx.restore();
     }
-    }
+  }
 
   private bottomHudBox(): Box | null {
     const canvas = this.canvas.getBoundingClientRect();
@@ -748,20 +769,6 @@ export class RadarView {
     ctx.fill();
     ctx.restore();
   }
-}
-
-function inside(box: Box, cx: number, cy: number, radius: number): boolean {
-  const corners = [
-    [box.x, box.y],
-    [box.x + box.w, box.y],
-    [box.x, box.y + box.h],
-    [box.x + box.w, box.y + box.h],
-  ];
-  return corners.every(([x, y]) => Math.hypot(x - cx, y - cy) <= radius);
-}
-
-function overlaps(box: Box, placed: Box[]): boolean {
-  return placed.some((other) => !(box.x + box.w < other.x || other.x + other.w < box.x || box.y + box.h < other.y || other.y + other.h < box.y));
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {

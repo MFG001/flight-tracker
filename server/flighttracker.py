@@ -44,7 +44,7 @@ from logic import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.7 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.8 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -737,7 +737,8 @@ class App:
             nm = float(value)
         except (TypeError, ValueError):
             return None
-        # 1.0.7: 100 NM is the largest display range (adsb.fi allows up to 250).
+        # 1.0.8: display steps start at 10 NM; 100 is the maximum (adsb.fi allows up to 250).
+        # Values between 1 and 100 are still accepted so a mid-animation poll is not dropped.
         if not math.isfinite(nm) or nm < 1 or nm > 100:
             return None
         return nm

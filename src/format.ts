@@ -25,6 +25,15 @@ export function formatAltitude(ft: number | null, ground: boolean, units: Units)
   return `${Math.round(ft).toLocaleString("en-US")} FT`;
 }
 
+/** Traffic-list altitude: the number only (or GROUND / —). Metric still
+ *  carries "M". The selected-aircraft card uses formatAltitude, which keeps "FT". */
+export function listAltitude(ft: number | null, ground: boolean, units: Units): string {
+  if (ground) return "GROUND";
+  if (ft == null || !Number.isFinite(ft)) return "—";
+  if (units === "metric") return `${Math.round(ft * 0.3048).toLocaleString("en-US")} M`;
+  return Math.round(ft).toLocaleString("en-US");
+}
+
 export function formatVertical(fpm: number | null, units: Units): string {
   if (fpm == null || !Number.isFinite(fpm) || Math.abs(fpm) < 50) return "LEVEL";
   const sign = fpm > 0 ? "+" : "−";

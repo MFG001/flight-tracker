@@ -170,12 +170,11 @@ async function checkText(name, rootSelector) {
 
 await open(`${base}/?capture=1&bg=dark&wx=0`);
 await check("main");
-// 1.0.3 range selector: − / range / + and the preset bar.
-await page.click("#range");
-await page.waitForSelector("#range-picker:not([hidden])", { timeout: 5000 });
-await check("range-picker");
-await checkText("range-picker-text", "#range-picker");
-await page.click("#range-picker button");
+// 1.0.8 range control: − / current range / + only (no preset bar).
+await check("rangectl");
+await checkText("rangectl-text", "#rangectl");
+await page.click("#range-plus");
+await check("rangectl-stepped");
 await open(`${base}/?capture=1&bg=light&wx=0`);
 await check("light");
 await open(`${base}/?capture=1&bg=sectional&wx=0`);

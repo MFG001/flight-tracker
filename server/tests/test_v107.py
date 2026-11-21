@@ -395,20 +395,20 @@ class AppScheduleTests(unittest.TestCase):
 
 
 class HundredMileRangeTests(unittest.TestCase):
-    """1.0.7: 50, 75 and 100 NM steps; 100 is the maximum."""
+    """Selectable ranges: 10, 20, 30, 40, 50, 75, 100 NM (1.0.8 dropped 2 and 5)."""
 
-    STEPS = [2, 5, 10, 20, 30, 40, 50, 75, 100]
+    STEPS = [10, 20, 30, 40, 50, 75, 100]
 
     def test_steps_and_snapping_server(self) -> None:
         from rings import MAX_RANGE_NM, RANGES, ring_distances, snap_range
         self.assertEqual(list(RANGES), self.STEPS)
         self.assertEqual(MAX_RANGE_NM, 100)
-        self.assertEqual([snap_range(v) for v in (45, 62, 80, 100, 160)], [40, 50, 75, 100, 100])
+        self.assertEqual([snap_range(v) for v in (2, 5, 9, 45, 62, 80, 100, 160)], [10, 10, 10, 40, 50, 75, 100, 100])
         self.assertEqual(ring_distances(100, 4), [25.0, 50.0, 75.0, 100.0])
 
     def test_config_accepts_100_and_clamps_above(self) -> None:
         from logic import sanitize_config
-        for asked, kept in ((100, 100), (75, 75), (50, 50), (250, 100), (40, 40)):
+        for asked, kept in ((100, 100), (75, 75), (50, 50), (250, 100), (40, 40), (2, 10), (5, 10), (15, 10)):
             cfg, errors = sanitize_config({"home": {"name": "KJFK", "lat": 40.6399, "lon": -73.7787}, "rangeNm": asked})
             self.assertEqual(errors, [])
             self.assertEqual(cfg["rangeNm"], kept, asked)
@@ -443,30 +443,48 @@ class HundredMileRangeTests(unittest.TestCase):
 
     def test_setup_page_offers_the_new_steps(self) -> None:
         setup = (ROOT / "setup/index.html").read_text(encoding="utf-8")
-        self.assertIn("<option>40</option><option>50</option><option>75</option><option>100</option>", setup)
+        self.assertIn("<option>10</option><option>20</option><option>30</option><option>40</option><option>50</option><option>75</option><option>100</option>", setup)
+        self.assertNotIn("<option>2</option>", setup)
+        self.assertNotIn("<option>5</option>", setup)
 
     @unittest.skipUnless(node_ts_ok(), "node with --experimental-strip-types not installed")
     def test_round_screen_steps_map_and_weather_zoom(self) -> None:
         data = run_ts("""
-import { RANGE_STEPS, MAX_RANGE_NM, snapRange, ringDistances, formatRing } from "./src/rings.ts";
+import { RANGE_STEPS, MAX_RANGE_NM, snapRange, ringDistances, formatRing, ringsForRange } from "./src/rings.ts";
 import { chooseZoom } from "./src/geo.ts";
 import { aircraftUrl } from "./src/aircraftpoll.ts";
 // 720 px panel, outer ring about 300 px: the map, sectional and radar zooms at 100 NM.
 const ringR = 300, NM = 1852;
 const ppm = ringR / (100 * NM);
 const reach = (z) => { const c = chooseZoom(40.64, ppm, z.min, z.max); return { z: c.z, tilesAcross: Math.ceil((2 * ringR / c.pxPerWorldPx) / 256) + 2 }; };
+const allLabels = {};
+const counts = {};
+for (const nm of RANGE_STEPS) { counts[nm] = ringsForRange(nm); allLabels[nm] = ringDistances(nm, ringsForRange(nm)).map(formatRing); }
 console.log(JSON.stringify({
-  steps: RANGE_STEPS, max: MAX_RANGE_NM, snaps: [snapRange(160), snapRange(88), snapRange(60)],
+  steps: RANGE_STEPS, max: MAX_RANGE_NM, min: 10,
+  snaps: [snapRange(2), snapRange(5), snapRange(160), snapRange(88), snapRange(60)],
   labels: ringDistances(100, 4).map(formatRing), labels75: ringDistances(75, 3).map(formatRing),
+  counts, allLabels,
   street: reach({ min: 0, max: 19 }), sectional: reach({ min: 8, max: 12 }), radar: reach({ min: 2, max: 7 }),
-  url: aircraftUrl(100, false),
+  url: aircraftUrl(100, false), url10: aircraftUrl(10, false),
 }));
 """)
         self.assertEqual(data["steps"], self.STEPS)
         self.assertEqual(data["max"], 100)
-        self.assertEqual(data["snaps"], [100, 100, 50])
+        self.assertEqual(data["snaps"], [10, 10, 100, 100, 50])
         self.assertEqual(data["labels"], ["25", "50", "75", "100"])
         self.assertEqual(data["labels75"], ["25", "50", "75"])
+        self.assertEqual(data["counts"], {"10": 4, "20": 4, "30": 3, "40": 4, "50": 5, "75": 3, "100": 4})
+        self.assertEqual(data["allLabels"], {
+            "10": ["2.5", "5", "7.5", "10"],
+            "20": ["5", "10", "15", "20"],
+            "30": ["10", "20", "30"],
+            "40": ["10", "20", "30", "40"],
+            "50": ["10", "20", "30", "40", "50"],
+            "75": ["25", "50", "75"],
+            "100": ["25", "50", "75", "100"],
+        })
+        self.assertEqual(data["url10"], "/api/aircraft?range=10")
         self.assertEqual(data["url"], "/api/aircraft?range=100")
         for layer in ("street", "sectional", "radar"):
             tiles = data[layer]["tilesAcross"] ** 2
@@ -477,12 +495,14 @@ console.log(JSON.stringify({
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_107_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.7")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.7")
+    def test_version_is_at_least_107(self) -> None:
+        # 1.0.8 moved on; test_v108 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 7))
+        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], version)
         lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.7", "1.0.7"))
-        self.assertIn("FlightTracker/1.0.7 ", (ROOT / "server/flighttracker.py").read_text())
+        self.assertEqual((lock["version"], lock["packages"][""]["version"]), (version, version))
+        self.assertIn(f"FlightTracker/{version} ", (ROOT / "server/flighttracker.py").read_text())
 
 
 class LicenseTests(unittest.TestCase):

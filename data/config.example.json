@@ -6,7 +6,7 @@
     "lon": -73.7787
   },
   "rangeNm": 20,
-  "rings": 4,
+  "rings": 0,
   "showClock": true,
   "clockFormat": "24h",
   "minimalText": true,

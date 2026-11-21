@@ -17,10 +17,10 @@ LEG_SECONDS = 240.0
 
 try:
     from classify import classify, load_hex_ranges, load_type_db
-    from rings import MAX_RANGE_NM, snap_range
+    from rings import MAX_RANGE_NM, MIN_RANGE_NM, snap_range
 except ImportError:
     from server.classify import classify, load_hex_ranges, load_type_db
-    from server.rings import MAX_RANGE_NM, snap_range
+    from server.rings import MAX_RANGE_NM, MIN_RANGE_NM, snap_range
 
 BACKGROUNDS = ("dark", "light", "satellite", "sectional", "scope")
 UNITS = ("aviation", "imperial", "metric")
@@ -47,7 +47,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "home": {"name": "KJFK", "lat": 40.6399, "lon": -73.7787},
     "rangeNm": 20.0,
     # Range rings drawn inside the outer (range) ring, outer ring included.
-    "rings": 4,
+    "rings": 0,  # 0 = auto, a round-label count for the selected range
     # Radar-screen text: clock on/off, clock style, and whether status text
     # fades out while aircraft are on the glass.
     "showClock": True,
@@ -112,7 +112,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
 }
 
 ROTATIONS = (0, 90, 180, 270)
-RING_COUNTS = (2, 3, 4, 5, 6)
+RING_COUNTS = (0, 2, 3, 4, 5, 6)  # 0 = auto
 CLOCK_FORMATS = ("24h", "12h", "utc")
 HHMM_RE = re.compile(r"^([01]\d|2[0-3])[0-5]\d$")
 
@@ -414,7 +414,7 @@ def sanitize_config(payload: Any) -> tuple[dict[str, Any], list[str]]:
     if rng is None:
         errors.append("Range must be a number of nautical miles.")
     else:
-        cfg["rangeNm"] = snap_range(_clamp(rng, 2, MAX_RANGE_NM))
+        cfg["rangeNm"] = snap_range(_clamp(rng, MIN_RANGE_NM, MAX_RANGE_NM))
 
     rings = payload.get("rings", cfg["rings"])
     try:
@@ -424,7 +424,7 @@ def sanitize_config(payload: Any) -> tuple[dict[str, Any], list[str]]:
     if ring_count in RING_COUNTS and not isinstance(rings, bool):
         cfg["rings"] = ring_count
     else:
-        errors.append("Number of range rings must be 2 to 6.")
+        errors.append("Number of range rings must be Auto or 2 to 6.")
 
     cfg["showClock"] = bool(payload.get("showClock", True))
     cfg["minimalText"] = bool(payload.get("minimalText", True))

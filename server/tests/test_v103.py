@@ -100,21 +100,26 @@ class NoEdgeKeysTests(unittest.TestCase):
 
 
 class RangeSelectorTests(unittest.TestCase):
-    def test_minus_range_plus_and_presets(self) -> None:
-        for needle in ('id="range-minus"', 'id="range"', 'id="range-plus"', 'id="range-picker"'):
+    def test_minus_range_plus_no_preset_bar(self) -> None:
+        for needle in ('id="range-minus"', 'id="range"', 'id="range-plus"'):
             self.assertIn(needle, INDEX)
-        self.assertIn("for (const nm of PRESETS)", MAIN)
+        self.assertNotIn("range-picker", INDEX)
+        self.assertNotIn("range-picker", MAIN)
+        self.assertNotIn("range-picker", CSS)
+        self.assertIn('<div id="range" aria-live="polite">', INDEX)
+        self.assertNotIn('aria-haspopup', INDEX)
         self.assertIn("rangeMinus.disabled = step <= 0;", MAIN)
         self.assertIn("rangePlus.disabled = step >= PRESETS.length - 1;", MAIN)
-        self.assertIn("closeRangePicker();", MAIN)
+        self.assertIn("function stepRange(direction: 1 | -1)", MAIN)
         steps = (ROOT / "src/rings.ts").read_text()
-        self.assertIn("export const RANGE_STEPS = [2, 5, 10, 20, 30, 40, 50, 75, 100]", steps)
+        self.assertIn("export const RANGE_STEPS = [10, 20, 30, 40, 50, 75, 100]", steps)
 
     def test_finger_size_targets(self) -> None:
-        block = CSS[CSS.index(".range-step {"):]
-        self.assertIn("width: 40px;", block[:200])
-        self.assertIn("height: 40px;", block[:200])
-        self.assertIn("height: 40px;", CSS[CSS.rindex("#range-picker button {"):][:200])
+        # Only − and + are buttons; use the first .range-step block (not :disabled / :active).
+        start = CSS.index("\n.range-step {")
+        block = CSS[start:start + 220]
+        self.assertIn("width: 40px;", block)
+        self.assertIn("height: 40px;", block)
 
     def test_range_is_saved_and_does_not_bounce(self) -> None:
         self.assertIn("config.rangeNm = snapRange(rangeNm);", MAIN)
@@ -657,7 +662,7 @@ console.log(JSON.stringify([
     def test_radar_draws_altitude_line(self) -> None:
         radar = (ROOT / "src/radar.ts").read_text(encoding="utf-8")
         self.assertIn("const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);", radar)
-        self.assertIn("fillText(fitText(ctx, line2, box.w - 10)", radar)
+        self.assertIn("fillText(fitText(ctx, draft.line2, box.w - 10)", radar)
         self.assertNotIn("minimal", radar)  # minimalText never hides the data block
 
 
@@ -666,7 +671,7 @@ class CompassUnderPillTests(unittest.TestCase):
         radar = (ROOT / "src/radar.ts").read_text(encoding="utf-8")
         self.assertIn("if (Math.abs(angleFromTop(deg - mapUp)) < TOP_PILL_HALF_DEG) continue;", radar)
         self.assertIn("export const TOP_PILL_HALF_DEG = 22;", radar)
-        block = CSS[CSS.index("#range, .range-step, #range-picker button {"):][:300]
+        block = CSS[CSS.index("#range, .range-step {"):][:300]
         self.assertIn("background: #060b10;", block)
 
     @unittest.skipUnless(node_ts_ok(), "node with --experimental-strip-types not installed")
