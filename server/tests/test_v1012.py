@@ -17,12 +17,14 @@ except ImportError:
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1012_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.12")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.12")
+    def test_version_is_at_least_1012(self) -> None:
+        # 1.0.13 moved on; test_v1013 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 12))
+        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], version)
         lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.12", "1.0.12"))
-        self.assertIn("FlightTracker/1.0.12 ", (ROOT / "server/flighttracker.py").read_text())
+        self.assertEqual((lock["version"], lock["packages"][""]["version"]), (version, version))
+        self.assertIn(f"FlightTracker/{version} ", (ROOT / "server/flighttracker.py").read_text())
 
 
 class KioskCreditTests(unittest.TestCase):
@@ -126,8 +128,7 @@ class StandbyStripTests(unittest.TestCase):
         block = css[start:start + 500]
         self.assertIn("bottom: 12%;", block)
         self.assertNotIn("bottom: 16%;", block)
-        # The earlier 16% placement must be gone.
-        self.assertNotIn("bottom: 16%;", css)
+        self.assertNotIn("bottom: 13.6%;", css)
         self.assertIn("font-size: 13px", css)  # clock
         self.assertIn("font-size: 12px", css)  # status / metar
 

@@ -119,6 +119,7 @@ class MapStillOmitsFtTests(unittest.TestCase):
     def test_map_block_path_still_omits_ft(self) -> None:
         radar = (ROOT / "src/radar.ts").read_text()
         main = (ROOT / "src/main.ts").read_text()
-        self.assertIn("const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);", radar)
+        self.assertNotIn("const line2 = dataBlockLine", radar)
         self.assertNotIn("formatAltitude", radar)
+        self.assertIn("mapLabelIdent", radar)
         self.assertIn('["ALTITUDE", formatAltitude(item.altFt, item.ground, config.units)]', main)

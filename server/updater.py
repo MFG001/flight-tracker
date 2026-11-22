@@ -744,6 +744,68 @@ def refresh_helpers(release: Path, sbin: Path = Path("/usr/local/sbin")) -> list
     return installed
 
 
+SYSTEM_UNIT_DIR = Path("/etc/systemd/system")
+# Copied to the system unit directory on OTA so existing units pick up the
+# 1.0.13 09:00 check timer (install.sh only runs on a first install).
+SYSTEMD_UNITS = (
+    "flight-tracker-update.service",
+    "flight-tracker-update.timer",
+    "flight-tracker-auto-update.service",
+    "flight-tracker-auto-update.timer",
+)
+TIMER_UNITS = (
+    "flight-tracker-update.timer",
+    "flight-tracker-auto-update.timer",
+)
+
+
+def install_unit(release: Path, name: str, dest_dir: Path) -> bool:
+    """Copy deploy/<name> into a systemd unit directory (mode 0644)."""
+    source = release / "deploy" / name
+    dest = dest_dir / name
+    try:
+        if not source.is_file() or not dest_dir.is_dir() or not os.access(dest_dir, os.W_OK):
+            return False
+        if dest.exists() and not os.access(dest, os.W_OK):
+            return False
+        temporary = dest.with_name(f".{dest.name}.new")
+        shutil.copyfile(source, temporary)
+        temporary.chmod(0o644)
+        os.replace(temporary, dest)
+        return True
+    except OSError:
+        return False
+
+
+def refresh_systemd_units(
+    release: Path,
+    unit_dir: Path = SYSTEM_UNIT_DIR,
+    *,
+    run_systemctl: bool = True,
+    systemctl: str | None = None,
+    runtime_dir: Path | None = None,
+) -> list[str]:
+    """Install updated timer/service units, then daemon-reload and restart timers."""
+    installed: list[str] = []
+    for name in SYSTEMD_UNITS:
+        if install_unit(release, name, unit_dir):
+            installed.append(name)
+    if not installed or not run_systemctl:
+        return installed
+    ctl = systemctl or shutil.which("systemctl")
+    runtime = Path("/run/systemd/system") if runtime_dir is None else runtime_dir
+    if not ctl or not runtime.is_dir():
+        return installed
+    try:
+        subprocess.run([ctl, "daemon-reload"], check=False, capture_output=True, timeout=30)
+        for timer in TIMER_UNITS:
+            subprocess.run([ctl, "enable", timer], check=False, capture_output=True, timeout=30)
+            subprocess.run([ctl, "restart", timer], check=False, capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return installed
+
+
 def restart_kiosk() -> bool:
     """Reload the round screen into the new release. Best effort; no-op off the Pi."""
     if not shutil.which("systemctl") or not Path("/run/systemd/system").is_dir():
@@ -884,6 +946,7 @@ def apply_update(
         # The new release is healthy: take its root helper and reload the round screen.
         refresh_wrapper(final, wrapper)
         refresh_helpers(final, wrapper.parent)
+        refresh_systemd_units(final)
         installed = {
             "current": found["version"],
             "version": found["version"],

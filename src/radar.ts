@@ -1,8 +1,8 @@
 import { trailAlpha } from "./trails";
 import { bearingDeg, chooseZoom, haversineNm, NM_TO_M, project } from "./geo";
-import { dataBlockLine } from "./format";
+import { mapLabelIdent } from "./format";
 import { leaderAnchor, placeLabels, type Box, type LabelMemory } from "./labelplace";
-import { paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
+import { paintAircraftIcon, rotorAngle, type IconSetId, type MaverickMark } from "./icons";
 import { formatRing, ringDistances, ringLabelMask } from "./rings";
 import type { Aircraft, BackgroundId, TileRequest, Units } from "./types";
 
@@ -42,10 +42,9 @@ export interface RadarScene {
 
 export type TileGetter = (req: TileRequest) => HTMLImageElement | null;
 
-interface Spot {
+interface LabelHit {
   id: string;
-  x: number;
-  y: number;
+  box: Box;
 }
 
 const SCOPE = "#04140e";
@@ -78,7 +77,7 @@ export class RadarView {
   private w = 720;
   private h = 720;
   private dpr = 1;
-  private spots: Spot[] = [];
+  labelHits: LabelHit[] = [];
   private plate: HTMLCanvasElement | null = null;
   private plateKey = "";
   private plateStats: PlateStats = { mapDrawn: 0, weatherDrawn: 0, weatherEchoes: null };
@@ -106,14 +105,23 @@ export class RadarView {
     this.canvas.style.height = `${cssH}px`;
   }
 
+  /** Hit-test the tail-number label only (not the aircraft icon). The visual
+   *  box may be shorter than a finger; the target is at least 44 px tall.
+   *  Overlapping pads resolve to the nearest visual box. */
   hitTest(x: number, y: number): string | null {
     let best: string | null = null;
-    let bestD = 28;
-    for (const spot of this.spots) {
-      const d = Math.hypot(spot.x - x, spot.y - y);
+    let bestD = Infinity;
+    for (const hit of this.labelHits) {
+      const vis = hit.box;
+      const padY = Math.max(0, (44 - vis.h) / 2);
+      const padX = 4;
+      if (x < vis.x - padX || x > vis.x + vis.w + padX || y < vis.y - padY || y > vis.y + vis.h + padY) continue;
+      const dx = x < vis.x ? vis.x - x : x > vis.x + vis.w ? x - (vis.x + vis.w) : 0;
+      const dy = y < vis.y ? vis.y - y : y > vis.y + vis.h ? y - (vis.y + vis.h) : 0;
+      const d = Math.hypot(dx, dy);
       if (d < bestD) {
         bestD = d;
-        best = spot.id;
+        best = hit.id;
       }
     }
     return best;
@@ -177,7 +185,7 @@ export class RadarView {
     this.drawRings(ctx, cx, cy, ringR, scene);
     this.drawCompass(ctx, cx, cy, ringR, scene.mapUpDeg, scope);
     this.drawHome(ctx, scene, zoom.z, zoom.pxPerWorldPx, cx, cy);
-    this.spots = [];
+    this.labelHits = [];
     this.drawSelectionLine(ctx, scene, zoom.z, zoom.pxPerWorldPx, cx, cy);
     this.drawLabelsAndHits(ctx, scene, zoom.z, zoom.pxPerWorldPx, cx, cy, ringR, now);
     if (scene.sweep) this.paintSweep(ctx, scene, now, cx, cy, ringR, zoom.z, zoom.pxPerWorldPx);
@@ -481,6 +489,7 @@ export class RadarView {
         military: Boolean(aircraft.military) && !emergency,
         emergency: flashOn,
         mark: aircraft.mark as MaverickMark | undefined,
+        rotorRad: rotorAngle(now, Boolean(aircraft.ground)),
       });
       ctx.restore();
     }
@@ -528,16 +537,31 @@ export class RadarView {
 
   private drawCompass(ctx: CanvasRenderingContext2D, cx: number, cy: number, ringR: number, mapUp: number, scope: boolean): void {
     const names: Record<number, string> = { 0: "N", 90: "E", 180: "S", 270: "W" };
+    const radius = Math.min(this.w, this.h) / 2;
+    const safeR = radius * 0.9;
+    // 1.0.13: N/S/E/W sit just outside the tick ring, between the ticks and
+    // the glass edge, still inside the safe circle. There was enough room
+    // (ticks end at ringR+10, safe circle is 28px beyond the ring) so the
+    // compass ring is not shrunk. The range pill covers the ring at 12
+    // o'clock, but not the band outside it, so north can be drawn above
+    // the pill; skip a letter only if its box would actually hit the pill
+    // or the bottom status/time/METAR stack.
+    const fontPx = 14;
+    const letterR = cardinalRadius(ringR, safeR, fontPx);
+    const pill = this.elementBox(["rangectl"], 3);
+    const southHud = this.elementBox(["status", "clock", "metar", "attrib"], 3);
     ctx.save();
-    ctx.font = '600 13px "IBM Plex Sans", sans-serif';
+    ctx.font = `600 ${fontPx}px "IBM Plex Sans", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
+    const halfW = fontPx * 0.55;
+    const halfH = fontPx * 0.55;
     for (let deg = 0; deg < 360; deg += 10) {
       const screen = (deg - mapUp) * (Math.PI / 180);
       const inner = deg % 90 === 0 ? ringR + 1 : deg % 30 === 0 ? ringR + 4 : ringR + 6;
-      const outer = Math.min(ringR + 10, ringR + (Math.min(this.w, this.h) / 2) * 0.9 - ringR - 4);
+      const outer = Math.min(ringR + 10, ringR + safeR - ringR - 4);
       ctx.beginPath();
       ctx.moveTo(cx + inner * Math.sin(screen), cy - inner * Math.cos(screen));
       ctx.lineTo(cx + outer * Math.sin(screen), cy - outer * Math.cos(screen));
@@ -545,18 +569,49 @@ export class RadarView {
       ctx.stroke();
       const name = names[deg];
       if (!name) continue;
-      // 1.0.3: the − / range / + selector sits at 12 o'clock; a cardinal letter
-      // there would peek out behind the pill, so it is left off (the amber
-      // north tick above the ring still marks north).
-      if (Math.abs(angleFromTop(deg - mapUp)) < TOP_PILL_HALF_DEG) continue;
-      const lx = cx + (ringR - 18) * Math.sin(screen);
-      const ly = cy - (ringR - 18) * Math.cos(screen);
+      const lx = cx + letterR * Math.sin(screen);
+      const ly = cy - letterR * Math.cos(screen);
+      const box = { x: lx - halfW, y: ly - halfH, w: halfW * 2, h: halfH * 2 };
+      if (boxesOverlap(box, pill) || boxesOverlap(box, southHud)) continue;
       ctx.strokeStyle = "rgba(0,0,0,0.75)";
       ctx.strokeText(name, lx, ly);
       ctx.fillStyle = deg === 0 ? "#ffcc6a" : scope ? "#d8ffe8" : "#f7fbff";
       ctx.fillText(name, lx, ly);
     }
     ctx.restore();
+  }
+
+  /** Axis-aligned box of HUD elements, in canvas pixels, or null if none are visible. */
+  private elementBox(ids: string[], pad = 4): Box | null {
+    const canvas = this.canvas.getBoundingClientRect();
+    if (canvas.width < 2 || canvas.height < 2) return null;
+    const scaleX = this.w / canvas.width;
+    const scaleY = this.h / canvas.height;
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    let any = false;
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (!el || el.hidden) continue;
+      const style = getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) continue;
+      any = true;
+      left = Math.min(left, rect.left);
+      top = Math.min(top, rect.top);
+      right = Math.max(right, rect.right);
+      bottom = Math.max(bottom, rect.bottom);
+    }
+    if (!any) return null;
+    return {
+      x: (left - canvas.left) * scaleX - pad,
+      y: (top - canvas.top) * scaleY - pad,
+      w: (right - left) * scaleX + pad * 2,
+      h: (bottom - top) * scaleY + pad * 2,
+    };
   }
 
   private drawHome(
@@ -609,8 +664,7 @@ export class RadarView {
       selected: boolean;
       emergency: boolean;
       distNm: number;
-      line1: string;
-      line2: string;
+      ident: string;
       stale: boolean;
     };
     const drafts: LabelDraft[] = [];
@@ -632,16 +686,14 @@ export class RadarView {
         continue;
       }
       if (distPx > ringR) continue;
-      this.spots.push({ id: aircraft.id, x: screen.x, y: screen.y });
       const selected = aircraft.id === scene.selectedId;
       const stale = (aircraft.seenSec ?? 0) > 25;
-      const line1 = aircraft.callsign;
-      // Altitude always in the block ("3,400", "FL340", "GND"), with the
-      // climb/descent arrow and ground speed after it. Feet have no "ft".
-      const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);
-      ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
-      const boxW = Math.min(118, Math.max(86, Math.ceil(ctx.measureText(line2).width) + 14));
-      const boxH = 30;
+      // 1.0.13: the map box shows only the tail number (registration, else
+      // callsign, else hex). Flight data lives on the detail card.
+      const ident = mapLabelIdent(aircraft);
+      ctx.font = '600 12px "IBM Plex Sans", sans-serif';
+      const boxW = Math.min(118, Math.max(52, Math.ceil(ctx.measureText(ident).width) + 14));
+      const boxH = 20;
       drafts.push({
         id: aircraft.id,
         x: screen.x,
@@ -651,8 +703,7 @@ export class RadarView {
         selected,
         emergency: Boolean(aircraft.emergency),
         distNm,
-        line1,
-        line2,
+        ident,
         stale,
       });
     }
@@ -683,17 +734,15 @@ export class RadarView {
       ctx.fillStyle = draft.selected ? "rgba(42, 28, 8, 0.92)" : "rgba(6, 10, 14, 0.82)";
       ctx.fill();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = draft.selected ? "#e8a23a" : "rgba(255,255,255,0.14)";
+      ctx.strokeStyle = draft.selected ? "#e8a23a" : draft.emergency ? "#e10600" : "rgba(255,255,255,0.14)";
       ctx.stroke();
       ctx.font = '600 12px "IBM Plex Sans", sans-serif';
       ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillStyle = "#f4f7fb";
-      ctx.fillText(fitText(ctx, draft.line1, box.w - 10), box.x + 6, box.y + 3);
-      ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(fitText(ctx, draft.line2, box.w - 10), box.x + 6, box.y + 16);
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = draft.emergency && !draft.selected ? "#ffd0c8" : "#f4f7fb";
+      ctx.fillText(fitText(ctx, draft.ident, box.w - 10), box.x + 6, box.y + box.h / 2);
       ctx.restore();
+      this.labelHits.push({ id: draft.id, box });
     }
   }
 
@@ -707,7 +756,7 @@ export class RadarView {
     let right = -Infinity;
     let bottom = -Infinity;
     let any = false;
-    for (const id of ["status", "clock", "metar"]) {
+    for (const id of ["status", "clock", "metar", "attrib", "copyright"]) {
       const el = document.getElementById(id);
       if (!el || el.hidden) continue;
       const style = getComputedStyle(el);
@@ -786,6 +835,16 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
   let trimmed = text;
   while (trimmed.length > 1 && ctx.measureText(`${trimmed}…`).width > maxWidth) trimmed = trimmed.slice(0, -1);
   return `${trimmed}…`;
+}
+
+/** Radius of the N/S/E/W labels: just outside the tick ring (ringR+10), inside the safe circle. */
+export function cardinalRadius(ringR: number, safeR: number, fontPx = 14): number {
+  return Math.min(ringR + 20, safeR - fontPx / 2 - 2);
+}
+
+function boxesOverlap(a: Box | null, b: Box | null): boolean {
+  if (!a || !b) return false;
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 /** Half-width, in degrees either side of 12 o'clock, of the top range selector over the compass letters. */

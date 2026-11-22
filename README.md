@@ -34,7 +34,7 @@ python3 -m unittest discover -s server/tests -v
 
 ## What you see
 
-Traffic is centred on a home latitude and longitude. Each aircraft is a planform icon turned to its track, with callsign, altitude and speed. Altitude is colour-coded. A tap (or a row in the traffic list) opens the detail card: identity, altitude, speed, track, vertical speed, distance, bearing, squawk and category. Range rings match the selected range. North is marked. Targets just outside the range sit on the outer ring as ticks.
+Traffic is centred on a home latitude and longitude. Each aircraft is a planform icon turned to its track, with a one-line tail-number box (registration when the feed has it, otherwise the callsign, then the ICAO hex). Altitude is colour-coded on the icon. Helicopter rotors spin while the body keeps its heading. Tap the tail-number box — not the icon — to open the detail card: identity, altitude, speed, track, vertical speed, distance, bearing, squawk and category. A row in the traffic list does the same and still shows the flight data. Range rings match the selected range. North is marked. Targets just outside the range sit on the outer ring as ticks. A small © 2026 Maverick Field Gear line sits at the bottom of the glass, above the south S.
 
 Backgrounds, cycled by **MAP**:
 
@@ -187,6 +187,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | WX | Glass key | Weather overlay on or off |
 | MNU | Glass key | About, radar sweep on or off, reopen the Wi-Fi card. A dot appears beside About when a checked update is waiting. It is not a button |
 | Software updates | Setup page, Software section | Current version, check, release notes, install, and the night auto-update switch. Off by default |
+| Tail-number box | Glass, next to each aircraft | Tap to select and open the detail card. The icon itself is not a hit target. NAV clears the selection. The map stays centred on the home location from Settings |
 | NAV | Glass key | Clear the selection. The map stays centred on the home location from Settings |
 | HDG | Glass key | North-up or track-up |
 | ALT | Glass key | Next altitude filter |
@@ -359,7 +360,9 @@ ssh -t flighttracker@flighttracker.local 'rm -rf /tmp/ftnew && mkdir -p /tmp/ftn
 
 On the Pi the tree lives in `/opt/flight-tracker/releases/<version>` and `/opt/flight-tracker/current` points at one of them. The switch is atomic. The user config stays in `/etc/flight-tracker/config.json`. The new release can run `server/migrate.py` against that file. If the new service does not answer `/api/health` with its own version within about 60 seconds, `current` is pointed back at the previous release, the config copy from before the migration is restored, and the service is started again. The two newest good releases are kept.
 
-The Software section on `http://flighttracker.local/` is the only place to check, read notes, install, or turn on auto-update. Auto-update is off by default. The timer runs at about 03:10. It installs only when auto-update is on, the local hour is between 01:00 and 05:00, and nobody has touched the glass or the setup page in the last 15 minutes. MNU does not check or install. It only shows a dot in About after a check has found a newer signed release.
+The Software section on `http://flighttracker.local/` is the only place to check, read notes, install, or turn on auto-update. Auto-update is off by default. A daily check runs at about 09:00 AM Eastern (with a few minutes of random delay) so the on-screen Update available prompt appears while people are awake. A unit that was off at 9:00 catches up when it next comes on. Background checks 90 seconds after boot and every 6 hours are skipped between 21:00 and 09:00 Eastern, so they do not pop the prompt at night. Manual CHECK FOR UPDATES always runs at once.
+
+Auto-update, when you turn it on, still installs in the quiet hours: the install is booked for the "Install later at" time (default 02:00 AM Eastern) without showing the prompt, and a 03:10 AM Eastern timer will also install if auto-update is on, the local hour is between 01:00 and 05:00, and nobody has touched the glass or the setup page in the last 15 minutes. MNU does not check or install. It only shows a dot in About after a check has found a newer signed release.
 
 ## Flashable Pi image
 

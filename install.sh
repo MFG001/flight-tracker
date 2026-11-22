@@ -240,6 +240,8 @@ printf '{"user": "%s", "previous": "%s", "how": "install.sh"}\n' "$SERVICE_USER"
 sed "s/@USER@/${TARGET_USER}/g" /opt/flight-tracker/current/deploy/flight-tracker-kiosk.service > /etc/systemd/system/flight-tracker-kiosk.service
 install -m 0644 /opt/flight-tracker/current/deploy/flight-tracker-update.service /etc/systemd/system/flight-tracker-update.service
 install -m 0644 /opt/flight-tracker/current/deploy/flight-tracker-update.timer /etc/systemd/system/flight-tracker-update.timer
+install -m 0644 /opt/flight-tracker/current/deploy/flight-tracker-auto-update.service /etc/systemd/system/flight-tracker-auto-update.service
+install -m 0644 /opt/flight-tracker/current/deploy/flight-tracker-auto-update.timer /etc/systemd/system/flight-tracker-auto-update.timer
 install -m 0644 /opt/flight-tracker/current/deploy/flight-tracker-wifi.service /etc/systemd/system/flight-tracker-wifi.service
 
 BOOT=""
@@ -309,6 +311,8 @@ if command -v systemctl >/dev/null 2>&1; then
   systemctl restart flight-tracker-wifi.service || true
   systemctl enable flight-tracker-update.timer || true
   systemctl restart flight-tracker-update.timer || true
+  systemctl enable flight-tracker-auto-update.timer || true
+  systemctl restart flight-tracker-auto-update.timer || true
 else
   echo "systemd is not available; start the server with: python3 /opt/flight-tracker/current/server/flighttracker.py"
 fi

@@ -181,3 +181,15 @@ export function formatOwner(raw: string | null | undefined): string {
   return text.split(" ").map((token, index) => titleOwnerToken(token, index === 0)).join(" ");
 }
 
+
+
+/** Identifier drawn in the on-map label box: registration (adsb.fi `r`) when
+ *  the feed has it, otherwise the callsign, then the ICAO hex. */
+export function mapLabelIdent(aircraft: { registration?: string | null; callsign?: string | null; hex?: string | null; id?: string }): string {
+  const reg = String(aircraft.registration || "").trim();
+  if (reg) return reg;
+  const call = String(aircraft.callsign || "").trim();
+  if (call && call !== "----") return call;
+  const hex = String(aircraft.hex || aircraft.id || "").trim();
+  return hex || "----";
+}

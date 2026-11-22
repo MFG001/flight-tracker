@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly Flight Tracker auto-update
+
+[Timer]
+# Quiet-hours install when auto-update is on. The morning timer only checks
+# (so the prompt can appear at 9:00 AM); this run may install, unattended.
+OnCalendar=*-*-* 03:10:00 America/New_York
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

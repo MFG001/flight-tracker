@@ -661,16 +661,20 @@ console.log(JSON.stringify([
                              "12,500▲ 250", "FL340▼ 466", "GND 12", "5,000"])
 
     def test_radar_draws_altitude_line(self) -> None:
+        # 1.0.13: the map box is identifier-only; altitude stays on the detail card.
         radar = (ROOT / "src/radar.ts").read_text(encoding="utf-8")
-        self.assertIn("const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);", radar)
-        self.assertIn("fillText(fitText(ctx, draft.line2, box.w - 10)", radar)
-        self.assertNotIn("minimal", radar)  # minimalText never hides the data block
+        main = (ROOT / "src/main.ts").read_text(encoding="utf-8")
+        self.assertNotIn("const line2 = dataBlockLine", radar)
+        self.assertIn("mapLabelIdent", radar)
+        self.assertIn('["ALTITUDE", formatAltitude(item.altFt, item.ground, config.units)]', main)
+        self.assertNotIn("minimal", radar)
 
 
 class CompassUnderPillTests(unittest.TestCase):
     def test_no_cardinal_behind_range_pill(self) -> None:
         radar = (ROOT / "src/radar.ts").read_text(encoding="utf-8")
-        self.assertIn("if (Math.abs(angleFromTop(deg - mapUp)) < TOP_PILL_HALF_DEG) continue;", radar)
+        self.assertIn('elementBox(["rangectl"]', radar)
+        self.assertIn("boxesOverlap(box, pill)", radar)
         self.assertIn("export const TOP_PILL_HALF_DEG = 22;", radar)
         block = CSS[CSS.index("#range, .range-step {"):][:300]
         self.assertIn("background: #060b10;", block)

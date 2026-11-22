@@ -383,12 +383,14 @@ class AppScheduleTests(unittest.TestCase):
         self.assertEqual(self.app.scheduler_tick(), "idle")
 
     def test_background_check_is_tokenless_and_waits(self) -> None:
+        # 14:00 UTC is 9:00 AM ET in mid-November, inside the waking window.
+        day = datetime(2026, 11, 21, 14, 0, tzinfo=timezone.utc)
         with mock.patch.object(self.app, "check_updates") as check:
             self.app.started = self.ft.time.monotonic()  # just started
-            self.assertNotEqual(self.app.scheduler_tick(), "checked")
+            self.assertNotEqual(self.app.scheduler_tick(day), "checked")
             self.app.started -= 120
-            self.assertEqual(self.app.scheduler_tick(), "checked")
-            self.assertNotEqual(self.app.scheduler_tick(), "checked")  # next one in 6 h
+            self.assertEqual(self.app.scheduler_tick(day), "checked")
+            self.assertNotEqual(self.app.scheduler_tick(day), "checked")  # next one in 6 h
             check.assert_called_once()
         # 1.0.7: no access key exists any more, and none is needed for the check.
         self.assertFalse(hasattr(self.live, "read_token"))

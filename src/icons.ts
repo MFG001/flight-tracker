@@ -35,6 +35,15 @@ const MAVERICK_SCALE = 28 / 92;
 
 /** Helicopter icons are drawn 22% larger than the other kinds, in every set. */
 export const ROTOR_ICON_SCALE = 1.22;
+/** Airborne main-rotor rate, revolutions per second. */
+export const ROTOR_RPS_AIR = 1;
+/** Grounded helicopters keep a slow idle spin so the rotor still reads as a rotor. */
+export const ROTOR_RPS_GROUND = 0.25;
+
+export function rotorAngle(nowMs: number, ground: boolean): number {
+  const rps = ground ? ROTOR_RPS_GROUND : ROTOR_RPS_AIR;
+  return ((nowMs / 1000) * rps * Math.PI * 2) % (Math.PI * 2);
+}
 
 export function iconSetId(value: string | null | undefined): IconSetId {
   if (value === "silhouette") return "linecut";
@@ -46,7 +55,7 @@ export function paintAircraftIcon(
   ctx: CanvasRenderingContext2D,
   kind: AircraftKind,
   set: IconSetId,
-  options: { fill: string; military: boolean; emergency: boolean; mark?: MaverickMark },
+  options: { fill: string; military: boolean; emergency: boolean; mark?: MaverickMark; rotorRad?: number },
 ): void {
   const dark = "rgba(10, 16, 22, 0.94)";
   const accent = options.emergency ? "#e10600" : options.military ? "#14944A" : dark;
@@ -72,12 +81,9 @@ export function paintAircraftIcon(
     ctx.strokeStyle = accent;
     ctx.stroke();
   }
-  if (set === "maverick" && mark === "rotor") {
-    ctx.beginPath();
-    drawDetail(ctx, "linecut", "rotor");
-    ctx.lineWidth = 1.15;
-    ctx.strokeStyle = accent;
-    ctx.stroke();
+  if (kind === "rotor" || mark === "rotor") {
+    const style = set === "compact" ? "compact" : set === "classic" ? "classic" : "linecut";
+    paintRotorBlades(ctx, style, options.rotorRad ?? 0, accent, dark);
   } else if (set !== "classic" && set !== "maverick") {
     ctx.beginPath();
     drawDetail(ctx, set, kind);
@@ -163,10 +169,6 @@ function traceMaverickPath(ctx: CanvasRenderingContext2D, d: string): void {
 function drawClassic(ctx: CanvasRenderingContext2D, kind: AircraftKind): void {
   if (kind === "rotor") {
     ctx.ellipse(0, 1, 3.2, 6.5, 0, 0, Math.PI * 2);
-    ctx.moveTo(-11, -1);
-    ctx.lineTo(11, -1);
-    ctx.moveTo(0, -8);
-    ctx.lineTo(0, 9);
     return;
   }
   if (kind === "uav") {
@@ -386,17 +388,6 @@ function drawDetail(ctx: CanvasRenderingContext2D, set: IconSetId, kind: Aircraf
     ctx.arc(0, -9.6, 3.1, 0, Math.PI * 2);
     return;
   }
-  if (kind === "rotor") {
-    const y = set === "compact" ? -1.6 : -2.4;
-    const r = set === "compact" ? 9.2 : 11;
-    ctx.moveTo(r, y);
-    ctx.arc(0, y, r, 0, Math.PI * 2);
-    ctx.moveTo(-r + 1, y);
-    ctx.lineTo(r - 1, y);
-    ctx.moveTo(0, y - r + 1);
-    ctx.lineTo(0, y + r - 1);
-    return;
-  }
   if (kind === "uav") {
     const arms = set === "compact"
       ? ([[-5.6, -5.6], [5.6, -5.6], [-5.6, 5.6], [5.6, 5.6]] as const)
@@ -406,4 +397,47 @@ function drawDetail(ctx: CanvasRenderingContext2D, set: IconSetId, kind: Aircraf
       ctx.lineTo(x, y);
     }
   }
+}
+
+/** Main rotor disc (static) and blades (rotated around the hub). Classic has
+ *  no disc, only the cross. The hub is slightly forward of the icon origin. */
+function paintRotorBlades(
+  ctx: CanvasRenderingContext2D,
+  style: "classic" | "compact" | "linecut",
+  angle: number,
+  accent: string,
+  dark: string,
+): void {
+  const y = style === "classic" ? -1 : style === "compact" ? -1.6 : -2.4;
+  const r = style === "compact" ? 9.2 : 11;
+  if (style !== "classic") {
+    ctx.beginPath();
+    ctx.arc(0, y, r, 0, Math.PI * 2);
+    ctx.lineWidth = 1.15;
+    ctx.strokeStyle = accent;
+    ctx.stroke();
+  }
+  ctx.save();
+  ctx.translate(0, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(-r + 1, 0);
+  ctx.lineTo(r - 1, 0);
+  ctx.moveTo(0, -r + 1);
+  ctx.lineTo(0, r - 1);
+  if (style === "classic") {
+    ctx.lineWidth = 1.35;
+    ctx.strokeStyle = dark;
+    ctx.stroke();
+    if (accent !== dark) {
+      ctx.lineWidth = 2.15;
+      ctx.strokeStyle = accent;
+      ctx.stroke();
+    }
+  } else {
+    ctx.lineWidth = 1.15;
+    ctx.strokeStyle = accent;
+    ctx.stroke();
+  }
+  ctx.restore();
 }

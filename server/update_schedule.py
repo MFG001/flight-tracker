@@ -42,6 +42,11 @@ ZONE_SHORT = {
 CHECK_EVERY_SEC = 6 * 3600
 FIRST_CHECK_AFTER_SEC = 90
 PROMPT_TIMEOUT_SEC = 300
+# In-process background checks (boot+90s and every 6 h) may show the
+# on-glass prompt, so they only run during waking hours in laterTz.
+# The systemd timer does the daily 09:00 check. Manual CHECK NOW is always allowed.
+PROMPT_CHECK_START_HOUR = 9
+PROMPT_CHECK_END_HOUR = 21
 HHMM = re.compile(r"^([01][0-9]|2[0-3]):([0-5][0-9])$")
 
 
@@ -76,6 +81,16 @@ def zone_short(name: Any, when: datetime | None = None) -> str:
     if key in ZONE_SHORT:
         return ZONE_SHORT[key]
     return (when or datetime.now(zone(key))).astimezone(zone(key)).tzname() or key
+
+
+
+def prompt_check_open(now: datetime | None = None, zone_name: str = DEFAULT_LATER_TZ) -> bool:
+    """True when a background check may show the Update available prompt."""
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    hour = current.astimezone(zone(zone_name)).hour
+    return PROMPT_CHECK_START_HOUR <= hour < PROMPT_CHECK_END_HOUR
 
 
 def next_occurrence(later_at: str, now: datetime, tz: tzinfo | None = None) -> datetime:

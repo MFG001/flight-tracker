@@ -1,10 +1,12 @@
 [Unit]
-Description=Nightly Flight Tracker update check
+Description=Morning Flight Tracker update check
 
 [Timer]
-OnCalendar=*-*-* 03:10:00
+# 9:00 AM Eastern, same zone as the "Install later at" time, so a Pi still
+# on UTC fires when people are awake (not 09:00 UTC / 4:00 AM ET).
+OnCalendar=*-*-* 09:00:00 America/New_York
 Persistent=true
-RandomizedDelaySec=20min
+RandomizedDelaySec=5min
 
 [Install]
 WantedBy=timers.target

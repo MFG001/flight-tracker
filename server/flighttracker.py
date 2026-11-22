@@ -44,7 +44,7 @@ from logic import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.12 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.13 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -388,16 +388,20 @@ class App:
 
     def scheduler_tick(self, now: datetime | None = None) -> str:
         """One pass of the background update loop. Returns what it did (for tests and the log)."""
-        from update_schedule import CHECK_EVERY_SEC, FIRST_CHECK_AFTER_SEC, read_schedule, write_schedule
+        from update_schedule import CHECK_EVERY_SEC, FIRST_CHECK_AFTER_SEC, prompt_check_open, read_schedule, write_schedule
 
         now = now or datetime.now(timezone.utc)
         mono = time.monotonic()
         if self.installing_now():
             return "installing"
         # 1. Background check: soon after start, then every 6 hours (anonymous, no key needed).
+        # 1.0.13: skip during the night so the Update available prompt is not
+        # shown while everyone is asleep. The systemd timer checks at 09:00.
         last = getattr(self, "_bg_checked_at", None)
         due = (mono - self.started >= FIRST_CHECK_AFTER_SEC) if last is None else (mono - last >= CHECK_EVERY_SEC)
         if due:
+            if not prompt_check_open(now, self._later_tz()):
+                return "deferred"
             self._bg_checked_at = mono
             self.check_updates()
             return "checked"

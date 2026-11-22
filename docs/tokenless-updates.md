@@ -6,7 +6,7 @@
 - Device checks `https://github.com/<repo>/releases/latest/download/manifest.json` anonymously.
   github.com 302s to `release-assets.githubusercontent.com`; this is not the REST API, so the
   60/hour/IP anonymous API limit does not apply. Checks: 90 s after boot, then every 6 h, plus the
-  03:10 nightly run and manual CHECK NOW (about 5/day/unit).
+  09:00 AM Eastern daily check, a 03:10 AM Eastern auto-install run when auto-update is on, and manual CHECK NOW.
 - Hosts allowed (HTTPS:443 only, no credentials, every redirect checked): github.com,
   release-assets.githubusercontent.com, objects.githubusercontent.com. Tarball URL must be under
   `github.com/<pinned repo>/releases/download/v…`. No Authorization header is ever sent.

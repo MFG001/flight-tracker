@@ -58,6 +58,7 @@ declare global {
     __ftReady?: boolean;
     __wifiReady?: boolean;
     __splashReady?: boolean;
+    __ftLabelHits?: () => { id: string; box: { x: number; y: number; w: number; h: number } }[];
   }
 }
 
@@ -72,6 +73,7 @@ if (kiosk) {
 const screen = document.querySelector<HTMLElement>("#screen")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#radar")!;
 const radar = new RadarView(canvas);
+window.__ftLabelHits = () => radar.labelHits;
 const statusEl = document.querySelector<HTMLElement>("#status")!;
 const clockEl = document.querySelector<HTMLElement>("#clock")!;
 const rangeBtn = document.querySelector<HTMLElement>("#range")!;
@@ -193,7 +195,7 @@ function $(id: string): HTMLInputElement {
  * 1.0.3: no tap keys on the glass. The eight edge tabs (BRT, MAP, TFC, WX,
  * MNU, ALT, NAV, HDG) are gone so the rim of the dial is clean; their
  * settings live on the setup page at flighttracker.local. What stays on the
- * glass: tap an aircraft for its details, the range − / + buttons, and a
+ * glass: tap the tail-number box for its details (not the icon), the range − / + buttons, and a
  * 2-second press on the clock / status line (or the standby clock) for the
  * About menu (Wi-Fi QR, touch test, traffic list). The map stays locked on
  * the home location from Settings; drag, swipe, pinch-pan, and double-tap

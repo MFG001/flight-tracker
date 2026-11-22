@@ -42,7 +42,10 @@ class BlockAltitudeTests(unittest.TestCase):
         self.assertNotIn('} ft`;', fmt)
         self.assertIn('return `${Math.round(ft).toLocaleString("en-US")} FT`;', fmt)
         self.assertIn('["ALTITUDE", formatAltitude(item.altFt, item.ground, config.units)]', main)
-        self.assertIn("const line2 = dataBlockLine(aircraft.altFt, aircraft.ground, aircraft.vsFpm, aircraft.gsKt, scene.units);", radar)
+        # 1.0.13: map labels no longer draw a data block; the formatter remains for tests / reuse.
+        self.assertNotIn("const line2 = dataBlockLine", radar)
+        self.assertIn("mapLabelIdent", radar)
+        self.assertIn("export function dataBlockLine", fmt)
         data = run_ts("""
 import { blockAltitude, dataBlockLine, formatAltitude, listAltitude } from "./src/format.ts";
 console.log(JSON.stringify([

@@ -216,6 +216,21 @@ body.kiosk #attrib {
 }
 #screen.bright #attrib { color: rgba(16, 20, 24, 0.55); }
 
+/* 1.0.13: small copyright under the map credit, above the south S. */
+#copyright {
+  pointer-events: none;
+  max-width: 100%;
+  color: rgba(214, 222, 230, 0.62);
+  background: none;
+  padding: 1px 0 0;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+}
+#screen.bright #copyright { color: rgba(16, 20, 24, 0.62); }
+
 #toast {
   top: 36%;
   left: 50%;
