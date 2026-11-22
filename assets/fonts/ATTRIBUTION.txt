@@ -1,0 +1,8 @@
+Fonts bundled with this site, under the SIL Open Font License 1.1
+(https://scripts.sil.org/OFL):
+
+  Chakra Petch — Cadson Demak
+  IBM Plex Sans and IBM Plex Mono — IBM Corp.
+
+Reserved font names are as stated by each foundry. These files were
+subset for the Flight Tracker site; the license is unchanged.

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070809">
+  <meta name="description" content="Flight Tracker by Maverick Field Gear: a free DIY cockpit-style ADS-B display for a Raspberry Pi 4 and a 4-inch round 720×720 screen. Purpose-built. Field-proven.">
+  <title>Flight Tracker — Maverick Field Gear</title>
+  <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <a class="brand" href="#top">
+      <img src="assets/logo_full_color.png" width="48" height="48" alt="">
+      <span>
+        <b>Maverick Field Gear</b>
+        <i>Purpose-built. Field-proven.</i>
+      </span>
+    </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle">
+    <label for="nav-toggle" class="nav-btn">
+      <span class="nav-btn-bars" aria-hidden="true"></span>
+      <span class="sr-only">Menu</span>
+    </label>
+    <nav aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="build.html">Build guide</a>
+      <a href="https://makerworld.com/en/models/3666834-flight-tracker-instrument-case">Print on MakerWorld</a>
+      <a href="https://github.com/MFG001/flight-tracker/releases/latest">Latest release</a>
+      <a href="LICENSE">License</a>
+      <a href="https://github.com/MFG001/flight-tracker">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="kicker">Free DIY kit <span>//</span> MFG001 / flight-tracker</p>
+        <h1>A cockpit instrument for your desk.</h1>
+        <p class="lede">Flight Tracker is a round, 720×720 ADS-B scope for a Raspberry Pi 4 and a Waveshare 4-inch DSI touch panel. Live traffic sits inside the glass, with range rings, weather, and the eight bezel actions printed on the case.</p>
+        <p class="tag">Purpose-built. Field-proven.</p>
+        <div class="cta">
+          <a class="btn primary" href="https://makerworld.com/en/models/3666834-flight-tracker-instrument-case">Print on MakerWorld</a>
+          <a class="btn ghost" href="https://github.com/MFG001/flight-tracker/releases/latest">Download latest release</a>
+          <a class="btn ghost" href="build.html">Build guide</a>
+          <a class="btn ghost" href="LICENSE">License</a>
+        </div>
+        <p class="fine">Free on GitHub and MakerWorld. Not sold. New units open on KJFK until you set a home airport.</p>
+      </div>
+      <div class="hero-viz">
+        <div class="rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <img class="scope" src="assets/map-scope.png" width="900" height="900" alt="Flight Tracker radar scope centered on KJFK at 20 nautical miles, with demo traffic and an emergency squawk shown in red.">
+        <figure class="case-cut">
+          <img src="assets/case-front.png" width="1029" height="1015" alt="Compact printed instrument case with a 140 mm square bezel, eight labeled keys, brightness knob, and a tilted desk foot.">
+        </figure>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <header>
+        <p class="kicker">01 — Capabilities</p>
+        <h2>What the glass shows.</h2>
+      </header>
+      <ol class="feat-list">
+        <li>
+          <span class="code">01</span>
+          <div>
+            <h3>Live aircraft radar</h3>
+            <p>Planform icons, colour-coded altitude, callsign, speed, and range rings. Select 10, 20, 30, 40, 50, 75, or 100 NM — 100 NM is the maximum. Tap a target for identity, track, vertical speed, distance, and squawk. Traffic can come from the public adsb.fi feed, or from your own readsb or dump1090 receiver.</p>
+          </div>
+        </li>
+        <li>
+          <span class="code">02</span>
+          <div>
+            <h3>Weather radar</h3>
+            <p>A precipitation overlay, animated from RainViewer, with a NEXRAD composite fallback. The nearest METAR sits on the glass. Opacity is set on the setup page; the WX key turns the overlay on or off.</p>
+          </div>
+        </li>
+        <li>
+          <span class="code">03</span>
+          <div>
+            <h3>Emergency alerts</h3>
+            <p>A squawk of 7500, 7600, or 7700, or an emergency flag from the receiver, flashes the icon red. An optional chime can be armed on the setup page. Only an emergency holds off a waiting software-update prompt.</p>
+          </div>
+        </li>
+        <li>
+          <span class="code">04</span>
+          <div>
+            <h3>Signed, tokenless updates</h3>
+            <p>When a new signed release is ready, the round screen offers <strong>UPDATE NOW</strong> or <strong>LATER</strong>. Later (or no answer within two minutes) books the install for the time you set on the Software card — 2:00 AM Eastern by default. Automatic night installs are off until you turn them on. Releases are signed with Ed25519 and published on the public GitHub repo, with no API token. A failed health check rolls the previous version back.</p>
+          </div>
+        </li>
+        <li>
+          <span class="code">05</span>
+          <div>
+            <h3>Five map styles</h3>
+            <p>Dark canvas, street map, satellite, FAA VFR sectional, and a drawn radar scope. Cycle them with the MAP key. North-up or track-up, altitude filters, and range all live on the bezel.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="maps" class="maps">
+      <header>
+        <p class="kicker">02 — Map styles</p>
+        <h2>One key, five charts.</h2>
+        <p>Rendered from the built-in demo, home at KJFK, 20 NM.</p>
+      </header>
+      <ul class="map-grid">
+        <li>
+          <img src="assets/map-dark-thumb.png" width="420" height="420" alt="Dark map style over New York, with demo traffic around KJFK.">
+          <span>Dark</span>
+        </li>
+        <li>
+          <img src="assets/map-light-wx-thumb.png" width="420" height="420" alt="Light street map style with weather overlay around KJFK.">
+          <span>Light + WX</span>
+        </li>
+        <li>
+          <img src="assets/map-satellite-thumb.png" width="420" height="420" alt="Satellite imagery style centered on KJFK.">
+          <span>Satellite</span>
+        </li>
+        <li>
+          <img src="assets/map-sectional-thumb.png" width="420" height="420" alt="FAA VFR sectional chart style centered on KJFK.">
+          <span>Sectional</span>
+        </li>
+        <li>
+          <img src="assets/map-scope-thumb.png" width="420" height="420" alt="Drawn radar-scope style with range rings and demo traffic.">
+          <span>Scope</span>
+        </li>
+      </ul>
+    </section>
+
+    <section id="kit" class="kit">
+      <header>
+        <p class="kicker">03 — What you need</p>
+        <h2>A printed case and a short parts list.</h2>
+        <p>The compact B case is a 140 mm square instrument, 140 × 154.7 × 100.3 mm, printed on a Bambu H2S in PLA Matte. No supports. About 5 hours 56 minutes and 224 g for the set (Set A + Set B).</p>
+      </header>
+      <div class="kit-grid">
+        <div>
+          <h3>Print</h3>
+          <ul>
+            <li>Set A: thin faceplate and BRT knob — black with grey legend inlays. Print files: <a href="https://makerworld.com/en/models/3666834-flight-tracker-instrument-case">MakerWorld listing</a></li>
+            <li>Set B: can + foot, and four original dome caps — Dark Gull Gray</li>
+            <li>Sliced for a Bambu H2S, supports off. Also prints on a Bambu A1; re-slice the models</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Electronics</h3>
+          <ul>
+            <li>Raspberry Pi 4</li>
+            <li>Waveshare 4inch DSI LCD (C), 720 × 720 capacitive touch</li>
+            <li>USB-C power supply suitable for a Raspberry Pi 4, and a microSD card</li>
+            <li>Raspberry Pi OS Bookworm or Trixie, with a desktop</li>
+            <li>USB-C cable, straight plug, 15–20 mm body</li>
+            <li>Cooling fan and heatsink on the Pi (Waveshare PI4-FAN-PWM, 17 mm stack, verified on the built unit)</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Fasteners</h3>
+          <ul>
+            <li>4 × CNC Kitchen M2.5×4 heat-set inserts</li>
+            <li>4 × M2.5×8 socket-head screws, ISO 4762</li>
+            <li>3 × M4×8 button-head screws, into the display’s own bosses</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Tools</h3>
+          <ul>
+            <li>Soldering iron for the heat-set inserts, 10–20 °C above print temperature</li>
+            <li>Hex key with about 30 mm of reach, for the rear M4s</li>
+            <li>Hex driver or key for M2.5 ISO 4762 socket-head screws</li>
+          </ul>
+        </div>
+      </div>
+      <p class="fine kit-note">No receiver is required. The default feed is adsb.fi over the internet, for personal, non-commercial use. Point the setup page at your own readsb or dump1090 <code>aircraft.json</code> when you have one. Rear depth is designed for a 17 mm Waveshare PI4-FAN-PWM fan heatsink; that stack fits and works on the built unit.</p>
+    </section>
+
+    <section id="build" class="build">
+      <header>
+        <p class="kicker">04 — Build</p>
+        <h2>Print, stack, install, fly.</h2>
+      </header>
+      <figure class="exploded">
+        <img src="assets/case-exploded-wide.png" width="2200" height="1285" alt="Exploded view of the compact case: faceplate, knob, caps, round display, and one-piece can with foot.">
+        <figcaption>Compact B assembly. The display, Pi, and fan stack front-load into the can.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li><span><strong>Print.</strong> Run Set A (thin faceplate and knob, black) and Set B (can, foot, and four dome caps, Dark Gull Gray). No supports.</span></li>
+        <li><span><strong>Inserts.</strong> Press the four M2.5×4 heat-set inserts into the front corners of the can.</span></li>
+        <li><span><strong>Cable.</strong> Thread the USB-C cable through the rear exit from the outside, then plug it into the Pi.</span></li>
+        <li><span><strong>Stack.</strong> Front-load the display, Pi, and fan. Fit the three M4s from the rear.</span></li>
+        <li><span><strong>Bezel.</strong> Fit the faceplate with four M2.5×8 screws, press on the original dome caps, and snap in the knob.</span></li>
+        <li><span><strong>Software.</strong> Flash Raspberry Pi OS (hostname and user <code>flighttracker</code>), then install <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13">v1.0.13</a> with <code>deploy/push-update.sh</code>. Full commands are in the <a href="build.html">build guide</a>.</span></li>
+        <li><span><strong>First boot.</strong> Scan the on-screen QR to join Wi-Fi. The scope opens on KJFK until you set your own location on the setup page at <code>flighttracker.local</code>.</span></li>
+      </ol>
+      <p class="fine kit-note">The illustrated, step-by-step guide — including a one-page assembly sheet — is in the <a href="build.html">build guide</a>.</p>
+      <div class="pair">
+        <figure>
+          <img src="assets/case-rear.png" width="937" height="935" alt="Rear of the case, showing the fan grille, three M4 access ports, side vents, and a straight USB-C cable leaving the rear exit.">
+          <figcaption>Rear grille, M4 ports, and a straight cable exit.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/setup-config.png" width="1696" height="848" alt="Setup page location card set to KJFK, John F. Kennedy International Airport, and a receiver host field showing receiver.local.">
+          <figcaption>Setup page. New units default to KJFK.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="install" class="install">
+      <header>
+        <p class="kicker">05 — Install</p>
+        <h2>Flash, connect, run the installer.</h2>
+      </header>
+      <ol class="steps">
+        <li><span>Flash <strong>Raspberry Pi OS Bookworm or Trixie</strong> with a desktop in Raspberry Pi Imager. Set the hostname and username to <code>flighttracker</code>, configure Wi-Fi if you wish, and turn SSH on.</span></li>
+        <li><span>From a Mac or Linux computer on the same network, download the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13">v1.0.13</a> release tarball and run <code>deploy/push-update.sh</code>. The commands are in the <a href="build.html">build guide</a>.</span></li>
+        <li><span>Reboot. The hostname is <code>flighttracker</code>. The setup page answers at <code>flighttracker.local</code>.</span></li>
+        <li><span>If no Wi-Fi is saved, the display shows a QR code for a setup network. Join it, then save your own network. The scope opens centred on KJFK until you set a home airport.</span></li>
+      </ol>
+      <p class="fine kit-note">The installer writes the display overlay for a Pi 4, starts the local server and the fullscreen kiosk, and leaves settings in <code>/etc/flight-tracker/config.json</code>. Full hardware notes and the control map are in the repository README.</p>
+    </section>
+
+    <section id="updates" class="updates">
+      <header>
+        <p class="kicker">06 — Updates</p>
+        <h2>Signed on GitHub. No token on the Pi.</h2>
+      </header>
+      <div class="prose">
+        <p>Each release is an Ed25519-signed manifest and a checksummed archive, published on the public <a href="https://github.com/MFG001/flight-tracker">MFG001/flight-tracker</a> repo. The unit fetches the latest manifest over HTTPS, with no API token and no credentials. It refuses older or equal versions, mismatched signatures, and downloads that are not from approved GitHub hosts.</p>
+        <p>A daily check runs at about 09:00 AM Eastern, so the on-screen prompt appears while people are awake. <strong>CHECK FOR UPDATES</strong> on the Software card always runs at once. When an update is ready, the round screen asks <strong>UPDATE NOW</strong> or <strong>LATER</strong>. Later, or no answer within two minutes, books the install for the next “Install later at” time (2:00 AM Eastern by default). Automatic night installs are off until you turn them on. Only an emergency alert holds off the prompt. After install, a health check runs; if it fails, the previous version is restored.</p>
+      </div>
+    </section>
+
+    <section class="get">
+      <header>
+        <p class="kicker">07 — Get the kit</p>
+        <h2>Software on GitHub. Case on MakerWorld.</h2>
+      </header>
+      <div class="get-grid">
+        <a class="get-card" href="https://github.com/MFG001/flight-tracker">
+          <p class="kicker">Install</p>
+          <h3>GitHub</h3>
+          <p>Source, installer, and signed releases for MFG001/flight-tracker.</p>
+          <span class="link">github.com/MFG001/flight-tracker</span>
+        </a>
+        <a class="get-card" id="makerworld" href="https://makerworld.com/en/models/3666834-flight-tracker-instrument-case">
+          <p class="kicker">Print files</p>
+          <h3>MakerWorld</h3>
+          <p>Compact B plates for the Bambu H2S, including the thin faceplate and original dome caps. Open the MakerWorld listing for the model.</p>
+          <span class="link">Print on MakerWorld</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="foot-brand">
+      <img src="assets/logo_full_color.png" width="56" height="56" alt="">
+      <div>
+        <b>Maverick Field Gear</b>
+        <p>Purpose-built. Field-proven.</p>
+      </div>
+    </div>
+    <p>Flight Tracker is a free DIY kit. It is not sold. Demo screenshots use bundled sample tracks around KJFK.</p>
+    <p>Software is licensed under the <a href="LICENSE">Maverick Field Gear Flight Tracker License</a>: free to install and run on a personal build, for non-commercial use. No modification, no selling. Case print files are <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC BY-NC-ND 4.0</a>. Copyright 2026 Maverick Field Gear.</p>
+    <p class="credits">Maps: Esri, OpenStreetMap contributors, and the GIS user community. Sectional: FAA Aeronautical Information Services. Weather: RainViewer and the Iowa Environmental Mesonet. METAR: Aviation Weather Center, NOAA/NWS. Live aircraft: adsb.fi open data, or your own receiver.</p>
+    <p class="links">
+      <a href="https://github.com/MFG001/flight-tracker">GitHub</a>
+      <a href="https://makerworld.com/en/models/3666834-flight-tracker-instrument-case">MakerWorld</a>
+      <a href="#top">Back to top</a>
+    </p>
+  </footer>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById('nav-toggle');
+      if (!toggle) return;
+      document.querySelectorAll('.nav nav a').forEach(function (link) {
+        link.addEventListener('click', function () { toggle.checked = false; });
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') toggle.checked = false;
+      });
+    })();
+  </script>
+</body>
+</html>
