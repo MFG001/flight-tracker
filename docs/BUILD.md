@@ -27,7 +27,7 @@ A one-page letter assembly sheet, with the hardware photographs, a parts list, a
 
 ## 1. Parts and hardware
 
-Finished size, from the model: **140 × 154.7 × 100.3 mm** (about 140 × 155 × 100 mm). The case is printed as two sets on a Bambu H2S. No supports.
+Finished size is about **140 × 155 × 100 mm**. The files are sliced for a Bambu H2S, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
 
 ![Kit layout: faceplate, knob, screws, gray dome plugs, can, and the Pi mounted on the display](build/photo-kit-layout.jpg)
 
@@ -41,7 +41,7 @@ The faceplate, knob, four original gray ribbed dome plugs, screws, can, and the 
 | Set B: can + foot, and four original dome caps | Dark Gull Gray `#545C61` | `FlightTracker_SetB_can_caps_gray_H2S.gcode.3mf` |
 | Optional insert-fit coupon | Gray | `FlightTracker_compactB_H2S_insert_coupon.gcode.3mf` |
 
-Set A is the thin faceplate and the knob. Set B is the can and foot, plus the four original ribbed dome caps (`caps_fit_v2`, Ø12 × 5.51, with a hex dimple) in Dark Gull Gray, matching the photographs. These are the original dome caps, not the later flush (flat) plugs.
+Set A is the thin faceplate and the knob. Set B is the can and foot, plus the four original ribbed dome caps in Dark Gull Gray. These are the original dome caps, not the later flush (flat) plugs.
 
 ![Printed parts laid out: faceplate, knob, four gray dome plugs, and the can with inserts](build/01-printed-parts.jpg)
 
@@ -57,9 +57,9 @@ The thin 140 mm faceplate, printed face-down, with MAP / TFC / WX / MNU along th
 | --- | --- | --- |
 | 1 | Raspberry Pi 4 | The installer default is a Pi 4 |
 | 1 | Waveshare **4inch DSI LCD (C)**, 720 × 720 capacitive touch | Confirm the model on the board. This is not the 4-DSI-TOUCH-C, which needs a different overlay |
-| 1 | USB-C power supply suitable for a Raspberry Pi 4, and a microSD card | Raspberry Pi OS Bookworm or Trixie, with a desktop. An “official” supply is not specified in the design files |
+| 1 | USB-C power supply suitable for a Raspberry Pi 4, and a microSD card | Raspberry Pi OS Bookworm or Trixie, with a desktop |
 | 1 | USB-C cable, **straight** plug | 15–20 mm body, cable no thicker than about Ø4.8 mm. No 90° adapter is needed |
-| 1 | Cooling fan and heatsink on the Pi | Waveshare PI4-FAN-PWM (Armor-lite + 3510 fan). The case is designed around a **17 mm** stack plus a 6 mm intake gap. **Verified** on the built unit: this stack fits and works |
+| 1 | Cooling fan and heatsink on the Pi | Waveshare PI4-FAN-PWM. The 17 mm stack fits and works on the built unit |
 
 The Pi screws into the display kit’s own standoffs.
 
@@ -67,35 +67,32 @@ The Pi screws into the display kit’s own standoffs.
 
 | Qty | Part | Where |
 | --- | --- | --- |
-| 4 | CNC Kitchen M2.5×4 heat-set inserts (TC-M2.5x4.0) | Front corners of the can, at (±61.5, ±61.5) |
+| 4 | CNC Kitchen M2.5×4 heat-set inserts (TC-M2.5x4.0) | Front corners of the can |
 | 4 | M2.5×8 socket-head screws, ISO 4762, no washer | Faceplate to the can, under the corner plugs |
-| 3 | M4×8 button-head screws, into the display’s own bosses | From the rear, through the three Ø12.1 ports (Ø4.5 through the pad). Clearance is for an ISO 7380 button head. The lower-left display mount is omitted on this case. **Verified** on the built unit: 3 × M4×8 |
+| 3 | M4×8 button-head screws, into the display’s own bosses | From the rear. The lower-left display mount is omitted. Verified on the built unit: 3 × M4×8 |
 
 No washers, and no nameplate screws.
 
 ## 2. Printing
 
-Printer and settings, taken from the sliced H2S delivery files:
+The MakerWorld files are sliced for a Bambu H2S, PLA, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
 
 - Bambu H2S, 0.4 mm nozzle, textured PEI
 - PLA Matte, 220 °C nozzle / 55 °C bed
-- 0.20 mm layers, 3 walls, 20 % gyroid, Arachne, outer brim
 - **Supports off**
 
-| Set | Time | Filament | Layers | Supports |
-| --- | --- | --- | --- | --- |
-| Set A, thin faceplate + knob in black (AMS) | **1 h 18 m 51 s** | **43.08 g** (42.39 g black + 0.68 g grey) | 70 | 0 |
-| Set B, can + foot + 4 dome caps in Dark Gull Gray `#545C61` | **4 h 37 m 32 s** | **181.13 g** | 748 | 0 |
-| Optional insert-fit coupon | 11 m 9 s | 5.53 g | 68 | 0 |
-| **Set total** (A + B) | **5 h 56 m 23 s** | **224.21 g** |  |  |
+| Set | Time | Filament |
+| --- | --- | --- |
+| Set A, thin faceplate + knob in black (AMS) | **1 h 18 m 51 s** | **43.08 g** (42.39 g black + 0.68 g grey) |
+| Set B, can + foot + 4 dome caps in Dark Gull Gray | **4 h 37 m 32 s** | **181.13 g** |
+| Optional insert-fit coupon | 11 m 9 s | 5.53 g |
+| **Set total** (A + B) | **5 h 56 m 23 s** | **224.21 g** |
 
-Times are slicer predictions. The coupon is extra and is not part of the set total. Print the `.gcode.3mf` delivery file for each set. The matching `.3mf` is the editable project.
+Times are slicer predictions for the H2S profile. The coupon is extra. Print the `.gcode.3mf` for each set, or re-slice the models for an A1. The faceplate prints face-down. Peel the brim. There are no supports to remove.
 
-The faceplate prints face-down (front on the PEI). The knob uses a per-object 100 % zig-zag infill override on Set A. Peel the brim off the can, the faceplate, the caps, and the knob. There are no supports to remove. Check the top-vent keels inside the can for strings. The interior, with the four heat-set inserts in place, is shown in the next step.
+![Rear of the can, three M4 ports, grille, and desk foot](build/photo-can-rear.jpg)
 
-![Rear of the can, three teardrop M4 ports, grille, and desk foot](build/photo-can-rear.jpg)
-
-The rear: three teardrop M4 ports, the fan grille, and the wedge foot.
+The rear: three M4 ports, the fan grille, and the wedge foot.
 
 ## 3. Heat-set inserts
 
@@ -103,9 +100,7 @@ Press the four CNC Kitchen M2.5×4 inserts into the front corners of the can bef
 
 ![Can interior with four brass heat-set inserts visible at the front corners](build/photo-can-interior.jpg)
 
-The four brass inserts, set flush with the column faces at the front corners. This photograph is shown in full, so all four corners stay in frame.
-
-The v2 can models the holes at **Ø3.6 × 8.05**, with a teardrop roof, tighter than the datasheet’s Ø4.0 hole. On the earlier Ø4.0 holes the inserts could push in almost without heat. These should need heat.
+The four brass inserts, set flush at the front corners. These should need heat.
 
 1. Stand the can on its foot with the front face up and level, or prop it so the front face is level.
 2. Use a soldering iron at 10–20 °C above print temperature (CNC Kitchen guidance).
@@ -113,7 +108,7 @@ The v2 can models the holes at **Ø3.6 × 8.05**, with a teardrop roof, tighter 
 4. Set each insert flush with the column face, and square to it.
 5. Let the inserts cool before you load the electronics.
 
-An optional coupon with three holes (Ø3.4 / 3.6 / 3.8, same 20° teardrop orientation as the can) can be printed first, in about 11 minutes, if you want to confirm the fit. If a hole still feels loose or too tight, use the coupon to choose among those sizes.
+Print the optional coupon first if you want to confirm the insert fit.
 
 ## 4. Mounting the Pi, fan, and display
 
@@ -125,27 +120,25 @@ The Pi 4 on the back of the Waveshare 4inch DSI LCD (C), with the fan and heatsi
 
 1. Mount the Pi on the display kit’s own standoffs. Fit the cooling fan and heatsink if you are using one.
 2. Connect the 15-pin DSI FPC between the display and the Pi’s DSI connector, and connect the 4-pin lead for 5 V and I2C, as in the [4inch DSI LCD (C) wiki](https://www.waveshare.com/wiki/4inch_DSI_LCD_(C)). In the photograph the ribbon is looped at the side of the Pi.
-3. **Before** you seat the stack, thread the USB-C cable through the Ø15 rear exit from the **outside**, plug end first. The overmold fits diagonally. Then plug it into the Pi. The cable makes one gentle bend toward the rear exit.
+3. **Before** you seat the stack, thread the USB-C cable through the rear exit from the **outside**, plug end first. Then plug it into the Pi.
 4. Confirm the board is **4inch DSI LCD (C)**. A Pi 4 has one 15-pin DSI connector.
 
-Display orientation in this case: USB-C at the lower left, pointing left, as in the compact B design notes.
-
-The rear wall was designed around a Waveshare PI4-FAN-PWM (Armor-lite + 3510 fan): a 17 mm stack plus a 6 mm intake gap. **Verified** on the built unit: this stack fits and works. If a different heatsink is taller, it may not clear the rear wall.
+Display orientation in this case: USB-C at the lower left, pointing left. The Waveshare PI4-FAN-PWM 17 mm stack fits and works. A taller heatsink may not clear the rear wall.
 
 ![Round display seated in the open can, before the faceplate](build/03-display-seated.jpg)
 
 The display seated in the can, before the faceplate goes on.
 
 5. Front-load the display, Pi, and fan stack into the can.
-6. Fit the **three** display M4s from the rear through the Ø12.1 ports, into the display’s own bosses. A hex key needs about 30 mm of reach. Snug only. These are clearance holes in the printed can, not heat-set inserts.
+6. Fit the **three** display M4s from the rear, into the display’s own bosses. A hex key needs about 30 mm of reach. Snug only.
 
 ## 5. Closing the case
 
-Assembly order for the bezel: fit the faceplate, press in the caps, then snap in the knob. The knob goes in from the front, so it can also be fitted with the faceplate still off the can; this guide follows the photographs and presses the caps first.
+Fit the faceplate, press in the caps, then snap in the knob from the front.
 
 ![Faceplate fitted, with four M2.5 screws visible in the corner pockets](build/04-faceplate-screws.jpg)
 
-1. Set the faceplate on the can. Drive four M2.5×8 screws into the inserts, snug only. The heads sit on the pocket floors. M2.5×6 is too short on the earlier 6.60 mm faceplate; keep M2.5×8 on this 4.60 mm thin faceplate as well (it still engages the full 4.00 mm of the insert).
+1. Set the faceplate on the can. Drive four M2.5×8 screws into the inserts, snug only.
 
 ![Finished faceplate with four original gray ribbed dome plugs seated, knob beside the unit](build/06-corner-plugs.jpg)
 
@@ -269,12 +262,12 @@ A render of the thin faceplate on the compact B can:
 
 **Verified on the built unit:**
 
-- **Display screws:** 3 × M4×8 button-head screws, into the display’s own bosses, from the rear. The case clearance is for an ISO 7380 button head.
-- **Fan and heatsink:** Waveshare PI4-FAN-PWM (Armor-lite + 3510 fan). The 17 mm stack the case was designed around, with a 6 mm intake gap, fits and works.
+- **Display screws:** 3 × M4×8 button-head screws, into the display’s own bosses, from the rear.
+- **Fan and heatsink:** Waveshare PI4-FAN-PWM, 17 mm stack, fits and works.
 
 **Still unverified:**
 
-- **USB-C plug length.** 15–20 mm bodies are designed to fit. The photographs show a straight plug in place. The longest (20 mm) is itself an assumed figure.
+- **USB-C plug length.** A straight 15–20 mm plug is designed to fit, and a straight plug is shown in the photographs.
 - First boot on the physical 720 × 720 panel, touch alignment, Avahi, the setup hotspot, a real over-the-air install, and backlight sysfs writes were not verified in this environment. The [software notes](SOFTWARE.md#verified-here-and-not-verified-on-the-hardware) list those items in full.
 
 ## License
