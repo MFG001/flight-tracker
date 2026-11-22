@@ -20,7 +20,7 @@ Open http://127.0.0.1:8741 . The round bezel is the case. The keys on the glass 
 
 Sample traffic is fictional and flies out and back around KJFK. `--demo` ignores the saved feed until you start the server without that flag.
 
-Keyboard, for the simulator: `M` map, `T` traffic, `W` weather, `U` menu, `N` home, `H` heading mode, `A` altitude filter, `B` brightness, `+`/`-` range, scroll to zoom, drag to pan, Escape to close a panel.
+Keyboard, for the simulator: `M` map, `T` traffic, `W` weather, `U` menu, `N` clear selection, `H` heading mode, `A` altitude filter, `B` brightness, `+`/`-` range, scroll to zoom, Escape to close a panel. The map stays centred on the home location from Settings; it cannot be panned.
 
 To change the UI and rebuild:
 
@@ -174,7 +174,7 @@ Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add.
 | `gpio` | Optional buttons and encoder. Off by default |
 | `fan` | Optional `gpio-fan` pin and temperature |
 
-Track-up rotates the chart so the selected aircraft’s track is at the top of the glass. With nothing selected, it uses `facingDeg`. **NAV** clears a pan and the selection and recentres on home.
+Track-up rotates the chart so the selected aircraft’s track is at the top of the glass. With nothing selected, it uses `facingDeg`. Rotation is around the home location. **NAV** clears the selection. The centre itself changes only on the setup page.
 
 ## Control map
 
@@ -187,7 +187,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | WX | Glass key | Weather overlay on or off |
 | MNU | Glass key | About, radar sweep on or off, reopen the Wi-Fi card. A dot appears beside About when a checked update is waiting. It is not a button |
 | Software updates | Setup page, Software section | Current version, check, release notes, install, and the night auto-update switch. Off by default |
-| NAV | Glass key | Centre on home and clear the selection |
+| NAV | Glass key | Clear the selection. The map stays centred on the home location from Settings |
 | HDG | Glass key | North-up or track-up |
 | ALT | Glass key | Next altitude filter |
 | BRT | Glass key | Backlight. Steps 100, 80, 60, 40, 20 percent. The encoder moves it by 5 |
@@ -197,7 +197,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | Icon set | Setup page only | Maverick is the default. Linecut, Classic, Planform, and Compact stay available |
 | Sweep speed | Setup page only | 2–6 seconds per revolution, default 4 |
 | Weather opacity | Setup page, Weather | 10–100 percent, steps of 10, default 60. The WX key only turns the overlay on or off |
-| Location | Setup page, Location section | Airport code (ICAO or IATA) or latitude and longitude. Save applies it. NAV recentres there |
+| Location | Setup page, Location section | Airport code (ICAO or IATA) or latitude and longitude. Save applies it. The glass stays centred there; it cannot be panned on the display |
 | Units, METAR, ADS-B source, demo mode, Wi-Fi join, restart, reset | Setup page only | `http://flighttracker.local/` |
 | Watch list | Setup page, Watch | Tails or hex. Off by default. Glass shows only a WATCH count |
 | Alerts | Setup page, Alerts | Flash and optional chime. Off by default |

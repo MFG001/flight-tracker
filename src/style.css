@@ -145,7 +145,7 @@ body.kiosk #legends { display: none; }
   white-space: nowrap;
   text-overflow: ellipsis;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.01em;
   color: #d5e4ef;
   background: rgba(5, 10, 14, 0.72);
@@ -153,13 +153,23 @@ body.kiosk #legends { display: none; }
   padding: 3px 8px;
 }
 
+/* 1.0.12: time and weather sit lower on the traffic view, still inside
+   the safe circle and clear of the south range-ring label. */
 #bottom {
-  bottom: 16%;
+  bottom: 12%;
   width: 46%;
   display: grid;
   gap: 4px;
   justify-items: center;
   z-index: 4;
+}
+
+/* 1.0.12: the standby card already shows time and weather, so hide the
+   duplicate bottom pills. The map credit stays visible (required). */
+#hud.standby #status,
+#hud.standby #clock,
+#hud.standby #metar {
+  display: none;
 }
 
 #status, #clock {
@@ -176,13 +186,14 @@ body.kiosk #legends { display: none; }
   overflow-wrap: anywhere;
 }
 #status, #clock {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   font-weight: 600;
   background: rgba(5, 10, 14, 0.72);
   border-radius: 8px;
   padding: 2px 8px;
 }
+#clock { font-size: 13px; }
 #status { color: #ffd089; }
 
 #clock { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -198,6 +209,10 @@ body.kiosk #legends { display: none; }
   letter-spacing: 0;
   text-decoration: none;
   line-height: 1.25;
+}
+body.kiosk #attrib {
+  pointer-events: none;
+  cursor: default;
 }
 #screen.bright #attrib { color: rgba(16, 20, 24, 0.55); }
 
@@ -266,6 +281,14 @@ body.kiosk #legends { display: none; }
 }
 #idle-title { color: #ffd089; letter-spacing: 0.04em; font-size: 14px; }
 #idle-clock { font-size: 28px; letter-spacing: 0.12em; margin: 6px 0; }
+#idle-clock.hold-target {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+#idle-clock.hold-target.holding { color: var(--amber); }
 #idle-airport, #idle-metar { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; }
 #icon-legend {
   list-style: none;

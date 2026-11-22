@@ -19,12 +19,14 @@ from server.logic import normalize_aircraft  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1011_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.11")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.11")
+    def test_version_is_at_least_1011(self) -> None:
+        # 1.0.12 moved on; test_v1012 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 11))
+        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], version)
         lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.11", "1.0.11"))
-        self.assertIn("FlightTracker/1.0.11 ", (ROOT / "server/flighttracker.py").read_text())
+        self.assertEqual((lock["version"], lock["packages"][""]["version"]), (version, version))
+        self.assertIn(f"FlightTracker/{version} ", (ROOT / "server/flighttracker.py").read_text())
 
 
 class FormatOwnerTests(unittest.TestCase):

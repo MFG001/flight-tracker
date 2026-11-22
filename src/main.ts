@@ -9,6 +9,7 @@ import { AlertTracker } from "./alerts";
 import { scopeAircraft } from "./scope";
 import { PollGate, aircraftUrl } from "./aircraftpoll";
 import { wxSummary } from "./wxstatus";
+import { installKioskGuards } from "./kioskguard";
 import {
   PROMPT_TIMEOUT_MS,
   PROMPT_TITLE,
@@ -24,7 +25,7 @@ import {
 import { recordTrails as addTrailPoints, trailLines, type TrailPoint } from "./trails";
 import { ICON_KINDS, ICON_SETS, MAVERICK_LEGEND, iconSetId, paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
 import { MAX_RANGE_NM, MIN_RANGE_NM, RANGE_STEPS, resolveRings, snapRange } from "./rings";
-import { bearingDeg, haversineNm, offsetNm } from "./geo";
+import { bearingDeg, haversineNm } from "./geo";
 import {
   bandLabel,
   formatAltitude,
@@ -63,6 +64,10 @@ declare global {
 const params = new URLSearchParams(location.search);
 const captureMode = params.has("capture");
 const kiosk = params.has("kiosk");
+if (kiosk) {
+  document.body.classList.add("kiosk");
+  installKioskGuards(window);
+}
 
 const screen = document.querySelector<HTMLElement>("#screen")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#radar")!;
@@ -75,7 +80,7 @@ const rangePlus = document.querySelector<HTMLButtonElement>("#range-plus")!;
 const chipHdg = document.querySelector<HTMLElement>("#chip-hdg")!;
 const chipAlt = document.querySelector<HTMLElement>("#chip-alt")!;
 const metarEl = document.querySelector<HTMLElement>("#metar")!;
-const attrib = document.querySelector<HTMLAnchorElement>("#attrib")!;
+const attrib = document.querySelector<HTMLElement>("#attrib")!;
 const toastEl = document.querySelector<HTMLElement>("#toast")!;
 const detail = document.querySelector<HTMLElement>("#detail")!;
 const traffic = document.querySelector<HTMLElement>("#traffic")!;
@@ -130,8 +135,6 @@ let nightOn = false;
 let nightLevel = 25;
 const trailHistory = new Map<string, TrailPoint[]>();
 let alertsPrimed = false;
-let panNorth = 0;
-let panEast = 0;
 let background: BackgroundId = config.background;
 let weatherOn = false;
 let opacity = config.weather.opacity;
@@ -180,7 +183,6 @@ const images = new Map<string, HTMLImageElement>();
 let toastTimer = 0;
 let saveTimer = 0;
 
-if (kiosk) document.body.classList.add("kiosk");
 if (captureMode) document.body.classList.add("capture");
 
 function $(id: string): HTMLInputElement {
@@ -191,14 +193,17 @@ function $(id: string): HTMLInputElement {
  * 1.0.3: no tap keys on the glass. The eight edge tabs (BRT, MAP, TFC, WX,
  * MNU, ALT, NAV, HDG) are gone so the rim of the dial is clean; their
  * settings live on the setup page at flighttracker.local. What stays on the
- * glass: tap an aircraft for its details, the range pill, drag / pinch,
- * double-tap to recenter, and a 2-second press on the clock / status line
- * for the About menu (Wi-Fi QR, touch test, traffic list).
+ * glass: tap an aircraft for its details, the range − / + buttons, and a
+ * 2-second press on the clock / status line (or the standby clock) for the
+ * About menu (Wi-Fi QR, touch test, traffic list). The map stays locked on
+ * the home location from Settings; drag, swipe, pinch-pan, and double-tap
+ * do not move the centre. Pinch and scroll still change range around home.
  */
 const HOLD_MS = 2000;
 
 function buildChrome(): void {
-  const targets = [statusEl, clockEl];
+  const idleClock = document.querySelector<HTMLElement>("#idle-clock");
+  const targets = [statusEl, clockEl, idleClock].filter((el): el is HTMLElement => el != null);
   let holdTimer = 0;
   const cancel = () => {
     window.clearTimeout(holdTimer);
@@ -227,15 +232,6 @@ function openMenu(): void {
   selectedId = null;
   menu.hidden = false;
   syncChrome();
-}
-
-function recenter(): boolean {
-  if (Math.hypot(panNorth, panEast) < 0.05) return false;
-  panNorth = 0;
-  panEast = 0;
-  toast("HOME");
-  syncChrome();
-  return true;
 }
 
 function applyQuery(): void {
@@ -298,7 +294,8 @@ function placeAircraft(item: Aircraft, now: number): Aircraft {
 }
 
 function centerOf(): { lat: number; lon: number } {
-  return offsetNm(config.home.lat, config.home.lon, panNorth, panEast);
+  // 1.0.12: the glass is locked on the saved home location.
+  return { lat: config.home.lat, lon: config.home.lon };
 }
 
 function mapUp(): number {
@@ -332,6 +329,7 @@ function syncIdle(count: number): void {
   const forceIdle = captureMode && params.get("idle") === "1";
   const hide = forceIdle ? false : !booted || count > 0;
   if (idle.hidden !== hide) idle.hidden = hide;
+  document.querySelector("#hud")?.classList.toggle("standby", !idle.hidden);
 }
 
 function syncChrome(): void {
@@ -378,7 +376,12 @@ function syncChrome(): void {
   const credit = esri ? (info?.attribution || "").trim() : "";
   attrib.hidden = credit.length === 0;
   attrib.textContent = credit;
-  attrib.href = info?.attributionUrl || "https://www.esri.com/en-us/legal/terms/data-attributions";
+  if (!kiosk && attrib instanceof HTMLAnchorElement) {
+    attrib.href = info?.attributionUrl || "https://www.esri.com/en-us/legal/terms/data-attributions";
+  } else if (attrib instanceof HTMLAnchorElement) {
+    attrib.removeAttribute("href");
+    attrib.removeAttribute("target");
+  }
   const dimLevel = nightOn ? Math.min(brightness, nightLevel) : brightness;
   dim.style.opacity = hardwareBacklight && !nightOn ? "0" : String(((100 - dimLevel) / 100) * 0.82);
   sweepBtn.textContent = sweepOn ? "SWEEP ON" : "SWEEP OFF";
@@ -497,11 +500,8 @@ function onKey(key: BezelKey): void {
     menu.hidden = !open;
     if (open) traffic.hidden = true;
   } else if (key === "NAV") {
-    panNorth = 0;
-    panEast = 0;
     selectedId = null;
     detail.hidden = true;
-    toast("HOME");
   } else if (key === "HDG") {
     orientation = orientation === "north" ? "track" : "north";
     toast(orientation === "north" ? "NORTH UP" : "TRACK UP");
@@ -1265,8 +1265,7 @@ function bindInput(): void {
     { passive: false },
   );
   const pointers = new Map<number, { x: number; y: number }>();
-  let lastTap = { t: 0, x: 0, y: 0 };
-  let drag: { x: number; y: number; north: number; east: number; moved: boolean } | null = null;
+  let drag: { x: number; y: number; moved: boolean } | null = null;
   let pinch: { dist: number; range: number } | null = null;
   const distance = () => {
     const [a, b] = [...pointers.values()];
@@ -1279,7 +1278,7 @@ function bindInput(): void {
       pinch = { dist: distance(), range: rangeNm };
       drag = null;
     } else {
-      drag = { x: event.clientX, y: event.clientY, north: panNorth, east: panEast, moved: false };
+      drag = { x: event.clientX, y: event.clientY, moved: false };
     }
   });
   canvas.addEventListener("pointermove", (event) => {
@@ -1293,16 +1292,8 @@ function bindInput(): void {
     if (!drag) return;
     const sx = event.clientX - drag.x;
     const sy = event.clientY - drag.y;
+    // A swipe is not a tap, but it must not pan. The centre stays on home.
     if (Math.hypot(sx, sy) > 6) drag.moved = true;
-    if (!drag.moved) return;
-    const angle = (-mapUp() * Math.PI) / 180;
-    const dx = sx * Math.cos(angle) + sy * Math.sin(angle);
-    const dy = -sx * Math.sin(angle) + sy * Math.cos(angle);
-    panEast = drag.east - dx * radar.nmPerPx;
-    panNorth = drag.north + dy * radar.nmPerPx;
-    panEast = Math.max(-80, Math.min(80, panEast));
-    panNorth = Math.max(-80, Math.min(80, panNorth));
-    syncChrome();
   });
   const end = (event: PointerEvent) => {
     const was = drag;
@@ -1318,18 +1309,11 @@ function bindInput(): void {
       if (was && !was.moved) {
         const rect = canvas.getBoundingClientRect();
         const hit = radar.hitTest(event.clientX - rect.left, event.clientY - rect.top);
-        const now = performance.now();
-        const double = now - lastTap.t < 380 && Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < 40;
-        lastTap = { t: double ? 0 : now, x: event.clientX, y: event.clientY };
         if (hit) select(hit);
-        else {
-          if (!detail.hidden) {
-            selectedId = null;
-            detail.hidden = true;
-            syncChrome();
-          }
-          // Double-tap empty map: back to home (the old NAV key).
-          if (double) recenter();
+        else if (!detail.hidden) {
+          selectedId = null;
+          detail.hidden = true;
+          syncChrome();
         }
       }
       drag = null;
@@ -1517,17 +1501,12 @@ async function pollSharedConfig(): Promise<void> {
   // A change made on the glass while this poll was out (or still being
   // saved) wins; the old reply must not bounce the range back.
   if (edits !== localEdits || saveTimer || saving) return;
-  const moved = next.home.lat !== config.home.lat || next.home.lon !== config.home.lon;
   // Any saved change on flighttracker.local applies: 1.0.2 compared a fixed
   // list of fields that left out trails, alerts, watch, night, and
   // brightness, so those only took effect after a restart.
   const changed = configKey(next) !== configKey(config);
   if (!changed) return;
-  const keepNorth = panNorth;
-  const keepEast = panEast;
   applyConfig(next);
-  panNorth = moved ? 0 : keepNorth;
-  panEast = moved ? 0 : keepEast;
 }
 
 // ---- 1.0.7 prototype: on-screen update prompt ----------------------------

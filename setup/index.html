@@ -898,7 +898,7 @@
         const current = await api("/api/config");
         current.home = home;
         await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(current) });
-        return "Saved. NAV recentres the glass here.";
+        return "Saved. The glass is now centred here.";
       }, $("loc-status")));
 
       $("form").addEventListener("submit", (event) => {

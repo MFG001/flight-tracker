@@ -82,11 +82,12 @@ class NoEdgeKeysTests(unittest.TestCase):
         for label in ("BRT", "MAP", "TFC", "WX", "MNU", "ALT", "NAV", "HDG"):
             self.assertNotIn(f">{label}<", INDEX)
 
-    def test_tap_aircraft_hold_menu_and_recenter_remain(self) -> None:
+    def test_tap_aircraft_hold_menu_remain(self) -> None:
         self.assertIn("radar.hitTest(", MAIN)
         self.assertIn("const HOLD_MS = 2000;", MAIN)
         self.assertIn("openMenu()", MAIN)
-        self.assertIn("if (double) recenter();", MAIN)
+        # 1.0.12: the glass is locked on home; double-tap no longer recentres.
+        self.assertNotIn("recenter()", MAIN)
         self.assertIn('id="m-traffic"', INDEX)
         self.assertIn('id="m-wifi"', INDEX)
         self.assertIn('id="m-touch"', INDEX)
