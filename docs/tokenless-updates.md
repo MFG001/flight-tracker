@@ -1,5 +1,10 @@
 # Tokenless signed updates (1.0.7)
 
+[Flight Tracker](../README.md) / Signed updates
+
+**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · **Signed updates** · [Wi-Fi QR test](wifi-qr-test.md)
+
+
 ## Channel
 - Public repo `MFG001/flight-tracker` (source + releases). Each release has
   `flight-tracker-X.Y.Z.tar.gz` and `manifest.json` (format 2).
@@ -65,3 +70,9 @@
   `tools/sign_release` (tarball + release notes) before anything is signed.
 - Public repo gets fresh history: one commit from the scrubbed tree, author "Maverick Field Gear"
   with a GitHub noreply address; `scrub_check.py --git-log` must pass before pushing.
+
+---
+
+[← Software](SOFTWARE.md) · [README](../README.md) · [Wi-Fi QR test →](wifi-qr-test.md)
+
+© 2026 Maverick Field Gear. All rights reserved.

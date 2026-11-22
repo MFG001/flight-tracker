@@ -1,5 +1,10 @@
 # Test the setup hotspot and join QR on the unit
 
+[Flight Tracker](../README.md) / Wi-Fi QR test
+
+**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · [Signed updates](tokenless-updates.md) · **Wi-Fi QR test**
+
+
 This is a short, self-reverting test of the FlightTracker-Setup hotspot and the NO WI-FI join QR card on the round display. It is safe to run while the unit is already on your home Wi-Fi: the test records that profile (spaces in the name are kept exactly), starts the setup hotspot, and then brings the same profile back.
 
 You will need SSH access to the Pi (for example `ssh flighttracker@flighttracker.local`) and Flight Tracker 1.0.10 or later.
@@ -54,3 +59,9 @@ The test does not print the hotspot password in the terminal or the journal. The
 1. Wait the full timer you started (10 minutes unless you chose another length). Do not assume it failed after only a minute or two.
 2. If it is still off home Wi-Fi after that, power-cycle the Pi.
 3. NetworkManager will autoconnect the saved home Wi-Fi profile on boot. It will not start the setup hotspot when a home profile is already saved.
+
+---
+
+[← Signed updates](tokenless-updates.md) · [README](../README.md)
+
+© 2026 Maverick Field Gear. All rights reserved.
