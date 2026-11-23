@@ -7,7 +7,7 @@
 
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
-This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.13](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
+This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
 
 A one-page letter assembly sheet, with the hardware photographs, a parts list, and print settings, is shown below. A printable PDF of the same sheet is on the [Pages build guide](https://mfg001.github.io/flight-tracker/build.html) as [assembly_sheet.pdf](https://mfg001.github.io/flight-tracker/assets/build/assembly_sheet.pdf).
 
@@ -169,18 +169,18 @@ The installer also sets the hostname to `flighttracker` and enables Avahi, so th
 
 ## 7. Installing the software
 
-Do this from a Mac or Linux computer on the same network, not on the Pi. The current release is [v1.0.13](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13). Download `flight-tracker-1.0.13.tar.gz` from that page, or use `curl` as below. Safari may unzip the download to a `.tar` file, which also works.
+Do this from a Mac or Linux computer on the same network, not on the Pi. The current release is [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14). Download `flight-tracker-1.0.14.tar.gz` from that page, or use `curl` as below. Safari may unzip the download to a `.tar` file, which also works.
 
 Power the unit, wait until it has booted and is on the network, then:
 
 ```bash
 cd ~/Downloads
-curl -L -O https://github.com/MFG001/flight-tracker/releases/download/v1.0.13/flight-tracker-1.0.13.tar.gz
-tar xf flight-tracker-1.0.13.tar.gz deploy/push-update.sh
-bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.13.tar.gz flighttracker@flighttracker.local
+curl -L -O https://github.com/MFG001/flight-tracker/releases/download/v1.0.14/flight-tracker-1.0.14.tar.gz
+tar xf flight-tracker-1.0.14.tar.gz deploy/push-update.sh
+bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.14.tar.gz flighttracker@flighttracker.local
 ```
 
-The script asks for the Pi password for SSH, then again when `sudo` on the Pi asks. It copies the tarball, unpacks it, and runs `sudo bash install.sh` on the Pi. When it finishes it prints `flight-tracker.service is running 1.0.13`. Then reboot so the display overlay is applied:
+The script asks for the Pi password for SSH, then again when `sudo` on the Pi asks. It copies the tarball, unpacks it, and runs `sudo bash install.sh` on the Pi. When it finishes it prints `flight-tracker.service is running 1.0.14`. Then reboot so the display overlay is applied:
 
 ```bash
 ssh flighttracker@flighttracker.local 'sudo reboot'

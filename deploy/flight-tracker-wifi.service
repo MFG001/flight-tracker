@@ -4,9 +4,10 @@ After=NetworkManager.service flight-tracker.service
 Wants=NetworkManager.service
 
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/opt/flight-tracker/current/scripts/wifi-setup.sh
-RemainAfterExit=yes
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

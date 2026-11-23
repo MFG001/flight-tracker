@@ -746,16 +746,21 @@ def refresh_helpers(release: Path, sbin: Path = Path("/usr/local/sbin")) -> list
 
 SYSTEM_UNIT_DIR = Path("/etc/systemd/system")
 # Copied to the system unit directory on OTA so existing units pick up the
-# 1.0.13 09:00 check timer (install.sh only runs on a first install).
+# 1.0.13 09:00 check timer and the 1.0.14 long-running Wi-Fi fallback
+# service (install.sh only runs on a first install).
 SYSTEMD_UNITS = (
     "flight-tracker-update.service",
     "flight-tracker-update.timer",
     "flight-tracker-auto-update.service",
     "flight-tracker-auto-update.timer",
+    "flight-tracker-wifi.service",
 )
 TIMER_UNITS = (
     "flight-tracker-update.timer",
     "flight-tracker-auto-update.timer",
+)
+SERVICE_UNITS = (
+    "flight-tracker-wifi.service",
 )
 
 
@@ -801,6 +806,9 @@ def refresh_systemd_units(
         for timer in TIMER_UNITS:
             subprocess.run([ctl, "enable", timer], check=False, capture_output=True, timeout=30)
             subprocess.run([ctl, "restart", timer], check=False, capture_output=True, timeout=30)
+        for unit in SERVICE_UNITS:
+            subprocess.run([ctl, "enable", unit], check=False, capture_output=True, timeout=30)
+            subprocess.run([ctl, "restart", unit], check=False, capture_output=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         pass
     return installed

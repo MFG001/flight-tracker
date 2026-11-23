@@ -40,10 +40,10 @@ class RangeStepTests(unittest.TestCase):
         self.assertEqual(example["rangeNm"], 20)
         main = (ROOT / "src/main.ts").read_text()
         self.assertIn("rangeNm: 20,", main)
-        readme = (ROOT / "README.md").read_text()
-        self.assertIn("step 10, 20, 30, 40, 50, 75, 100 nm", readme)
-        self.assertNotIn("Steps 2, 5, 10", readme)
-        self.assertNotIn("At 2 nm they read", readme)
+        software = (ROOT / "docs/SOFTWARE.md").read_text()
+        self.assertIn("step 10, 20, 30, 40, 50, 75, 100 nm", software)
+        self.assertNotIn("Steps 2, 5, 10", software)
+        self.assertNotIn("At 2 nm they read", software)
 
     def test_legacy_2_and_5_and_other_non_steps_snap(self) -> None:
         self.assertEqual([snap_range(v) for v in (2, 5, 0, 9, 2.0, 5.0)], [10, 10, 10, 10, 10, 10])

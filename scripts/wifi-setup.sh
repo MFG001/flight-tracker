@@ -1,11 +1,16 @@
 #!/bin/bash
-# Start the setup hotspot only on a unit with no saved Wi-Fi network.
-# Once any client Wi-Fi profile exists (for example "Home Net "),
-# NetworkManager reconnects to it by itself and this script leaves wlan0
-# alone, even if that network is slow to come up after boot (1.0.3 fix: the
-# hotspot used to take wlan0 whenever Wi-Fi was not up yet).
-# TODO: not tested on a Raspberry Pi. NetworkManager's shared mode usually
-# gives this machine 10.42.0.1; confirm that address before relying on it.
+# Supervise the FlightTracker-Setup hotspot.
+#
+# - No saved client Wi-Fi profile: start the hotspot immediately.
+# - Saved client profiles: wait about two minutes for a Wi-Fi client
+#   connection (Ethernet does not count). If none comes up, start the
+#   hotspot, then periodically retry saved networks when no phone is
+#   joined and setup is not in progress.
+# Saving a network on the setup page still stops the hotspot and joins
+# (wifi-ctl.sh connect). The self-reverting test-hotspot command is left
+# alone.
+# Unverified on hardware: grace and retry intervals; AP/STA switching on
+# Raspberry Pi OS Trixie / brcmfmac.
 set -euo pipefail
 if ! command -v nmcli >/dev/null 2>&1; then
   echo "nmcli is not installed; skipping the setup hotspot." >&2
@@ -13,15 +18,16 @@ if ! command -v nmcli >/dev/null 2>&1; then
 fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-known="$("$ROOT/scripts/wifi-ctl.sh" client-profiles || true)"
-if [[ -n "$known" ]]; then
-  "$ROOT/scripts/wifi-ctl.sh" boot-hotspot
-  exit 0
-fi
-password="$(PYTHONPATH="$ROOT/server" python3 - << 'PY'
+password="$(
+  PYTHONPATH="$ROOT/server" FT_HOTSPOT_JSON="${FT_HOTSPOT_JSON:-}" python3 - << 'PY'
 from pathlib import Path
+import os
 from wifi_net import load_hotspot
-for candidate in (Path("/etc/flight-tracker/hotspot.json"), Path("data/hotspot.json")):
+candidates = []
+if os.environ.get("FT_HOTSPOT_JSON"):
+    candidates.append(Path(os.environ["FT_HOTSPOT_JSON"]))
+candidates.extend((Path("/etc/flight-tracker/hotspot.json"), Path("data/hotspot.json")))
+for candidate in candidates:
     if candidate.parent.is_dir() or candidate.is_file():
         print(load_hotspot(candidate)["password"])
         break

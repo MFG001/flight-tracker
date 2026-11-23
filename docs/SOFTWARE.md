@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.13 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
+How to install, set up, and run Flight Tracker 1.0.14 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
@@ -114,16 +114,16 @@ Fields that are read: `hex`, `flight`, `lat`, `lon`, `alt_baro` (including `"gro
 1. Flash Raspberry Pi OS Bookworm or Trixie with a desktop. Connect the 4inch DSI LCD (C) with the 15-pin FPC and the 4-pin power/I2C lead.
 2. Clone this repository and run `sudo bash install.sh`. Add `--admin-password` only if the setup page should ask for one. It is off by default.
 3. Reboot. The hostname is `flighttracker`. Avahi answers `flighttracker.local`.
-4. If the Pi has no saved Wi-Fi, it raises a WPA hotspot named **FlightTracker-Setup**. The password is random per device, eight letters, and is shown under the QR code on the round display. A phone camera can scan `WIFI:T:WPA;S:FlightTracker-Setup;P:<password>;;`.
+4. If the Pi has no saved Wi-Fi, or a saved network is out of range for about two minutes after boot, it raises a WPA2-PSK hotspot named **FlightTracker-Setup** (PMF not required, so iPhones can join). The password is random per device, eight letters, and is shown under the QR code on the round display. A phone camera can scan `WIFI:T:WPA;S:FlightTracker-Setup;P:<password>;;`.
 5. When the phone associates, the display switches to a second QR code for `http://10.42.0.1/`. That is NetworkManager’s usual shared-hotspot address. Save the home Wi-Fi there.
 6. After the home network connects, the card changes to “Connected” and a QR code for `http://flighttracker.local/`, then closes. Open that address any time from a phone on the LAN.
 7. **MNU → WI-FI SETUP** opens the card again.
 
 The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR defaults to KJFK. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
 
-If no Wi-Fi profile exists, or a saved network is not active, the round display opens the setup card on its own. QR codes are drawn on the Pi with the open-source `qrcode` library. No QR image is fetched from the network.
+The round display opens the Join setup card only while the FlightTracker-Setup hotspot is actually up. While it is waiting for a saved network after boot, that card stays hidden. QR codes are drawn on the Pi with the open-source `qrcode` library. No QR image is fetched from the network.
 
-TODO: the hotspot, captive-portal redirects, `10.42.0.1`, and `iw` station detection were not run on a Raspberry Pi. Bookworm’s NetworkManager is what the scripts call. If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
+TODO: the hotspot, captive-portal redirects, `10.42.0.1`, `iw` station detection, WPA2-PSK/PMF settings, the two-minute fallback, and AP/STA retries were not run on a Raspberry Pi. The scripts call Raspberry Pi OS Trixie NetworkManager (`nmcli dev wifi hotspot` on brcmfmac). If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
 
 ## Install on the Pi
 
@@ -144,7 +144,7 @@ That script:
 - appends the 4inch DSI LCD (C) overlay for a Pi 4 when no Waveshare DSI overlay is already there
 - sets the hostname to `flighttracker` and enables Avahi
 - allows backlight, Wi-Fi helper, and kiosk restart through sudoers
-- enables a oneshot that starts the setup hotspot when no known Wi-Fi is connected
+- enables a service that starts the setup hotspot when no Wi-Fi is saved, or when saved Wi-Fi stays down for about two minutes, and retries saved networks while the hotspot is up
 
 Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add. The kiosk script waits for Wayland or X11 and passes `--ozone-platform=wayland` when `wayland-0` exists. That path has not been run on a physical Pi in this project’s test environment.
 

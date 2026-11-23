@@ -173,12 +173,13 @@ class LockedHomeTests(unittest.TestCase):
 
     def test_docs_and_setup_match_locked_home(self) -> None:
         readme = (ROOT / "README.md").read_text()
+        software = (ROOT / "docs/SOFTWARE.md").read_text()
         setup = (ROOT / "setup/index.html").read_text()
         self.assertNotIn("drag to pan", readme)
         self.assertNotIn("clears a pan", readme)
         self.assertNotIn("NAV recentres", readme)
-        self.assertIn("The map stays centred on the home location from Settings; it cannot be panned.", readme)
-        self.assertIn("Clear the selection. The map stays centred on the home location from Settings", readme)
-        self.assertIn("The glass stays centred there; it cannot be panned on the display", readme)
+        self.assertIn("The map stays centred on the home location from Settings; it cannot be panned.", software)
+        self.assertIn("Clear the selection. The map stays centred on the home location from Settings", software)
+        self.assertIn("The glass stays centred there; it cannot be panned on the display", software)
         self.assertIn("Saved. The glass is now centred here.", setup)
         self.assertNotIn("NAV recentres the glass here.", setup)

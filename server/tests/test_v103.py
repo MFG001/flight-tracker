@@ -426,7 +426,13 @@ if [[ "$*" == "-t -f NAME connection show --active" ]]; then cat {t}/active; exi
 if [[ "$1" == "--wait" ]]; then exit "$(cat {t}/connect-rc)"; fi
 exit 0
 ''')
-        self.env = {"PATH": f"{t}:/usr/bin:/bin", "FT_WIFI_SETTLE": "0"}
+        self.env = {
+            "PATH": f"{t}:/usr/bin:/bin",
+            "FT_WIFI_SETTLE": "0",
+            "FT_WIFI_GRACE_SECONDS": "0",
+            "FT_WIFI_RETRY_SECONDS": "0",
+            "FT_WIFI_POLL": "0.05",
+        }
 
     def calls(self) -> list[list[str]]:
         path = self.tmp / "calls"
@@ -461,12 +467,14 @@ exit 0
         self.assertEqual(self.calls()[-1], ["connection", "up", "id", "FlightTracker-Setup"])
 
     def test_boot_leaves_wlan0_alone_when_wifi_is_saved(self) -> None:
+        # Already on the saved client network: do not start the setup hotspot,
+        # even immediately (grace 0). A leftover AP profile is left alone.
         (self.tmp / "profiles").write_text(f"Hotspot:802-11-wireless\n{SPACED}:802-11-wireless\n")
+        (self.tmp / "active").write_text(SPACED + "\n")
         result = self.run_ctl("boot-hotspot", "FlightTracker-Setup", "ABCDEFGH")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("not starting the setup hotspot", result.stdout)
         self.assertFalse([c for c in self.calls() if "hotspot" in c])
-        self.assertIn(["connection", "modify", "id", "Hotspot", "connection.autoconnect", "no"], self.calls())
         self.assertEqual(self.run_ctl("client-profiles").stdout, SPACED + "\n")
 
     def test_boot_starts_hotspot_without_saved_wifi(self) -> None:
@@ -475,15 +483,32 @@ exit 0
         self.assertEqual(result.returncode, 0, result.stderr)
         start = next(c for c in self.calls() if "hotspot" in c)
         self.assertEqual(start, ["dev", "wifi", "hotspot", "ifname", "wlan0", "con-name", "FlightTracker-Setup", "ssid", "FlightTracker-Setup", "password", "ABCDEFGH"])
-        self.assertEqual(self.calls()[-1], ["connection", "modify", "id", "FlightTracker-Setup", "connection.autoconnect", "no"])
+        modify = next(c for c in self.calls() if c[:4] == ["connection", "modify", "id", "FlightTracker-Setup"])
+        self.assertIn("connection.autoconnect", modify)
+        self.assertIn("no", modify)
+        self.assertIn("802-11-wireless-security.key-mgmt", modify)
+        self.assertIn("wpa-psk", modify)
+        self.assertIn("802-11-wireless-security.proto", modify)
+        self.assertIn("rsn", modify)
+        self.assertIn("802-11-wireless-security.pairwise", modify)
+        self.assertIn("ccmp", modify)
+        self.assertIn("802-11-wireless-security.group", modify)
+        self.assertIn("802-11-wireless-security.pmf", modify)
+        self.assertIn("disable", modify)
+        self.assertEqual(self.calls()[-1], ["connection", "up", "id", "FlightTracker-Setup"])
 
     def test_wifi_service_script_does_not_hijack(self) -> None:
         (self.tmp / "profiles").write_text(f"{SPACED}:802-11-wireless\n")
-        result = subprocess.run(["bash", str(ROOT / "scripts/wifi-setup.sh")], env=self.env, capture_output=True, text=True, timeout=30, cwd=self.tmp)
+        (self.tmp / "active").write_text(SPACED + "\n")
+        (self.tmp / "hotspot.json").write_text('{"ssid": "FlightTracker-Setup", "password": "ABCDEFGH"}\n')
+        env = dict(self.env, FT_HOTSPOT_JSON=str(self.tmp / "hotspot.json"))
+        result = subprocess.run(["bash", str(ROOT / "scripts/wifi-setup.sh")], env=env, capture_output=True, text=True, timeout=30, cwd=self.tmp)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse([c for c in self.calls() if "hotspot" in c or c[:2] == ["connection", "up"]])
         unit = (ROOT / "deploy/flight-tracker-wifi.service").read_text()
         self.assertIn("scripts/wifi-setup.sh", unit)
+        self.assertIn("Type=simple", unit)
+        self.assertNotIn("Type=oneshot", unit)
 
 
 class PushUpdateTests(unittest.TestCase):

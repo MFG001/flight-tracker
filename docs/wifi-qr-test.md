@@ -58,7 +58,7 @@ The test does not print the hotspot password in the terminal or the journal. The
 
 1. Wait the full timer you started (10 minutes unless you chose another length). Do not assume it failed after only a minute or two.
 2. If it is still off home Wi-Fi after that, power-cycle the Pi.
-3. NetworkManager will autoconnect the saved home Wi-Fi profile on boot. It will not start the setup hotspot when a home profile is already saved.
+3. NetworkManager will autoconnect the saved home Wi-Fi profile on boot. If that profile does not come up within about two minutes, Flight Tracker starts the setup hotspot so you can join a network that is in range. While the hotspot is up it retries the saved profile every few minutes, unless a phone is already joined.
 
 ---
 

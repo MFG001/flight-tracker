@@ -91,8 +91,9 @@ class WifiPromptTests(unittest.TestCase):
     def test_hotspot_after_connected_reopens_dismissed_card(self) -> None:
         main = (ROOT / "src/main.ts").read_text()
         self.assertIn("wifiDismissed = false;", main)
-        self.assertIn('if (outage && !["hotspot", "portal", "failed"].includes(wifiSeen))', main)
+        self.assertIn('if (outage && !["hotspot", "portal"].includes(wifiSeen))', main)
         self.assertIn("if (outage && !wifiDismissed)", main)
+        self.assertIn('const outage = state === "hotspot" || state === "portal";', main)
 
 
 class WifiCardLayoutTests(unittest.TestCase):

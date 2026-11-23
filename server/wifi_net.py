@@ -143,8 +143,10 @@ def wifi_status(hotspot: dict[str, str]) -> dict[str, Any]:
         payload["state"] = "failed"
         payload["note"] = f"Saved Wi-Fi is not connected ({', '.join(known[:3])})."
         return payload
-    payload["state"] = "hotspot"
-    payload["note"] = "No known Wi-Fi profile."
+    # Do not report "hotspot" unless the AP is actually up; the join QR
+    # card is only shown for hotspot/portal.
+    payload["state"] = "offline"
+    payload["note"] = "The setup network is not up yet."
     return payload
 
 

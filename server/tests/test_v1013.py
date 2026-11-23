@@ -30,12 +30,10 @@ import updater as up  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1013_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.13")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.13")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.13", "1.0.13"))
-        self.assertIn("FlightTracker/1.0.13 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_1013(self) -> None:
+        # 1.0.14 moved on; test_v1014 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 13))
 
 
 class MorningCheckTimerTests(unittest.TestCase):
@@ -246,9 +244,10 @@ class SetupResponsiveTests(unittest.TestCase):
 class DocsTests(unittest.TestCase):
     def test_docs_describe_nine_am_check(self) -> None:
         readme = (ROOT / "README.md").read_text()
+        software = (ROOT / "docs/SOFTWARE.md").read_text()
         docs = (ROOT / "docs/tokenless-updates.md").read_text()
-        self.assertIn("09:00 AM Eastern", readme)
-        self.assertIn("21:00 and 09:00 Eastern", readme)
+        self.assertIn("09:00 AM Eastern", software)
+        self.assertIn("21:00 and 09:00 Eastern", software)
         self.assertNotIn("The timer runs at about 03:10.", readme)
         self.assertIn("09:00 AM Eastern daily check", docs)
 

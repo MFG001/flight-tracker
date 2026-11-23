@@ -1241,8 +1241,8 @@ function bindInput(): void {
     wifiDismissed = false;
     menu.hidden = true;
     const info = (await fetch("/api/wifi").then((response) => response.json())) as WifiInfo;
-    const view = info.state === "connected" ? "connected" : info.state === "portal" ? "portal" : "hotspot";
-    await renderWifi(view, info);
+    const view = info.state === "connected" ? "connected" : info.state === "portal" ? "portal" : info.state === "hotspot" ? "hotspot" : "";
+    if (view) await renderWifi(view, info);
     syncChrome();
   });
   bindTouchTest();
@@ -1447,16 +1447,20 @@ async function pollWifi(): Promise<void> {
     return;
   }
   const state = info.state;
-  const outage = state === "hotspot" || state === "portal" || state === "failed";
+  // Join setup / open setup only when the FlightTracker-Setup hotspot is up.
+  // "failed" (saved Wi-Fi out of range) must not show the join QR.
+  const outage = state === "hotspot" || state === "portal";
   // A new hotspot (including the Wi-Fi QR test after home Wi-Fi) reopens
   // the join card even if an earlier one was dismissed.
-  if (outage && !["hotspot", "portal", "failed"].includes(wifiSeen)) {
+  if (outage && !["hotspot", "portal"].includes(wifiSeen)) {
     wifiDismissed = false;
   }
   if (outage && !wifiDismissed) {
     await renderWifi(state === "portal" ? "portal" : "hotspot", info);
-  } else if (wifiSeen && ["hotspot", "portal", "failed"].includes(wifiSeen) && state === "connected") {
+  } else if (wifiSeen && ["hotspot", "portal"].includes(wifiSeen) && state === "connected") {
     await renderWifi("connected", info);
+  } else if (!outage && state !== "connected" && !wifiPinned) {
+    wifiPanel.hidden = true;
   }
   wifiSeen = state;
 }

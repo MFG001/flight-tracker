@@ -10,8 +10,13 @@
 #   hotspot [ssid] [pw] [iface]
 #   client-profiles      print saved client (non-hotspot) Wi-Fi profile names
 #   boot-hotspot [ssid] [pw] [iface]
-#                        start the setup hotspot only when no client Wi-Fi
-#                        profile is saved (flight-tracker-wifi.service)
+#                        start the setup hotspot when no client Wi-Fi
+#                        profile is saved, or when saved profiles exist but
+#                        none connects within a grace period (~2 minutes).
+#                        Ethernet does not count. Then, while the hotspot is
+#                        up, periodically retry saved networks unless a
+#                        station is associated or setup/test is in progress
+#                        (flight-tracker-wifi.service)
 #   test-hotspot [minutes]
 #                        brief, self-reverting setup-hotspot test (default 10,
 #                        max 30). Records the active client profile exactly,
@@ -129,7 +134,153 @@ start_hotspot() {
   # never autoconnect it: it is only started on purpose.
   nmcli dev wifi hotspot ifname "$iface" con-name "$ssid" ssid "$ssid" password "$password" || \
     nmcli connection up id "$ssid"
-  nmcli connection modify id "$ssid" connection.autoconnect no >/dev/null 2>&1 || true
+  harden_hotspot_security "$ssid"
+}
+
+# Force WPA2-PSK (RSN, CCMP) and PMF not required. iPhones can fail to join
+# when NetworkManager's `dev wifi hotspot` on Raspberry Pi OS Trixie / brcmfmac
+# asks for WPA3 or requires PMF.
+# Unverified on hardware: settings and whether the connection must be brought
+# up again for the AP to apply them were not confirmed on a Pi.
+harden_hotspot_security() {
+  local ssid="$1"
+  nmcli connection modify id "$ssid" \
+    connection.autoconnect no \
+    802-11-wireless-security.key-mgmt wpa-psk \
+    802-11-wireless-security.proto rsn \
+    802-11-wireless-security.pairwise ccmp \
+    802-11-wireless-security.group ccmp \
+    802-11-wireless-security.pmf disable >/dev/null 2>&1 || \
+    nmcli connection modify id "$ssid" connection.autoconnect no >/dev/null 2>&1 || true
+  nmcli connection up id "$ssid" >/dev/null 2>&1 || true
+}
+
+client_wifi_connected() {
+  active_client_profile >/dev/null 2>&1
+}
+
+# Associated stations on the setup AP. If `iw` is missing, treat as busy so
+# a retry does not tear the hotspot down when we cannot tell.
+# Unverified on hardware: `iw dev wlan0 station dump` on brcmfmac.
+hotspot_station_count() {
+  local iface="${FT_WIFI_IFACE:-wlan0}" out
+  if ! command -v iw >/dev/null 2>&1; then
+    printf '%s\n' "-1"
+    return 0
+  fi
+  out="$(iw dev "$iface" station dump 2>/dev/null)" || { printf '%s\n' "-1"; return 0; }
+  printf '%s\n' "$(grep -c '^Station ' <<<"$out" || true)"
+}
+
+wifi_test_running() {
+  local dir
+  dir="$(test_dir)"
+  [[ -f "$dir/running" ]]
+}
+
+# True when dropping the hotspot would kick a phone or interrupt setup.
+hotspot_busy() {
+  local count
+  wifi_test_running && return 0
+  [[ -f "${FT_WIFI_CONNECTING:-/run/flight-tracker-wifi/connecting}" ]] && return 0
+  count="$(hotspot_station_count)"
+  # -1 means we could not query stations; do not drop the AP.
+  [[ "$count" != "0" ]]
+}
+
+wait_for_client_wifi() {
+  local seconds="$1"
+  local start now
+  start="$(date +%s)"
+  while true; do
+    client_wifi_connected && return 0
+    now="$(date +%s)"
+    (( now - start >= seconds )) && return 1
+    sleep "${FT_WIFI_POLL:-2}"
+  done
+}
+
+# Brief attempt to join a saved client profile. Caller must have already
+# confirmed the hotspot is not busy. Returns 0 if a saved network is up.
+# Unverified on hardware: stopping the AP, scanning, and bringing a saved
+# profile up on the same brcmfmac radio.
+try_saved_networks() {
+  local profile
+  stop_hotspot >/dev/null || true
+  sleep "${FT_WIFI_SETTLE:-2}"
+  nmcli dev wifi list --rescan yes >/dev/null 2>&1 || true
+  while IFS= read -r profile; do
+    [[ -n "$profile" ]] || continue
+    if nmcli connection up id "$profile" >/dev/null 2>&1; then
+      if grep -Fxq -- "$profile" <<<"$(active_names)"; then
+        echo "Joined saved Wi-Fi ($profile)."
+        return 0
+      fi
+    fi
+  done < <(client_profiles)
+  return 1
+}
+
+# Saved profiles: wait ~2 minutes for a Wi-Fi client connection (Ethernet
+# does not count), then start the setup hotspot and retry saved networks
+# every few minutes unless a phone is joined or setup/test is in progress.
+# No saved profile: start the hotspot immediately and return (same as 1.0.13).
+# Unverified on hardware: grace and retry intervals; AP/STA switching.
+boot_hotspot_cmd() {
+  local ssid="${1:-$HOTSPOT_SSID}" password="${2:-}" iface="${3:-${FT_WIFI_IFACE:-wlan0}}"
+  local grace retry_every known attempts
+  grace="${FT_WIFI_GRACE_SECONDS:-120}"
+  retry_every="${FT_WIFI_RETRY_SECONDS:-180}"
+
+  if wifi_test_running; then
+    echo "A Wi-Fi test is running; not changing the setup hotspot."
+    return 0
+  fi
+
+  if [[ -z "$password" ]]; then
+    password="$(hotspot_password)" || { echo "Could not read the setup hotspot password." >&2; return 1; }
+  fi
+
+  known="$(client_profiles)"
+  if [[ -z "$known" ]]; then
+    start_hotspot "$ssid" "$password" "$iface"
+    echo "Started the setup hotspot (no saved Wi-Fi profile)."
+    return 0
+  fi
+
+  if wait_for_client_wifi "$grace"; then
+    echo "Connected to saved Wi-Fi ($(active_client_profile)); not starting the setup hotspot."
+    return 0
+  fi
+
+  start_hotspot "$ssid" "$password" "$iface"
+  echo "No saved Wi-Fi came up; started the setup hotspot."
+
+  if ! [[ "$retry_every" =~ ^[0-9]+$ ]] || (( retry_every <= 0 )); then
+    return 0
+  fi
+
+  attempts=0
+  while true; do
+    sleep "$retry_every"
+    if wifi_test_running; then
+      :
+    elif client_wifi_connected; then
+      echo "Already on saved Wi-Fi; leaving the setup hotspot down."
+      return 0
+    elif hotspot_busy; then
+      echo "Leaving the setup hotspot up (a phone is connected or setup is in progress)."
+    elif try_saved_networks; then
+      return 0
+    else
+      start_hotspot "$ssid" "$password" "$iface"
+    fi
+    # Test hook: stop after N retry cycles so unit tests do not run forever.
+    if [[ "${FT_WIFI_RETRY_LIMIT:-}" =~ ^[0-9]+$ ]]; then
+      attempts=$((attempts + 1))
+      (( attempts >= FT_WIFI_RETRY_LIMIT )) && return 0
+    fi
+  done
 }
 
 
@@ -377,6 +528,10 @@ case "$cmd" in
       set_country "$country" no || true
     fi
     # The setup hotspot holds wlan0; a client connect fails while it is up.
+    connecting_dir="$(dirname "${FT_WIFI_CONNECTING:-/run/flight-tracker-wifi/connecting}")"
+    mkdir -p "$connecting_dir" 2>/dev/null || true
+    : > "${FT_WIFI_CONNECTING:-/run/flight-tracker-wifi/connecting}" || true
+    trap 'rm -f "${FT_WIFI_CONNECTING:-/run/flight-tracker-wifi/connecting}"' EXIT
     was_up="$(stop_hotspot || true)"
     if [[ -n "$was_up" ]]; then
       # wlan0 was an access point; give it a fresh scan as a client.
@@ -416,16 +571,7 @@ case "$cmd" in
     client_profiles
     ;;
   boot-hotspot)
-    # Once any client Wi-Fi profile is saved, NetworkManager owns wlan0: it
-    # reconnects on its own. Do not hijack the radio with the hotspot, even
-    # when that network is slow to come up after boot.
-    known="$(client_profiles)"
-    if [[ -n "$known" ]]; then
-      stop_hotspot >/dev/null || true
-      echo "Wi-Fi profile saved ($(head -n 1 <<<"$known")); not starting the setup hotspot."
-      exit 0
-    fi
-    start_hotspot "${1:-$HOTSPOT_SSID}" "${2:-}" "${3:-wlan0}"
+    boot_hotspot_cmd "${1:-}" "${2:-}" "${3:-}"
     ;;
   test-hotspot)
     test_hotspot_cmd "$@"

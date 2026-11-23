@@ -61,7 +61,7 @@ Photos and full steps: **[docs/BUILD.md](docs/BUILD.md)**. Printable sheet: [ass
 
 ## Software
 
-Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.13](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13).
+Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14).
 
 1. Flash Raspberry Pi OS (desktop, Bookworm or Trixie). Set hostname and user to `flighttracker`, and enable SSH.
 2. From a Mac or Linux computer, download the [latest release](https://github.com/MFG001/flight-tracker/releases/latest) and run `deploy/push-update.sh` against `flighttracker@flighttracker.local`.
