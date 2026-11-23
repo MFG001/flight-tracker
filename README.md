@@ -10,7 +10,7 @@ A free DIY kit: a cockpit-style ADS-B display for a Raspberry Pi 4 and a Wavesha
 The kit is free on GitHub and MakerWorld. It is not sold.
 
 - Software and signed releases: [github.com/MFG001/flight-tracker](https://github.com/MFG001/flight-tracker)
-- Print files: [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear))
+- Print files: [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear))
 - New units open on **KJFK** until you set your own location
 
 ## Features
@@ -29,7 +29,7 @@ Demo screenshots below use bundled sample tracks, home at KJFK, 20 NM.
 
 ![Compact B printed case](assets/case-front.png)
 
-The compact B case is 140 × 155 × 100 mm, printed as two plates. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). H2S, Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
+The compact B case is 140 × 155 × 100 mm, printed as two plates. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). H2S, Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
 
 ## What you need
 
@@ -100,7 +100,7 @@ After install, a health check runs. If it fails, the previous version is restore
 
 Software in this repository is released under the [Maverick Field Gear Flight Tracker License](LICENSE). It is source-available and free to install and run on a personal build, for non-commercial use. You may not modify it, distribute modified versions, or sell it. The full text is in the repository `LICENSE` file.
 
-Case print files are licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
+Case print files are licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
 
 © 2026 Maverick Field Gear. All rights reserved.
 
