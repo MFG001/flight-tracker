@@ -27,7 +27,7 @@ A one-page letter assembly sheet, with the hardware photographs, a parts list, a
 
 ## 1. Parts and hardware
 
-Finished size is about **140 × 155 × 100 mm**. The files are sliced for a Bambu H2S, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
+Finished size is about **140 × 155 × 100 mm**. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case).
 
 ![Kit layout: faceplate, knob, screws, gray dome plugs, can, and the Pi mounted on the display](build/photo-kit-layout.jpg)
 
@@ -75,11 +75,14 @@ No washers, and no nameplate screws.
 
 ## 2. Printing
 
-The MakerWorld files are sliced for a Bambu H2S, PLA, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
+Both print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case), PLA, supports off.
 
-- Bambu H2S, 0.4 mm nozzle, textured PEI
-- PLA Matte, 220 °C nozzle / 55 °C bed
-- **Supports off**
+- **H2S,** Set A + Set B — Full case (2 plates): about **5 h 56 m**, **224 g**
+- **A1,** A1 — Full case (2 plates): about **7 h 16 m**, **224 g**. Plate 1 needs AMS lite for the gray legends.
+
+The H2S delivery files use a 0.4 mm nozzle, textured PEI, and PLA Matte at 220 °C / 55 °C.
+
+H2S plate times:
 
 | Set | Time | Filament |
 | --- | --- | --- |
@@ -88,7 +91,7 @@ The MakerWorld files are sliced for a Bambu H2S, PLA, supports off. It also prin
 | Optional insert-fit coupon | 11 m 9 s | 5.53 g |
 | **Set total** (A + B) | **5 h 56 m 23 s** | **224.21 g** |
 
-Times are slicer predictions for the H2S profile. The coupon is extra. Print the `.gcode.3mf` for each set, or re-slice the models for an A1. The faceplate prints face-down. Peel the brim. There are no supports to remove.
+Times are slicer predictions. The coupon is extra and is not in the set totals above. Print the `.gcode.3mf` for your printer. The faceplate prints face-down. Peel the brim. There are no supports to remove.
 
 ![Rear of the can, three M4 ports, grille, and desk foot](build/photo-can-rear.jpg)
 

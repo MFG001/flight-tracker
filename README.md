@@ -25,7 +25,7 @@ Print the case from the [MakerWorld listing](https://makerworld.com/en/models/36
 - [ ] **Set B** — can, foot, and four dome caps (plate 2, Dark Gull Gray)
 - [ ] Optional insert-fit coupon
 
-The files are sliced for a Bambu H2S, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
+Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). **H2S,** Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. **A1,** A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
 
 ### Hardware
 
