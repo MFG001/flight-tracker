@@ -29,11 +29,11 @@ Demo screenshots below use bundled sample tracks, home at KJFK, 20 NM.
 
 ![Compact B printed case](assets/case-front.png)
 
-The compact B case is 140 × 155 × 100 mm, printed as two plates. The files are sliced for a Bambu H2S, supports off. It also prints on a Bambu A1; re-slice the models for that printer.
+The compact B case is 140 × 155 × 100 mm, printed as two plates. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). H2S, Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
 
 ## What you need
 
-### Print (sliced for Bambu H2S; also prints on a Bambu A1 if you re-slice)
+### Print (H2S and A1 profiles on MakerWorld)
 
 About 5 hours 56 minutes and 224 g for the set (Set A + Set B). Finished size 140 × 154.7 × 100.3 mm.
 
