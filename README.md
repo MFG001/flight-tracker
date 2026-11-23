@@ -6,7 +6,7 @@ A cockpit-style ADS-B display for a Raspberry Pi 4 and a Waveshare 4-inch DSI to
 
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
-**[Print on MakerWorld](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case)** · **[Download latest release](https://github.com/MFG001/flight-tracker/releases/latest)** · **[Build guide](docs/BUILD.md)** · **[License](LICENSE)**
+**[Print on MakerWorld](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar)** · **[Download latest release](https://github.com/MFG001/flight-tracker/releases/latest)** · **[Build guide](docs/BUILD.md)** · **[License](LICENSE)**
 
 ## Contents
 
@@ -19,13 +19,13 @@ Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
 ### Printed parts
 
-Print the case from the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). One profile, two plates. Use the thin faceplate and the original dome caps, not the later flush plugs.
+Print the case from the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). One profile, two plates. Use the thin faceplate and the original dome caps, not the later flush plugs.
 
 - [ ] **Set A** — faceplate and knob (plate 1, black)
 - [ ] **Set B** — can, foot, and four dome caps (plate 2, Dark Gull Gray)
 - [ ] Optional insert-fit coupon
 
-Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). **H2S,** Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. **A1,** A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
+Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). **H2S,** Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. **A1,** A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
 
 ### Hardware
 
@@ -51,7 +51,7 @@ Photos and full steps: **[docs/BUILD.md](docs/BUILD.md)**. Printable sheet: [ass
 
 ![One-page Flight Tracker assembly sheet](docs/build/assembly_sheet-web.jpg)
 
-1. Print Set A and Set B from [MakerWorld](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case). Peel the brim.
+1. Print Set A and Set B from [MakerWorld](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). Peel the brim.
 2. Press four M2.5×4 inserts into the front corners of the can. Let them cool.
 3. Mount the Pi and fan on the display. Thread the USB-C cable through the rear exit, then plug it in.
 4. Front-load the stack. Fit the three M4×8 screws from the rear. Snug only.
@@ -71,6 +71,6 @@ Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.
 
 ## License
 
-Software is under the [Maverick Field Gear Flight Tracker License](LICENSE): personal, non-commercial use; no modification or sale. Case print files are [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files: [MakerWorld](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case).
+Software is under the [Maverick Field Gear Flight Tracker License](LICENSE): personal, non-commercial use; no modification or sale. Case print files are [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files: [MakerWorld](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 © 2026 Maverick Field Gear. All rights reserved.

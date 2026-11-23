@@ -7,7 +7,7 @@
 
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
-This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.13](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
+This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.13](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
 
 A one-page letter assembly sheet, with the hardware photographs, a parts list, and print settings, is shown below. A printable PDF of the same sheet is on the [Pages build guide](https://mfg001.github.io/flight-tracker/build.html) as [assembly_sheet.pdf](https://mfg001.github.io/flight-tracker/assets/build/assembly_sheet.pdf).
 
@@ -27,7 +27,7 @@ A one-page letter assembly sheet, with the hardware photographs, a parts list, a
 
 ## 1. Parts and hardware
 
-Finished size is about **140 × 155 × 100 mm**. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case).
+Finished size is about **140 × 155 × 100 mm**. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ![Kit layout: faceplate, knob, screws, gray dome plugs, can, and the Pi mounted on the display](build/photo-kit-layout.jpg)
 
@@ -75,7 +75,7 @@ No washers, and no nameplate screws.
 
 ## 2. Printing
 
-Both print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case), PLA, supports off.
+Both print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar), PLA, supports off.
 
 - **H2S,** Set A + Set B — Full case (2 plates): about **5 h 56 m**, **224 g**
 - **A1,** A1 — Full case (2 plates): about **7 h 16 m**, **224 g**. Plate 1 needs AMS lite for the gray legends.
@@ -277,7 +277,7 @@ A render of the thin faceplate on the compact B can:
 
 Software is under the [Maverick Field Gear Flight Tracker License](../LICENSE). It is source-available and free to install and run on a personal build, for non-commercial use. You may not modify it, distribute modified versions, or sell it.
 
-Case print files are [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case).
+Case print files are [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 

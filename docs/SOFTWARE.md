@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.13 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3666834-flight-tracker-instrument-case).
+How to install, set up, and run Flight Tracker 1.0.13 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
