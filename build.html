@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#070809">
-  <meta name="description" content="Step-by-step build guide for the Flight Tracker by Maverick Field Gear: print the case, fit the hardware, flash the OS, and install v1.0.13.">
+  <meta name="description" content="Step-by-step build guide for the Flight Tracker by Maverick Field Gear: print the case, fit the hardware, flash the OS, and install v1.0.14.">
   <title>Build the Flight Tracker — Maverick Field Gear</title>
   <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -40,9 +40,9 @@
   <main id="main">
     <section class="hero guide-hero" id="top">
       <div class="hero-copy">
-        <p class="kicker">Build guide <span>//</span> Flight Tracker 1.0.13</p>
+        <p class="kicker">Build guide <span>//</span> Flight Tracker 1.0.14</p>
         <h1>Print, stack, install, fly.</h1>
-        <p class="lede">Step-by-step instructions for the compact B case: a 140 mm printed instrument, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). Software is the signed v1.0.13 release.</p>
+        <p class="lede">Step-by-step instructions for the compact B case: a 140 mm printed instrument, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). Software is the signed v1.0.14 release.</p>
         <p class="tag">Purpose-built. Field-proven.</p>
         <div class="cta">
           <a class="btn primary" href="https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar">Print on MakerWorld</a>
@@ -235,14 +235,14 @@
     <section id="software">
       <header>
         <p class="kicker">07 — Installing the software</p>
-        <h2>Push the v1.0.13 tarball from a computer on the LAN.</h2>
-        <p>Run these on a Mac or Linux computer, not on the Pi. Download <code>flight-tracker-1.0.13.tar.gz</code> from the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.13">v1.0.13 release</a>, or use <code>curl</code> as below. Safari may unzip the download to a <code>.tar</code> file, which also works.</p>
+        <h2>Push the v1.0.14 tarball from a computer on the LAN.</h2>
+        <p>Run these on a Mac or Linux computer, not on the Pi. Download <code>flight-tracker-1.0.14.tar.gz</code> from the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14">v1.0.14 release</a>, or use <code>curl</code> as below. Safari may unzip the download to a <code>.tar</code> file, which also works.</p>
       </header>
       <pre><code>cd ~/Downloads
-curl -L -O https://github.com/MFG001/flight-tracker/releases/download/v1.0.13/flight-tracker-1.0.13.tar.gz
-tar xf flight-tracker-1.0.13.tar.gz deploy/push-update.sh
-bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.13.tar.gz flighttracker@flighttracker.local</code></pre>
-      <p class="prose">The script asks for the Pi password for SSH, then again when <code>sudo</code> on the Pi asks. When it finishes it prints <code>flight-tracker.service is running 1.0.13</code>. Then reboot so the display overlay is applied:</p>
+curl -L -O https://github.com/MFG001/flight-tracker/releases/download/v1.0.14/flight-tracker-1.0.14.tar.gz
+tar xf flight-tracker-1.0.14.tar.gz deploy/push-update.sh
+bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.14.tar.gz flighttracker@flighttracker.local</code></pre>
+      <p class="prose">The script asks for the Pi password for SSH, then again when <code>sudo</code> on the Pi asks. When it finishes it prints <code>flight-tracker.service is running 1.0.14</code>. Then reboot so the display overlay is applied:</p>
       <pre><code>ssh flighttracker@flighttracker.local 'sudo reboot'</code></pre>
       <p class="prose">If <code>flighttracker.local</code> does not resolve, use the Pi’s IP address in place of the hostname, still with the user <code>flighttracker</code>. You can also clone the repository on the Pi and run <code>sudo bash install.sh</code>; the tarball and <code>push-update.sh</code> are the usual first install from a computer on the LAN.</p>
     </section>
