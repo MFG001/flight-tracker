@@ -225,26 +225,32 @@
         <h2>Raspberry Pi Imager, then a card in the Pi.</h2>
       </header>
       <ol class="steps">
-        <li><span>Use <a href="https://www.raspberrypi.com/software/">Raspberry Pi Imager</a> on a computer, not the Pi. Choose Raspberry Pi OS with a desktop, Bookworm or Trixie.</span></li>
-        <li><span>In OS customisation: hostname <code>flighttracker</code>, username <code>flighttracker</code> (set a password for SSH and sudo), wireless LAN if you already know the home network, and SSH on with password authentication.</span></li>
-        <li><span>Write the image, then put the card in the Pi.</span></li>
+        <li><span>Use <a href="https://www.raspberrypi.com/software/">Raspberry Pi Imager</a> 2.0.12 or newer on a computer, not the Pi. Choose Raspberry Pi 4, then <strong>Raspberry Pi OS (64-bit)</strong>, the one with a desktop (Trixie).</span></li>
+        <li><span>Fill in <strong>every</strong> customisation step: hostname <code>flighttracker</code>, your Wi-Fi country, username <code>flighttracker</code> with a password you will remember (you type it during the install), your Wi-Fi name and password, or nothing if you use Ethernet, and SSH on with password authentication.</span></li>
+        <li><span>Write the card. Take it out and put it back in the computer; a disk named <strong>bootfs</strong> appears. Check it with <a href="https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh"><code>prep-sd-card.sh</code></a>, below.</span></li>
+        <li><span>Eject the card, put it in the Pi, plug in Ethernet if you use it, and power on. Wait about five minutes. The screen stays blank until the software is installed.</span></li>
       </ol>
-      <p class="prose">The installer also sets the hostname to <code>flighttracker</code> and enables Avahi, so the unit answers at <code>flighttracker.local</code>. The first-install script logs in as <code>flighttracker@flighttracker.local</code>, so that username needs to match.</p>
+      <pre><code>cd ~/Downloads &amp;&amp; curl -fsSLO https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh
+bash prep-sd-card.sh</code></pre>
+      <div class="prose">
+        <p>Every line should say <code>OK</code>. The Wi-Fi line shows the network name in brackets with its length; compare it with your router’s name character for character. Downloading from GitHub needs no account or password. <strong>Network names that start or end with a space:</strong> Imager drops the space, and the Pi never joins. Rename the network so it has no leading or trailing space and flash again, or run <code>bash prep-sd-card.sh wifi</code> and type the name exactly. An Ethernet cable to your router is the most reliable first install; it needs no Wi-Fi settings.</p>
+        <p>The installer also sets the hostname to <code>flighttracker</code> and enables Avahi, so the unit answers at <code>flighttracker.local</code>. The first-install script logs in as <code>flighttracker@flighttracker.local</code>, so that username needs to match.</p>
+      </div>
     </section>
 
     <section id="software">
       <header>
         <p class="kicker">07 — Installing the software</p>
         <h2>Push the v1.0.14 tarball from a computer on the LAN.</h2>
-        <p>Run these on a Mac or Linux computer, not on the Pi. Download <code>flight-tracker-1.0.14.tar.gz</code> from the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14">v1.0.14 release</a>, or use <code>curl</code> as below. Safari may unzip the download to a <code>.tar</code> file, which also works.</p>
+        <p>Run these on a Mac or Linux computer on the same network as the tracker, not on the Pi. Download <code>flight-tracker-1.0.14.tar.gz</code> from the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14">v1.0.14 release</a>, or use <code>curl</code> as below. Safari may unzip the download to a <code>.tar</code> file, which also works.</p>
       </header>
       <pre><code>cd ~/Downloads
 curl -L -O https://github.com/MFG001/flight-tracker/releases/download/v1.0.14/flight-tracker-1.0.14.tar.gz
 tar xf flight-tracker-1.0.14.tar.gz deploy/push-update.sh
 bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.14.tar.gz flighttracker@flighttracker.local</code></pre>
-      <p class="prose">The script asks for the Pi password for SSH, then again when <code>sudo</code> on the Pi asks. When it finishes it prints <code>flight-tracker.service is running 1.0.14</code>. Then reboot so the display overlay is applied:</p>
+      <p class="prose">The script asks for the Pi password for SSH, then again when <code>sudo</code> on the Pi asks. This is your own Pi login password, the one you set for <code>flighttracker</code> in Raspberry Pi Imager; it is not a GitHub password. The first time, SSH asks <code>Are you sure you want to continue connecting?</code>; type <code>yes</code>. When it finishes it prints <code>flight-tracker.service is running 1.0.14</code>. Then reboot so the display overlay is applied:</p>
       <pre><code>ssh flighttracker@flighttracker.local 'sudo reboot'</code></pre>
-      <p class="prose">If <code>flighttracker.local</code> does not resolve, use the Pi’s IP address in place of the hostname, still with the user <code>flighttracker</code>. You can also clone the repository on the Pi and run <code>sudo bash install.sh</code>; the tarball and <code>push-update.sh</code> are the usual first install from a computer on the LAN.</p>
+      <p class="prose">If <code>flighttracker.local</code> does not resolve, use the Pi’s IP address in place of the hostname, still with the user <code>flighttracker</code>; your router’s client list shows it. If you installed over Ethernet and want Wi-Fi, unplug the cable and reboot: with no Wi-Fi saved, the screen now shows the FlightTracker-Setup QR code (see First setup). You can also clone the repository on the Pi and run <code>sudo bash install.sh</code>; the tarball and <code>push-update.sh</code> are the usual first install from a computer on the LAN.</p>
     </section>
 
     <section id="setup">
@@ -271,11 +277,14 @@ ssh flighttracker@flighttracker.local 'sudo journalctl -u flight-tracker.service
       <table>
         <thead><tr><th>Symptom</th><th>What to try</th></tr></thead>
         <tbody>
-          <tr><td><code>flighttracker.local</code> does not resolve</td><td>Use the Pi’s IP address. Confirm Avahi is running, and that you are on the same network.</td></tr>
-          <tr><td>The script cannot log in</td><td>Hostname and username should both be <code>flighttracker</code>. Enable SSH in Imager.</td></tr>
+          <tr><td><code>flighttracker.local</code> does not resolve, and the tracker is not in the router’s client list</td><td>It has not joined the network. Before the software is installed there is no QR setup. Use an Ethernet cable, or check the card with <a href="https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh"><code>prep-sd-card.sh</code></a>. If the Wi-Fi name starts or ends with a space, rename the network, or fix the card with <code>bash prep-sd-card.sh wifi</code>. The network should offer 2.4 GHz or 5 GHz (not 6 GHz only) and WPA2 or WPA2/WPA3 (not WPA3 only).</td></tr>
+          <tr><td><code>flighttracker.local</code> does not resolve, but the tracker is in the client list</td><td>Use its IP address from the list, and check your computer is on the same network. Multicast or mDNS blocking on the router can also stop <code>.local</code> names.</td></tr>
+          <tr><td>The script cannot log in</td><td>Hostname and username should both be <code>flighttracker</code>. Enable SSH with password authentication in Imager. The password is the one you set in Imager for <code>flighttracker</code>.</td></tr>
+          <tr><td>The card was flashed without customisation</td><td>There is no <code>flighttracker</code> user and SSH is off, so nothing can log in, even over Ethernet. Flash it again and fill in every customisation step.</td></tr>
+          <tr><td><code>REMOTE HOST IDENTIFICATION HAS CHANGED</code> after reflashing</td><td>A fresh card has new SSH host keys. Run <code>ssh-keygen -R flighttracker.local</code> (and <code>ssh-keygen -R</code> with the IP address if you used one), then try again. Two units both named <code>flighttracker</code> on one network also clash; use each unit’s IP address, or power one off while you set up the other.</td></tr>
           <tr><td>Safari turned the download into <code>.tar</code></td><td>That is fine. Pass the <code>.tar</code> path to <code>push-update.sh</code>.</td></tr>
           <tr><td>The display is blank after the first install</td><td>Reboot so the Waveshare overlay loads. Confirm the board is 4inch DSI LCD (C).</td></tr>
-          <tr><td>No Wi-Fi on first boot</td><td>Use the on-screen FlightTracker-Setup QR, then save the home network at <code>http://10.42.0.1/</code>.</td></tr>
+          <tr><td>No Wi-Fi after the software is installed</td><td>Use the on-screen FlightTracker-Setup QR, then save the home network at <code>http://10.42.0.1/</code>.</td></tr>
           <tr><td>An update never appears</td><td>Tap <strong>CHECK FOR UPDATES</strong>. The automatic check is at 9:00 AM Eastern.</td></tr>
         </tbody>
       </table>
