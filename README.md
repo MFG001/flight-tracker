@@ -2,11 +2,11 @@
 
 A cockpit-style ADS-B display for a Raspberry Pi 4 and a Waveshare 4-inch DSI touch panel.
 
-![Assembled Flight Tracker instrument, with the thin faceplate, original dome caps, and brightness knob](docs/build/hero-assembled.jpg)
-
 ![Flight Tracker showing live ADS-B traffic](docs/build/photo-live-radar.jpg)
 
 ![Aircraft detail card](docs/build/photo-detail-card.jpg)
+
+![Assembled Flight Tracker instrument, with the thin faceplate, original dome caps, and brightness knob](docs/build/hero-assembled.jpg)
 
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
@@ -68,7 +68,21 @@ Photos and full steps: **[docs/BUILD.md](docs/BUILD.md)**. Printable sheet: [ass
 Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14).
 
 1. Flash Raspberry Pi OS (desktop, Bookworm or Trixie). Set hostname and user to `flighttracker`, and enable SSH.
-2. From a Mac or Linux computer, download the [latest release](https://github.com/MFG001/flight-tracker/releases/latest) and run `deploy/push-update.sh` against `flighttracker@flighttracker.local`.
+2. From a Mac or Linux computer on the same network as the tracker, install or update the software with `deploy/push-update.sh`. This is the manual update path when CHECK FOR UPDATES on `flighttracker.local` cannot be used.
+   1. Download `flight-tracker-X.Y.Z.tar.gz` from the [latest release](https://github.com/MFG001/flight-tracker/releases/latest). It goes to your Downloads folder. If Safari turns it into a `.tar`, that's fine.
+   2. Open Terminal and run these two commands one at a time, pressing Return after each. The first pulls the update script out of the download:
+
+      ```
+      cd ~/Downloads && tar xf flight-tracker-*.tar* deploy/push-update.sh
+      ```
+
+      The second sends the update to the tracker and installs it:
+
+      ```
+      bash deploy/push-update.sh
+      ```
+
+      The script uses the newest `flight-tracker-*.tar*` in `~/Downloads` and defaults to `flighttracker@flighttracker.local`. It asks for the tracker's login password, maybe twice, once to connect (ssh) and once to install (sudo). When it finishes, the tracker restarts on the new version.
 3. If the Pi has no Wi-Fi, scan the on-screen QR, then save the home network at `http://10.42.0.1/`.
 4. Open `http://flighttracker.local/` and set your location. The scope starts on KJFK.
 5. Use the setup page Software card for updates. Auto-update is off by default.
