@@ -4,6 +4,10 @@ A cockpit-style ADS-B display for a Raspberry Pi 4 and a Waveshare 4-inch DSI to
 
 ![Assembled Flight Tracker instrument, with the thin faceplate, original dome caps, and brightness knob](docs/build/hero-assembled.jpg)
 
+![Flight Tracker showing live ADS-B traffic](docs/build/photo-live-radar.jpg)
+
+![Aircraft detail card](docs/build/photo-detail-card.jpg)
+
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
 **[Print on MakerWorld](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar)** · **[Download latest release](https://github.com/MFG001/flight-tracker/releases/latest)** · **[Build guide](docs/BUILD.md)** · **[License](LICENSE)**
