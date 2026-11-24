@@ -67,7 +67,7 @@ Photos and full steps: **[docs/BUILD.md](docs/BUILD.md)**. Printable sheet: [ass
 
 Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14).
 
-1. Flash Raspberry Pi OS (desktop, Bookworm or Trixie). Set hostname and user to `flighttracker`, and enable SSH.
+1. Flash Raspberry Pi OS (64-bit) with Raspberry Pi Imager 2.0.12 or newer. Fill in every customisation step: hostname and user `flighttracker`, Wi-Fi country, and SSH with password login. An Ethernet cable is the most reliable first install. If you use Wi-Fi, check the card with [`prep-sd-card.sh`](https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh) before the first boot. Tip: if your Wi-Fi name starts or ends with a space, Imager drops it and the Pi never joins. Either rename the network so it has no leading or trailing space, or fix the card with `bash prep-sd-card.sh wifi`. The screen stays blank until the software is installed. Full steps: [build guide, sections 6 and 7](docs/BUILD.md#6-flashing-the-os).
 2. From a Mac or Linux computer on the same network as the tracker, install or update the software with `deploy/push-update.sh`. This is the manual update path when CHECK FOR UPDATES on `flighttracker.local` cannot be used.
    1. Download `flight-tracker-X.Y.Z.tar.gz` from the [latest release](https://github.com/MFG001/flight-tracker/releases/latest). It goes to your Downloads folder. If Safari turns it into a `.tar`, that's fine.
    2. Open Terminal and run these two commands one at a time, pressing Return after each. The first pulls the update script out of the download:
@@ -82,7 +82,7 @@ Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.
       bash deploy/push-update.sh
       ```
 
-      The script uses the newest `flight-tracker-*.tar*` in `~/Downloads` and defaults to `flighttracker@flighttracker.local`. It asks for the tracker's login password, maybe twice, once to connect (ssh) and once to install (sudo). When it finishes, the tracker restarts on the new version.
+      The script uses the newest `flight-tracker-*.tar*` in `~/Downloads` and defaults to `flighttracker@flighttracker.local`. It asks for the tracker's login password, maybe twice, once to connect (ssh) and once to install (sudo). This is your own Pi login password, the one you set for the user `flighttracker` in Raspberry Pi Imager. Downloading from GitHub needs no account or password. When it finishes, the tracker restarts on the new version.
 3. If the Pi has no Wi-Fi, scan the on-screen QR, then save the home network at `http://10.42.0.1/`.
 4. Open `http://flighttracker.local/` and set your location. The scope starts on KJFK.
 5. Use the setup page Software card for updates. Auto-update is off by default.
