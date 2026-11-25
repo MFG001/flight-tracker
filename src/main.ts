@@ -1240,9 +1240,20 @@ function bindInput(): void {
     wifiPinned = true;
     wifiDismissed = false;
     menu.hidden = true;
-    const info = (await fetch("/api/wifi").then((response) => response.json())) as WifiInfo;
-    const view = info.state === "connected" ? "connected" : info.state === "portal" ? "portal" : info.state === "hotspot" ? "hotspot" : "";
-    if (view) await renderWifi(view, info);
+    let info = (await fetch("/api/wifi").then((response) => response.json())) as WifiInfo;
+    // failed / offline / unknown: the AP is not up yet (new location, or still
+    // in the boot grace wait). Start it now; do not close the menu with no card.
+    if (info.state !== "connected" && info.state !== "portal" && info.state !== "hotspot") {
+      try {
+        const response = await fetch("/api/wifi/hotspot", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        const body = (await response.json()) as { wifi?: WifiInfo };
+        if (body.wifi) info = body.wifi;
+      } catch {
+        // Show the join card anyway; pollWifi updates if the AP comes up.
+      }
+    }
+    const view = info.state === "connected" ? "connected" : info.state === "portal" ? "portal" : "hotspot";
+    await renderWifi(view, info);
     syncChrome();
   });
   bindTouchTest();
@@ -1421,7 +1432,7 @@ async function renderWifi(view: string, info: WifiInfo): Promise<void> {
     wifiKicker.textContent = "CONNECTED";
     wifiTitle.textContent = "Connected";
     wifiPass.textContent = info.configUrl;
-    wifiSteps.textContent = "Scan to open setup.";
+    wifiSteps.textContent = "Join this Wi-Fi, then scan.";
     code = info.configQr;
   } else {
     wifiKicker.textContent = "NO WI-FI";
@@ -1726,6 +1737,41 @@ function captureUpdatePop(mode: string): void {
   else if (mode === "failed") popFailed({ ...base, state: "rolled-back", stage: "failed", error: "Update to Version 1.0.7 failed." });
 }
 
+function fetchOk(url: string, ms = 5000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal, cache: "no-store" }).finally(() => window.clearTimeout(timer));
+}
+
+async function loadDisplay(): Promise<boolean> {
+  if (booted) return true;
+  try {
+    const [cfgRes, mapRes, healthRes] = await Promise.all([
+      fetchOk("/api/config"),
+      fetchOk("/api/basemaps"),
+      fetchOk("/api/health"),
+    ]);
+    if (!cfgRes.ok || !mapRes.ok || !healthRes.ok) {
+      throw new Error("Display server is not ready");
+    }
+    basemaps = (await mapRes.json()) as Record<string, BasemapInfo>;
+    const health = (await healthRes.json()) as { demoLock?: boolean; backlightNodes?: string[] };
+    demoLock = Boolean(health.demoLock);
+    hardwareBacklight = Array.isArray(health.backlightNodes) && health.backlightNodes.length > 0;
+    applyConfig((await cfgRes.json()) as AppConfig);
+    booted = true;
+    await pollAircraft().catch(() => undefined);
+    await pollWeather().catch(() => undefined);
+    if (config.metar) await pollMetar().catch(() => undefined);
+    syncChrome();
+    return true;
+  } catch (error) {
+    statusEl.textContent = "DISPLAY LINK DOWN";
+    console.error(error);
+    return false;
+  }
+}
+
 async function boot(): Promise<void> {
   if (params.get("sheet") === "1") {
     buildSheet();
@@ -1742,26 +1788,20 @@ async function boot(): Promise<void> {
   }).catch(() => {
     fontsDone = true;
   });
-  try {
-    const [cfgRes, mapRes, healthRes] = await Promise.all([
-      fetch("/api/config"),
-      fetch("/api/basemaps"),
-      fetch("/api/health"),
-    ]);
-    basemaps = (await mapRes.json()) as Record<string, BasemapInfo>;
-    const health = (await healthRes.json()) as { demoLock?: boolean; backlightNodes?: string[] };
-    demoLock = Boolean(health.demoLock);
-    hardwareBacklight = Array.isArray(health.backlightNodes) && health.backlightNodes.length > 0;
-    applyConfig((await cfgRes.json()) as AppConfig);
-    booted = true;
-    await pollAircraft();
-    await pollWeather();
-    if (config.metar) await pollMetar();
-    syncChrome();
-  } catch (error) {
-    statusEl.textContent = "DISPLAY LINK DOWN";
-    console.error(error);
+  // One failed first fetch used to leave booted=false forever, so the title
+  // splash never hid even after later aircraft polls succeeded.
+  if (!(await loadDisplay())) {
+    const retry = async () => {
+      if (booted) return;
+      if (await loadDisplay()) return;
+      window.setTimeout(() => void retry(), 2000);
+    };
+    window.setTimeout(() => void retry(), 2000);
   }
+  window.setTimeout(() => {
+    if (params.get("splash") === "1") return;
+    if (booted) splash.hidden = true;
+  }, 8000);
   requestAnimationFrame(frame);
   let lastActivity = 0;
   screen.addEventListener("pointerdown", () => {

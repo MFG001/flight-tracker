@@ -29,12 +29,10 @@ POS = {"name": "POS", "lat": 28.1, "lon": -80.65}
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1015_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.15")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.15")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.15", "1.0.15"))
-        self.assertIn("FlightTracker/1.0.15 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_1015(self) -> None:
+        # 1.0.16 moved on; test_v1016 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 15))
         self.assertEqual(CONFIG_SCHEMA, 4)
         self.assertEqual(DEFAULT_CONFIG["schema"], 4)
         self.assertEqual(DEFAULT_CONFIG["metarStation"], "KJFK")

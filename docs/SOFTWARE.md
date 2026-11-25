@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.15 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
+How to install, set up, and run Flight Tracker 1.0.16 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
@@ -115,9 +115,9 @@ Fields that are read: `hex`, `flight`, `lat`, `lon`, `alt_baro` (including `"gro
 2. Clone this repository and run `sudo bash install.sh`. Add `--admin-password` only if the setup page should ask for one. It is off by default.
 3. Reboot. The hostname is `flighttracker`. Avahi answers `flighttracker.local`.
 4. If the Pi has no saved Wi-Fi, or a saved network is out of range for about two minutes after boot, it raises a WPA2-PSK hotspot named **FlightTracker-Setup** (PMF not required, so iPhones can join). The password is random per device, eight letters, and is shown under the QR code on the round display. A phone camera can scan `WIFI:T:WPA;S:FlightTracker-Setup;P:<password>;;`.
-5. When the phone associates, the display switches to a second QR code for `http://10.42.0.1/`. That is NetworkManager’s usual shared-hotspot address. Save the home Wi-Fi there.
-6. After the home network connects, the card changes to “Connected” and a QR code for `http://flighttracker.local/`, then closes. Open that address any time from a phone on the LAN.
-7. **MNU → WI-FI SETUP** opens the card again.
+5. When the phone associates, the display switches to a second QR code for `http://10.42.0.1/`. That is the setup hotspot address (pinned in NetworkManager). On that hotspot, `http://flighttracker.local/` also resolves to the unit. Save the home Wi-Fi there.
+6. After the home network connects, the card changes to “Connected” and a QR code for the unit’s current IPv4 address, then closes. Join that same Wi-Fi on your phone, then scan or type the address. `http://flighttracker.local/` works when the network allows mDNS.
+7. **MNU → WI-FI SETUP** opens the card again. If the setup network is not already up (for example after a move, while saved Wi-Fi is out of range), this starts it immediately.
 
 The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR starts at KJFK and follows the home airport when you change home by airport search. A latitude and longitude home uses the nearest station, unless you type a METAR station on the setup page. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
 

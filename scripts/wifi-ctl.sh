@@ -146,6 +146,8 @@ harden_hotspot_security() {
   local ssid="$1"
   nmcli connection modify id "$ssid" \
     connection.autoconnect no \
+    ipv4.method shared \
+    ipv4.addresses 10.42.0.1/24 \
     802-11-wireless-security.key-mgmt wpa-psk \
     802-11-wireless-security.proto rsn \
     802-11-wireless-security.pairwise ccmp \

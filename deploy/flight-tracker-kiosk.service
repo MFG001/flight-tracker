@@ -9,8 +9,9 @@ User=@USER@
 Group=@USER@
 Environment=FLIGHT_TRACKER_URL=http://127.0.0.1:8741/?kiosk=1
 ExecStart=/opt/flight-tracker/current/scripts/kiosk.sh
-Restart=on-failure
+Restart=always
 RestartSec=3
+StartLimitIntervalSec=0
 
 [Install]
 WantedBy=graphical.target

@@ -1,7 +1,8 @@
 [Unit]
 Description=Flight Tracker by Maverick Field Gear
-After=network-online.target
-Wants=network-online.target
+# Do not wait for network-online. When Wi-Fi is slow or a new site has no
+# network yet, that target can leave the desktop on screen for a minute or
+# more, and the local display server does not need the internet to bind.
 
 [Service]
 Type=simple
@@ -12,8 +13,9 @@ WorkingDirectory=/opt/flight-tracker/current
 Environment=LG_WD=/var/cache/flight-tracker
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStart=/usr/bin/python3 /opt/flight-tracker/current/server/flighttracker.py --host 0.0.0.0 --port 8741 --http-port 80 --config /etc/flight-tracker/config.json --cache /var/cache/flight-tracker
-Restart=on-failure
+Restart=always
 RestartSec=2
+StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target

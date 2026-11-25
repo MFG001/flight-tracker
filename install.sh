@@ -216,6 +216,9 @@ install -m 0755 "$ROOT/deploy/flight-tracker-brightness" /usr/local/sbin/flight-
 install -m 0755 "$ROOT/deploy/flight-tracker-wifi" /usr/local/sbin/flight-tracker-wifi
 install -m 0755 "$ROOT/deploy/flight-tracker-update" /usr/local/sbin/flight-tracker-update
 install -m 0755 "$ROOT/deploy/flight-tracker-wifi-test" /usr/local/sbin/flight-tracker-wifi-test
+# Shared-hotspot DNS: flighttracker.local and captive-portal checks resolve to the unit.
+install -d /etc/NetworkManager/dnsmasq-shared.d
+install -m 0644 "$ROOT/deploy/dnsmasq-shared-flighttracker.conf" /etc/NetworkManager/dnsmasq-shared.d/flighttracker.conf
 
 if getent group video >/dev/null; then
   usermod -aG video "$TARGET_USER" || true

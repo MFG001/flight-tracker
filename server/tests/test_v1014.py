@@ -30,7 +30,7 @@ OLD_MAKERWORLD = "https://makerworld.com/en/models/3666834-flight-tracker-instru
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1014(self) -> None:
-        # 1.0.15 moved on; test_v1015 pins the exact number.
+        # 1.0.16 moved on; test_v1016 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 14))
 
@@ -94,8 +94,8 @@ class JoinCardTests(unittest.TestCase):
         main = (ROOT / "src/main.ts").read_text()
         self.assertIn('const outage = state === "hotspot" || state === "portal";', main)
         self.assertNotIn('state === "hotspot" || state === "portal" || state === "failed"', main)
-        self.assertIn('info.state === "hotspot" ? "hotspot" : ""', main)
-        self.assertIn("if (view) await renderWifi(view, info);", main)
+        self.assertIn("await renderWifi(view, info);", main)
+        self.assertIn('/api/wifi/hotspot', main)
         self.assertIn('else if (!outage && state !== "connected" && !wifiPinned)', main)
 
 

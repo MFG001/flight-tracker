@@ -61,6 +61,7 @@ class KioskScriptTests(unittest.TestCase):
             "XDG_RUNTIME_DIR": str(runtime),
             "FLIGHT_TRACKER_CONFIG": str(tmp / "config.json"),
             "FLIGHT_TRACKER_DISPLAY_WAIT": "1",
+            "FLIGHT_TRACKER_HEALTH_WAIT": "0",
             "HOME": str(tmp),
         }
         if gpu:
@@ -78,6 +79,10 @@ class KioskScriptTests(unittest.TestCase):
         self.assertIn("--disable-gpu", args)
         self.assertIn("--disable-gpu-compositing", args)
         self.assertIn("--ozone-platform=wayland", args)
+        self.assertIn("--disable-session-crashed-bubble", args)
+        self.assertIn("--hide-crash-restore-bubble", args)
+        self.assertIn("--no-first-run", args)
+        self.assertIn("--no-default-browser-check", args)
         self.assertIn("http://127.0.0.1:8741/?kiosk=1", args)
 
     def test_gpu_can_be_turned_back_on(self) -> None:

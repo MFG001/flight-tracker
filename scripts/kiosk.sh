@@ -8,6 +8,8 @@ set -euo pipefail
 url="${FLIGHT_TRACKER_URL:-http://127.0.0.1:8741/?kiosk=1}"
 config="${FLIGHT_TRACKER_CONFIG:-/etc/flight-tracker/config.json}"
 wait_seconds="${FLIGHT_TRACKER_DISPLAY_WAIT:-40}"
+health_url="${FLIGHT_TRACKER_HEALTH_URL:-http://127.0.0.1:8741/api/health}"
+health_wait="${FLIGHT_TRACKER_HEALTH_WAIT:-90}"
 uid="$(id -u)"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${uid}}"
 # Chromium logs "Failed to connect to the bus" when no session bus address is
@@ -28,18 +30,100 @@ if [[ -z "$chrome" ]]; then
   exit 1
 fi
 
+have_display() {
+  [[ -S "${XDG_RUNTIME_DIR}/wayland-0" || -n "${DISPLAY:-}" || -S /tmp/.X11-unix/X0 ]]
+}
+
+# If the compositor is not up yet, do not fall through to a missing X11
+# display. Exit so systemd can try again once labwc is running.
+displayed=0
 for _ in $(seq 1 "$wait_seconds"); do
-  if [[ -S "${XDG_RUNTIME_DIR}/wayland-0" || -n "${DISPLAY:-}" || -S /tmp/.X11-unix/X0 ]]; then
+  if have_display; then
+    displayed=1
     break
   fi
   sleep 1
 done
+if [[ "$displayed" -eq 0 ]]; then
+  echo "The desktop session is not up yet." >&2
+  exit 1
+fi
+
+# After a power loss Chromium can refuse to start (stale SingletonLock) or
+# show the "Restore pages?" / start page instead of the radar. Clear those.
+chrome_config="${XDG_CONFIG_HOME:-$HOME/.config}"
+for profile in chromium chromium-browser google-chrome; do
+  dir="${chrome_config}/${profile}"
+  [[ -d "$dir" ]] || continue
+  rm -f "$dir/SingletonLock" "$dir/SingletonSocket" "$dir/SingletonCookie"
+  pref="$dir/Default/Preferences"
+  if [[ -f "$pref" ]] && command -v python3 >/dev/null 2>&1; then
+    python3 - "$pref" << 'PY' || true
+import json, os, sys
+path = sys.argv[1]
+try:
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
+except Exception:
+    sys.exit(0)
+profile = data.get("profile")
+if not isinstance(profile, dict):
+    profile = {}
+    data["profile"] = profile
+changed = False
+if profile.get("exited_cleanly") is not True:
+    profile["exited_cleanly"] = True
+    changed = True
+if profile.get("exit_type") != "Normal":
+    profile["exit_type"] = "Normal"
+    changed = True
+if not changed:
+    sys.exit(0)
+tmp = path + ".tmp"
+with open(tmp, "w", encoding="utf-8") as handle:
+    json.dump(data, handle)
+os.replace(tmp, path)
+PY
+  fi
+done
+
+health_ok() {
+  python3 - "$health_url" << 'PY'
+import sys, urllib.error, urllib.request
+url = sys.argv[1]
+try:
+    with urllib.request.urlopen(url, timeout=1) as response:
+        sys.exit(0 if getattr(response, "status", 200) == 200 else 1)
+except Exception:
+    sys.exit(1)
+PY
+}
+
+# Do not open Chromium until the local display server answers. Otherwise it
+# stays on "This site can't be reached" (or the desktop) and never reloads.
+if [[ "$health_wait" != "0" ]]; then
+  healthy=0
+  for _ in $(seq 1 "$health_wait"); do
+    if health_ok; then
+      healthy=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$healthy" -eq 0 ]]; then
+    echo "The display server is not answering at ${health_url}." >&2
+    exit 1
+  fi
+fi
 
 args=(
   --kiosk
   --noerrdialogs
   --disable-infobars
   --disable-session-crashed-bubble
+  --hide-crash-restore-bubble
+  --no-first-run
+  --no-default-browser-check
   --disable-features=TranslateUI
   --check-for-update-interval=31536000
   --autoplay-policy=no-user-gesture-required

@@ -27,6 +27,47 @@ CONFIG_URL = "http://flighttracker.local/"
 # TODO: NetworkManager's shared hotspot uses 10.42.0.1 by default. The wiki
 # for NetworkManager does not promise that address, and it was not confirmed
 # on a Pi here. The display shows this URL because it is NM's usual subnet.
+# wifi-ctl.sh now pins ipv4.addresses to 10.42.0.1/24 on the setup AP.
+_IPV4_RE = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
+
+
+def http_url(ip: str, fallback: str) -> str:
+    """Build http://<ipv4>/, or fallback when no usable address is known."""
+    address = (ip or "").strip()
+    if _IPV4_RE.fullmatch(address):
+        return f"http://{address}/"
+    return fallback
+
+
+def first_ipv4(devices: list[dict[str, str]], kind: str = "") -> str:
+    for row in devices:
+        if kind and row.get("type") != kind:
+            continue
+        ip = (row.get("ip") or "").strip()
+        if _IPV4_RE.fullmatch(ip):
+            return ip
+    return ""
+
+
+def apply_service_urls(payload: dict[str, Any]) -> dict[str, Any]:
+    """Point the on-screen QR at a reachable IPv4 when one is known.
+
+    flighttracker.local needs mDNS, which many phones skip on a no-internet
+    hotspot and many guest/hotel networks block. The unit already reads its
+    IPv4 via nmcli; the join and connected cards should show that address.
+    """
+    devices = payload.get("devices") or []
+    state = payload.get("state")
+    if state in ("hotspot", "portal"):
+        url = http_url(first_ipv4(devices, "wifi"), HOTSPOT_ADDRESS)
+        payload["setupUrl"] = url
+        payload["setupQr"] = url
+    elif state == "connected":
+        ip = first_ipv4(devices, "wifi") or first_ipv4(devices, "ethernet")
+        url = http_url(ip, CONFIG_URL)
+        payload["configUrl"] = url
+        payload["configQr"] = url
+    return payload
 
 
 def wifi_escape(value: str) -> str:
@@ -126,12 +167,12 @@ def wifi_status(hotspot: dict[str, str]) -> dict[str, Any]:
     if home_rows:
         payload["state"] = "connected"
         payload["connectedSsid"] = home_rows[0]["name"]
-        return payload
+        return apply_service_urls(payload)
     if hotspot_rows:
         device = hotspot_rows[0]["device"]
         payload["clients"] = _stations(device)
         payload["state"] = "portal" if payload["clients"] else "hotspot"
-        return payload
+        return apply_service_urls(payload)
     saved = _run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"])
     known = []
     if saved.returncode == 0:
@@ -142,12 +183,12 @@ def wifi_status(hotspot: dict[str, str]) -> dict[str, Any]:
     if known:
         payload["state"] = "failed"
         payload["note"] = f"Saved Wi-Fi is not connected ({', '.join(known[:3])})."
-        return payload
+        return apply_service_urls(payload)
     # Do not report "hotspot" unless the AP is actually up; the join QR
     # card is only shown for hotspot/portal.
     payload["state"] = "offline"
     payload["note"] = "The setup network is not up yet."
-    return payload
+    return apply_service_urls(payload)
 
 
 WRAPPER = Path("/usr/local/sbin/flight-tracker-wifi")
@@ -323,3 +364,23 @@ def set_country(country: str) -> tuple[bool, str]:
     if result.returncode == 0:
         return True, (result.stdout or f"Wi-Fi country set to {country}.").strip()
     return False, (result.stderr or result.stdout or "Could not set the Wi-Fi country.").strip()
+
+
+def start_setup_hotspot(hotspot: dict[str, str]) -> tuple[bool, str]:
+    """Start the FlightTracker-Setup AP through the root helper.
+
+    Used when WI-FI SETUP is opened and the AP is not already up (saved
+    Wi-Fi is down, or no profile exists). The helper takes over wlan0.
+    """
+    helper = _helper()
+    if not helper.is_file():
+        return False, "The Wi-Fi helper is not installed. Run install.sh again."
+    password = str(hotspot.get("password") or "")
+    result = _run(["sudo", "-n", str(helper), "hotspot", HOTSPOT_SSID, password], timeout=60)
+    if result.returncode == 0:
+        return True, _scrub(result.stdout, password) or "Setup network is up."
+    detail = _scrub(result.stderr or result.stdout, password) or "Could not start the setup network."
+    if "password is required" in detail.lower():
+        detail = "This unit is missing its Wi-Fi permission. Run install.sh again."
+    return False, detail
+

@@ -204,6 +204,66 @@
         #watch-list li button { width: 44px; height: 44px; min-height: 44px; }
         .preview { width: min(72vw, 240px); }
       }
+    
+      /* Device Wi-Fi keyboard (720×720 round glass). A rectangular OS keyboard
+         is clipped at the lower left and right by the inscribed circle. This
+         keyboard is laid out inside that circle. Phones keep the OS keyboard. */
+      #ft-osk {
+        display: none;
+        position: fixed;
+        z-index: 80;
+        box-sizing: border-box;
+        padding: 6px 6px 8px;
+        background: rgba(10, 14, 18, 0.97);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      body.ft-osk-open #ft-osk { display: flex; flex-direction: column; gap: 4px; }
+      #ft-osk .osk-preview {
+        display: flex; align-items: center; gap: 8px;
+        min-height: 28px; padding: 0 6px 2px;
+        font-size: 12px; letter-spacing: 0.06em; color: var(--muted);
+      }
+      #ft-osk .osk-preview output {
+        flex: 1; min-width: 0; color: #ffd089;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 15px; letter-spacing: 0.04em;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        text-align: left;
+      }
+      #ft-osk .osk-row { display: flex; justify-content: center; gap: 4px; flex: 1 1 0; min-height: 0; }
+      #ft-osk button {
+        flex: 1 1 0;
+        min-width: 0;
+        width: auto;
+        height: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        border-radius: 8px;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: var(--ink);
+        background: #1a2430;
+        border: 1px solid #31404c;
+      }
+      #ft-osk button[data-wide="2"] { flex: 2.1 1 0; }
+      #ft-osk button[data-wide="3"] { flex: 3.2 1 0; }
+      #ft-osk button[data-wide="5"] { flex: 5.2 1 0; }
+      #ft-osk button:active, #ft-osk button[aria-pressed="true"] {
+        background: #3a2a12;
+        border-color: var(--amber);
+        color: #ffd89a;
+      }
+      #ft-osk button.osk-action { font-size: 12px; letter-spacing: 0.04em; background: #121a22; }
+      body.ft-osk-open #wifi-ssid,
+      body.ft-osk-open #wifi-pass { scroll-margin-top: 16vh; scroll-margin-bottom: 52vh; }
+
     </style>
   </head>
   <body>
@@ -227,7 +287,7 @@
           <label class="check"><input id="wifi-hidden" type="checkbox" /> Hidden network (type its name)</label>
           <label>Password <input id="wifi-pass" type="password" autocomplete="off" maxlength="64" placeholder="Blank for an open network" /></label>
           <label class="check"><input id="wifi-show" type="checkbox" /> Show password</label>
-          <p class="warn">If this page is open over the same Wi-Fi, it may drop for up to a minute while the Pi switches. Ethernet stays connected. Then reopen http://flighttracker.local/</p>
+          <p class="warn">If this page is open over the same Wi-Fi, it may drop for up to a minute while the Pi switches. Ethernet stays connected. Then join that Wi-Fi and reopen the address shown on the display, or http://flighttracker.local/ if it resolves</p>
           <button id="wifi-join" class="primary" type="button">CONNECT</button>
           <p id="wifi-status" class="note"></p>
           <label>Wi-Fi country
@@ -453,6 +513,7 @@
         <p class="foot">Flight Tracker by Maverick Field Gear<br />Purpose-built. Field-proven.</p>
       </div>
     </main>
+    <div id="ft-osk" hidden aria-hidden="true"></div>
     <script>
       const $ = (id) => document.getElementById(id);
       const say = (text) => { $("status").textContent = text; };
@@ -1181,6 +1242,196 @@
         return "Connected to " + ssid + (ip ? ". Wi-Fi address " + ip.ip : "") + ".";
       }, $("wifi-status"), { busy: "CONNECTING…", ok: "CONNECTED ✓", bad: "NOT CONNECTED" }));
 
+
+      function isDevicePanel() {
+        const w = window.innerWidth, h = window.innerHeight;
+        const min = Math.min(w, h), max = Math.max(w, h);
+        return min >= 600 && max <= 850 && (max - min) / max <= 0.12;
+      }
+
+      function bindWifiOsk() {
+        const root = $("ft-osk");
+        const fields = ["wifi-ssid", "wifi-pass"].map($).filter(Boolean);
+        if (!root || !fields.length) return;
+
+        const LETTERS = [
+          ["1","2","3","4","5","6","7","8","9","0"],
+          ["q","w","e","r","t","y","u","i","o","p"],
+          ["a","s","d","f","g","h","j","k","l"],
+          ["shift","z","x","c","v","b","n","m","back"],
+          ["sym","space","done"],
+        ];
+        const SYMBOLS = [
+          ["!","@","#","$","%","^","&","*","(",")"],
+          ["-","_","=","+","[","]","{","}","\\","|"],
+          [";",":","'","\"",",",".","/","<",">"],
+          ["shift","~","`","?","back"],
+          ["abc","space","done"],
+        ];
+        let shifted = false;
+        let symbols = false;
+        let target = null;
+
+        const previewLabel = document.createElement("span");
+        const previewValue = document.createElement("output");
+        previewValue.setAttribute("for", "wifi-pass");
+        const preview = document.createElement("div");
+        preview.className = "osk-preview";
+        preview.append(previewLabel, previewValue);
+        root.append(preview);
+
+        const rowEls = [];
+        function paint() {
+          const rows = symbols ? SYMBOLS : LETTERS;
+          while (rowEls.length < rows.length) {
+            const row = document.createElement("div");
+            row.className = "osk-row";
+            root.append(row);
+            rowEls.push(row);
+          }
+          rowEls.forEach((row, i) => {
+            const keys = rows[i] || [];
+            row.hidden = keys.length === 0;
+            row.replaceChildren();
+            for (const key of keys) {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.dataset.key = key;
+              if (key === "space") { btn.dataset.wide = "5"; btn.className = "osk-action"; btn.textContent = "space"; }
+              else if (key === "shift") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "shift"; btn.setAttribute("aria-pressed", String(shifted)); }
+              else if (key === "back") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "delete"; }
+              else if (key === "done") { btn.dataset.wide = "3"; btn.className = "osk-action"; btn.textContent = "done"; }
+              else if (key === "sym") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "?123"; }
+              else if (key === "abc") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "ABC"; }
+              else {
+                const letter = (shifted && /^[a-z]$/.test(key)) ? key.toUpperCase() : key;
+                btn.textContent = letter;
+              }
+              row.append(btn);
+            }
+          });
+        }
+
+        function refreshPreview() {
+          if (!target) return;
+          previewLabel.textContent = target.id === "wifi-ssid" ? "NETWORK" : "PASSWORD";
+          previewValue.setAttribute("for", target.id);
+          const raw = target.value || "";
+          if (target.id === "wifi-pass" && target.type === "password") {
+            previewValue.textContent = raw ? "•".repeat(Math.min(raw.length, 32)) : "";
+          } else {
+            previewValue.textContent = raw;
+          }
+        }
+
+        function layout() {
+          if (!isDevicePanel() || root.hidden) return;
+          const w = window.innerWidth, h = window.innerHeight;
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) / 2 - 22;
+          const kbH = Math.round(Math.min(h, w) * 0.42);
+          const bottom = cy + radius * 0.82;
+          const top = bottom - kbH;
+          const chord = (y) => {
+            const d = y - cy;
+            return 2 * Math.sqrt(Math.max(0, radius * radius - d * d));
+          };
+          const width = Math.max(280, Math.min(chord(top), chord(bottom)) - 8);
+          root.style.left = Math.round(cx - width / 2) + "px";
+          root.style.top = Math.round(top) + "px";
+          root.style.width = Math.round(width) + "px";
+          root.style.height = Math.round(kbH) + "px";
+        }
+
+        function setOpen(on, field) {
+          if (on && isDevicePanel() && field) {
+            target = field;
+            root.hidden = false;
+            root.setAttribute("aria-hidden", "false");
+            document.body.classList.add("ft-osk-open");
+            refreshPreview();
+            layout();
+            field.scrollIntoView({ block: "center", inline: "nearest" });
+          } else {
+            target = on ? target : null;
+            root.hidden = true;
+            root.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("ft-osk-open");
+          }
+        }
+
+        function applyFieldPolicy() {
+          const device = isDevicePanel();
+          for (const field of fields) {
+            if (device) {
+              field.setAttribute("inputmode", "none");
+              field.setAttribute("virtualkeyboardpolicy", "manual");
+            } else {
+              field.removeAttribute("inputmode");
+              field.removeAttribute("virtualkeyboardpolicy");
+            }
+          }
+          if (!device) setOpen(false);
+        }
+
+        function insert(text) {
+          if (!target) return;
+          const start = target.selectionStart ?? target.value.length;
+          const end = target.selectionEnd ?? target.value.length;
+          const next = target.value.slice(0, start) + text + target.value.slice(end);
+          const max = Number(target.getAttribute("maxlength") || 0);
+          if (max && next.length > max) return;
+          target.value = next;
+          const caret = start + text.length;
+          target.setSelectionRange(caret, caret);
+          target.dispatchEvent(new Event("input", { bubbles: true }));
+          refreshPreview();
+        }
+
+        function backspace() {
+          if (!target) return;
+          const start = target.selectionStart ?? target.value.length;
+          const end = target.selectionEnd ?? target.value.length;
+          if (start !== end) {
+            target.value = target.value.slice(0, start) + target.value.slice(end);
+            target.setSelectionRange(start, start);
+          } else if (start > 0) {
+            target.value = target.value.slice(0, start - 1) + target.value.slice(end);
+            target.setSelectionRange(start - 1, start - 1);
+          }
+          target.dispatchEvent(new Event("input", { bubbles: true }));
+          refreshPreview();
+        }
+
+        root.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          const btn = event.target.closest("button");
+          if (!btn || !root.contains(btn)) return;
+          const key = btn.dataset.key;
+          if (key === "shift") { shifted = !shifted; paint(); return; }
+          if (key === "sym") { symbols = true; shifted = false; paint(); return; }
+          if (key === "abc") { symbols = false; shifted = false; paint(); return; }
+          if (key === "back") { backspace(); return; }
+          if (key === "space") { insert(" "); return; }
+          if (key === "done") { if (target) target.blur(); setOpen(false); return; }
+          const ch = (shifted && /^[a-z]$/.test(key)) ? key.toUpperCase() : key;
+          insert(ch);
+          if (shifted && /^[a-z]$/i.test(key)) { shifted = false; paint(); }
+        });
+
+        for (const field of fields) {
+          field.addEventListener("focus", () => { applyFieldPolicy(); setOpen(true, field); });
+          field.addEventListener("input", refreshPreview);
+        }
+        document.addEventListener("focusin", (event) => {
+          if (!fields.includes(event.target)) setOpen(false);
+        });
+        window.addEventListener("resize", () => { applyFieldPolicy(); layout(); });
+        paint();
+        applyFieldPolicy();
+      }
+
+      bindWifiOsk();
       load().catch((error) => { say(error.message); });
     </script>
   </body>
