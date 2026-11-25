@@ -305,6 +305,8 @@
             </select>
           </label>
           <button id="wifi-country-save" type="button">SAVE COUNTRY</button>
+          <p class="note">Forget saved networks if the unit keeps trying a network that is no longer valid. The setup hotspot will start so you can join a new one.</p>
+          <button id="wifi-forget" type="button">FORGET SAVED NETWORKS</button>
         </div></section>
         <section id="background" class="card"><div class="round-scroll">
           <h2>BACKGROUND</h2>
@@ -1237,6 +1239,11 @@
       }, $("wifi-status")));
       window.setInterval(() => refreshHealth().catch(() => { $("health-text").textContent = "No data"; }), 3000);
 
+      $("wifi-forget").addEventListener("click", () => withSave($("wifi-forget"), async () => {
+        const result = await api("/api/wifi/forget", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        if (result.wifi) showWifiState(result.wifi);
+        return result.detail || "Saved networks forgotten.";
+      }, $("wifi-status"), { busy: "FORGETTING…", ok: "FORGOTTEN ✓", bad: "NOT FORGOTTEN" }));
       $("wifi-join").addEventListener("click", () => withSave($("wifi-join"), async () => {
         // Never trim: spaces are part of a network name ("Home Net " has a
         // trailing space and is a different network from "Home Net").

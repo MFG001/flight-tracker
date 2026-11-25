@@ -30,7 +30,7 @@ POS = {"name": "POS", "lat": 28.1, "lon": -80.65}
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1015(self) -> None:
-        # 1.0.17 moved on; test_v1017 pins the exact number.
+        # 1.0.18 moved on; test_v1018 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 15))
         self.assertEqual(CONFIG_SCHEMA, 4)

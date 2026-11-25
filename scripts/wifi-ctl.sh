@@ -6,6 +6,11 @@
 #   connect              read four lines on stdin: SSID, password, hidden yes/no,
 #                        country code. The password never appears in argv of
 #                        sudo, so it is not written to the sudo/auth log.
+#                        After a successful join, this network is preferred
+#                        (autoconnect-priority 100) and other saved client
+#                        profiles have autoconnect turned off so an old
+#                        network is not retried.
+#   forget               delete saved client (non-hotspot) Wi-Fi profiles
 #   country CC           set the Wi-Fi regulatory country (two letters)
 #   hotspot [ssid] [pw] [iface]
 #   client-profiles      print saved client (non-hotspot) Wi-Fi profile names
@@ -190,6 +195,39 @@ hotspot_busy() {
   [[ "$count" != "0" ]]
 }
 
+# After a successful join, prefer this SSID and stop older saved client
+# profiles from autoconnecting (they are a different network, or the same
+# name with a stale password). Profiles are matched on the wireless SSID,
+# including any spaces, not only the NetworkManager connection name.
+promote_client_network() {
+  local ssid="$1" mode name prof_ssid
+  while IFS="$SEP" read -r mode name; do
+    [[ -n "$name" ]] || continue
+    is_hotspot_profile "$mode" "$name" && continue
+    prof_ssid="$(nmcli -g 802-11-wireless.ssid connection show id "$name" 2>/dev/null || true)"
+    if [[ "$prof_ssid" == "$ssid" ]]; then
+      nmcli connection modify id "$name" \
+        connection.autoconnect yes \
+        connection.autoconnect-priority 100 >/dev/null 2>&1 || true
+    else
+      nmcli connection modify id "$name" connection.autoconnect no >/dev/null 2>&1 || true
+    fi
+  done < <(wifi_profiles)
+}
+
+# Remove saved client networks so the unit stops retrying them. The setup
+# hotspot profile is left alone. Prints the names it deleted.
+forget_client_profiles() {
+  local mode name
+  while IFS="$SEP" read -r mode name; do
+    [[ -n "$name" ]] || continue
+    is_hotspot_profile "$mode" "$name" && continue
+    if nmcli connection delete id "$name" >/dev/null 2>&1; then
+      printf '%s\n' "$name"
+    fi
+  done < <(wifi_profiles)
+}
+
 wait_for_client_wifi() {
   local seconds="$1"
   local start now
@@ -257,32 +295,12 @@ boot_hotspot_cmd() {
 
   start_hotspot "$ssid" "$password" "$iface"
   echo "No saved Wi-Fi came up; started the setup hotspot."
-
-  if ! [[ "$retry_every" =~ ^[0-9]+$ ]] || (( retry_every <= 0 )); then
-    return 0
-  fi
-
-  attempts=0
-  while true; do
-    sleep "$retry_every"
-    if wifi_test_running; then
-      :
-    elif client_wifi_connected; then
-      echo "Already on saved Wi-Fi; leaving the setup hotspot down."
-      return 0
-    elif hotspot_busy; then
-      echo "Leaving the setup hotspot up (a phone is connected or setup is in progress)."
-    elif try_saved_networks; then
-      return 0
-    else
-      start_hotspot "$ssid" "$password" "$iface"
-    fi
-    # Test hook: stop after N retry cycles so unit tests do not run forever.
-    if [[ "${FT_WIFI_RETRY_LIMIT:-}" =~ ^[0-9]+$ ]]; then
-      attempts=$((attempts + 1))
-      (( attempts >= FT_WIFI_RETRY_LIMIT )) && return 0
-    fi
-  done
+  # Do not periodically stop the AP to retry a failing saved profile.
+  # That loop (every ~3 minutes in 1.0.14-1.0.17) made the setup network
+  # disappear and look like the unit was "still trying the old Wi-Fi".
+  # Saved profiles stay on disk; a later reboot still waits the grace
+  # period and will join if the network is valid again.
+  return 0
 }
 
 
@@ -549,6 +567,7 @@ case "$cmd" in
     fi
     # nmcli prints the SSID and device on success; it does not print the password.
     if nmcli "${args[@]}"; then
+      promote_client_network "$ssid"
       test_dir="${FT_WIFI_TEST_DIR:-/run/flight-tracker-wifi-test}"
       if [[ -f "$test_dir/running" ]]; then
         : > "$test_dir/portal-saved"
@@ -572,6 +591,9 @@ case "$cmd" in
   client-profiles)
     client_profiles
     ;;
+  forget)
+    forget_client_profiles
+    ;;
   boot-hotspot)
     boot_hotspot_cmd "${1:-}" "${2:-}" "${3:-}"
     ;;
@@ -579,7 +601,7 @@ case "$cmd" in
     test_hotspot_cmd "$@"
     ;;
   *)
-    echo "Use scan, connect, country, hotspot, client-profiles, boot-hotspot, or test-hotspot." >&2
+    echo "Use scan, connect, forget, country, hotspot, client-profiles, boot-hotspot, or test-hotspot." >&2
     exit 1
     ;;
 esac

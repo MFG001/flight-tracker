@@ -782,6 +782,107 @@ def install_unit(release: Path, name: str, dest_dir: Path) -> bool:
         return False
 
 
+SERVICE_ACCOUNT_PATH = Path("/var/lib/flight-tracker/service-account.json")
+DISPLAY_UNITS = (
+    "flight-tracker.service",
+    "flight-tracker-kiosk.service",
+)
+
+
+def _unit_user_from_file(path: Path, default: str) -> str:
+    if not path.is_file():
+        return default
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("User="):
+            value = line.split("=", 1)[1].strip()
+            if value and value != "@USER@":
+                return value
+    return default
+
+
+def display_unit_users(
+    unit_dir: Path = SYSTEM_UNIT_DIR,
+    account_path: Path = SERVICE_ACCOUNT_PATH,
+) -> tuple[str, str]:
+    """Service account and kiosk login for substituted unit files.
+
+    OTA must not write User=@USER@ into /etc/systemd/system. Prefer the
+    record install.sh/harden left, then the User= already on the unit.
+    """
+    server, kiosk = "ft-server", "flighttracker"
+    if account_path.is_file():
+        try:
+            record = json.loads(account_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            record = {}
+        if isinstance(record, dict):
+            server = str(record.get("user") or server)
+            kiosk = str(record.get("previous") or kiosk)
+    server = _unit_user_from_file(unit_dir / "flight-tracker.service", server)
+    kiosk = _unit_user_from_file(unit_dir / "flight-tracker-kiosk.service", kiosk)
+    return server, kiosk
+
+
+def install_display_unit(release: Path, name: str, dest_dir: Path, user: str) -> bool:
+    """Copy a display/kiosk unit with @USER@ replaced, mode 0644."""
+    source = release / "deploy" / name
+    dest = dest_dir / name
+    if not source.is_file() or not dest_dir.is_dir() or not os.access(dest_dir, os.W_OK):
+        return False
+    if dest.exists() and not os.access(dest, os.W_OK):
+        return False
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", user or ""):
+        return False
+    try:
+        text = source.read_text(encoding="utf-8").replace("@USER@", user)
+        if "@USER@" in text:
+            return False
+        temporary = dest.with_name(f".{dest.name}.new")
+        temporary.write_text(text, encoding="utf-8")
+        temporary.chmod(0o644)
+        os.replace(temporary, dest)
+        return True
+    except OSError:
+        return False
+
+
+def refresh_display_units(
+    release: Path,
+    unit_dir: Path = SYSTEM_UNIT_DIR,
+    *,
+    account_path: Path = SERVICE_ACCOUNT_PATH,
+    run_systemctl: bool = True,
+    systemctl: str | None = None,
+    runtime_dir: Path | None = None,
+) -> list[str]:
+    """Install the display-server and kiosk units on OTA (install.sh does not rerun).
+
+    This is how an OTA-updated unit receives the 1.0.16 change that drops
+    After=network-online.target, which otherwise leaves a white glass and
+    no setup hotspot when the saved Wi-Fi is gone.
+    """
+    server_user, kiosk_user = display_unit_users(unit_dir, account_path)
+    users = {
+        "flight-tracker.service": server_user,
+        "flight-tracker-kiosk.service": kiosk_user,
+    }
+    installed: list[str] = []
+    for name in DISPLAY_UNITS:
+        if install_display_unit(release, name, unit_dir, users[name]):
+            installed.append(name)
+    if not installed or not run_systemctl:
+        return installed
+    ctl = systemctl or shutil.which("systemctl")
+    runtime = Path("/run/systemd/system") if runtime_dir is None else runtime_dir
+    if not ctl or not runtime.is_dir():
+        return installed
+    try:
+        subprocess.run([ctl, "daemon-reload"], check=False, capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return installed
+
+
 def refresh_systemd_units(
     release: Path,
     unit_dir: Path = SYSTEM_UNIT_DIR,
@@ -955,6 +1056,7 @@ def apply_update(
         refresh_wrapper(final, wrapper)
         refresh_helpers(final, wrapper.parent)
         refresh_systemd_units(final)
+        refresh_display_units(final)
         installed = {
             "current": found["version"],
             "version": found["version"],

@@ -30,7 +30,7 @@ OLD_MAKERWORLD = "https://makerworld.com/en/models/3666834-flight-tracker-instru
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1014(self) -> None:
-        # 1.0.17 moved on; test_v1017 pins the exact number.
+        # 1.0.18 moved on; test_v1018 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 14))
 
@@ -224,43 +224,19 @@ exit 0
         self.assertIn("not starting the setup hotspot", result.stdout)
         self.assertFalse([c for c in self.calls() if "hotspot" in c])
 
-    def test_retry_rejoins_saved_network_when_no_station(self) -> None:
+    def test_boot_does_not_retry_saved_network_after_starting_hotspot(self) -> None:
         (self.tmp / "profiles").write_text(f"{SPACED}:802-11-wireless\n")
         result = self.run_ctl(
             "boot-hotspot", "FlightTracker-Setup", "ABCDEFGH",
             env={"FT_WIFI_RETRY_SECONDS": "1", "FT_WIFI_RETRY_LIMIT": "2"},
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Joined saved Wi-Fi", result.stdout)
-        self.assertIn(SPACED, result.stdout)
+        self.assertIn("No saved Wi-Fi came up", result.stdout)
+        self.assertNotIn("Joined saved Wi-Fi", result.stdout)
         downs = [c for c in self.calls() if c[:3] == ["connection", "down", "id"] and c[3] == "FlightTracker-Setup"]
-        self.assertTrue(downs, self.calls())
+        self.assertFalse(downs, downs)
         ups = [c for c in self.calls() if c[:4] == ["connection", "up", "id", SPACED]]
-        self.assertTrue(ups, self.calls())
-
-    def test_retry_leaves_hotspot_up_when_phone_is_joined(self) -> None:
-        (self.tmp / "profiles").write_text(f"{SPACED}:802-11-wireless\n")
-        (self.tmp / "stations").write_text("Station aa:bb:cc:dd:ee:ff (on wlan0)\n")
-        result = self.run_ctl(
-            "boot-hotspot", "FlightTracker-Setup", "ABCDEFGH",
-            env={"FT_WIFI_RETRY_SECONDS": "1", "FT_WIFI_RETRY_LIMIT": "1"},
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("a phone is connected or setup is in progress", result.stdout)
-        downs = [c for c in self.calls() if c[:3] == ["connection", "down", "id"] and c[3] == "FlightTracker-Setup"]
-        self.assertFalse(downs, downs)
-
-    def test_retry_leaves_hotspot_up_while_setup_connect_is_running(self) -> None:
-        (self.tmp / "profiles").write_text(f"{SPACED}:802-11-wireless\n")
-        (self.tmp / "connecting").write_text("1\n")
-        result = self.run_ctl(
-            "boot-hotspot", "FlightTracker-Setup", "ABCDEFGH",
-            env={"FT_WIFI_RETRY_SECONDS": "1", "FT_WIFI_RETRY_LIMIT": "1"},
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("a phone is connected or setup is in progress", result.stdout)
-        downs = [c for c in self.calls() if c[:3] == ["connection", "down", "id"] and c[3] == "FlightTracker-Setup"]
-        self.assertFalse(downs, downs)
+        self.assertFalse(ups, ups)
 
     def test_boot_leaves_test_hotspot_alone(self) -> None:
         (self.tmp / "profiles").write_text(f"{SPACED}:802-11-wireless\n")

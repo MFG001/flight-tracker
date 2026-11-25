@@ -111,8 +111,11 @@ if [[ "$health_wait" != "0" ]]; then
     sleep 1
   done
   if [[ "$healthy" -eq 0 ]]; then
-    echo "The display server is not answering at ${health_url}." >&2
-    exit 1
+    # 1.0.16 exited here, so Chromium never opened and the panel stayed
+    # white (compositor/backlight only) after an OTA when /api/health was
+    # late or the display server was still waiting for network-online.
+    # Open the glass anyway; loadDisplay() retries until the server answers.
+    echo "The display server is not answering at ${health_url}; opening the glass anyway so it can retry." >&2
   fi
 fi
 

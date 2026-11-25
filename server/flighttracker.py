@@ -31,7 +31,7 @@ from typing import Any
 from adsbfi import AdsbFiFeed, query_radius_nm, radius_url
 from airports import search_airports
 from gpio_input import GpioService
-from wifi_net import connect_wifi, load_hotspot, set_country, start_setup_hotspot, wifi_scan, wifi_status
+from wifi_net import connect_wifi, forget_wifi, load_hotspot, set_country, start_setup_hotspot, wifi_scan, wifi_status
 from logic import (
     backlight_value,
     demo_document,
@@ -45,7 +45,7 @@ from logic import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.17 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.18 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -1384,7 +1384,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                     return
                 self._json(app.update_view(ok=True))
                 return
-            if parsed.path in ("/api/config", "/api/brightness", "/api/display/restart", "/api/feed/test", "/api/wifi/connect", "/api/wifi/country", "/api/wifi/hotspot", "/api/config/reset"):
+            if parsed.path in ("/api/config", "/api/brightness", "/api/display/restart", "/api/feed/test", "/api/wifi/connect", "/api/wifi/country", "/api/wifi/hotspot", "/api/wifi/forget", "/api/config/reset"):
                 app.touch_activity()
             if parsed.path == "/api/config":
                 cfg, errors = app.update_config(payload)
@@ -1431,6 +1431,14 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 return
             if parsed.path == "/api/wifi/hotspot":
                 ok, detail = start_setup_hotspot(app.hotspot())
+                self._json({"ok": ok, "detail": detail, "wifi": app.wifi()}, 200 if ok else 500)
+                return
+            if parsed.path == "/api/wifi/forget":
+                ok, detail = forget_wifi()
+                if ok:
+                    started, start_detail = start_setup_hotspot(app.hotspot())
+                    if started:
+                        detail = (detail + " " + start_detail).strip()
                 self._json({"ok": ok, "detail": detail, "wifi": app.wifi()}, 200 if ok else 500)
                 return
             if parsed.path == "/api/wifi/country":

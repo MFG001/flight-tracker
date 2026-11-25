@@ -124,15 +124,16 @@ class KioskBootTests(unittest.TestCase):
         self.assertGreaterEqual(elapsed, 1.4)
         self.assertIn("http://127.0.0.1:8741/?kiosk=1", (tmp / "chrome-args").read_text())
 
-    def test_chromium_is_not_opened_if_the_server_stays_down(self) -> None:
+    def test_chromium_opens_even_if_the_server_stays_down(self) -> None:
         result, tmp = self.start_kiosk(
             health_wait="1",
             health_url="http://127.0.0.1:9/api/health",
             timeout=15,
         )
-        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("not answering", result.stderr)
-        self.assertFalse((tmp / "chrome-args").exists())
+        self.assertIn("opening the glass anyway", result.stderr)
+        self.assertIn("http://127.0.0.1:8741/?kiosk=1", (tmp / "chrome-args").read_text())
 
     def test_missing_display_does_not_open_chromium(self) -> None:
         result, tmp = self.start_kiosk(wayland=False, health_wait="0", display_wait="1")

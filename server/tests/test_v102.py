@@ -385,13 +385,14 @@ class WifiTests(unittest.TestCase):
     def test_helper_reads_stdin_and_quotes_args(self) -> None:
         tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp, True)
-        _exe(tmp, "nmcli", f'printf "%s\\n" "$@" > {tmp}/nm-args\n')
+        _exe(tmp, "nmcli", f'{{ printf "CALL"; for a in "$@"; do printf "\\t%s" "$a"; done; printf "\\n"; }} >> {tmp}/nm-args\n')
         env = {"PATH": f"{tmp}:/usr/bin:/bin"}
         data = "My Net; touch /tmp/pwned\npass word 123\nyes\n\n"
         result = subprocess.run(["bash", str(ROOT / "scripts/wifi-ctl.sh"), "connect"], input=data, env=env, capture_output=True, text=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stderr)
-        args = (tmp / "nm-args").read_text().split("\n")
-        self.assertEqual(args[:9], ["--wait", "45", "dev", "wifi", "connect", "My Net; touch /tmp/pwned", "password", "pass word 123", "hidden"])
+        lines = [line.split("\t")[1:] for line in (tmp / "nm-args").read_text().splitlines() if line.startswith("CALL")]
+        connect = next((line for line in lines if line[:5] == ["--wait", "45", "dev", "wifi", "connect"]), None)
+        self.assertEqual(connect[:9], ["--wait", "45", "dev", "wifi", "connect", "My Net; touch /tmp/pwned", "password", "pass word 123", "hidden"])
         self.assertNotIn("pass word 123", result.stdout + result.stderr)
 
 

@@ -1,6 +1,9 @@
 [Unit]
 Description=Flight Tracker setup hotspot by Maverick Field Gear
-After=NetworkManager.service flight-tracker.service
+# Do not wait for flight-tracker.service: after an OTA the installed
+# display-server unit may still have After=network-online.target, and a
+# dead saved Wi-Fi would then block the setup hotspot as well as the glass.
+After=NetworkManager.service
 Wants=NetworkManager.service
 
 [Service]

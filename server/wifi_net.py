@@ -384,3 +384,23 @@ def start_setup_hotspot(hotspot: dict[str, str]) -> tuple[bool, str]:
         detail = "This unit is missing its Wi-Fi permission. Run install.sh again."
     return False, detail
 
+
+def forget_wifi() -> tuple[bool, str]:
+    """Delete saved client Wi-Fi profiles through the root helper.
+
+    The setup hotspot profile is not removed. After this, no saved home
+    network remains for NetworkManager or the boot script to retry.
+    """
+    helper = _helper()
+    if not helper.is_file():
+        return False, "The Wi-Fi helper is not installed. Run install.sh again."
+    result = _run(["sudo", "-n", str(helper), "forget"], timeout=30)
+    if result.returncode == 0:
+        names = [line for line in (result.stdout or "").splitlines() if line.strip()]
+        if names:
+            return True, "Forgot " + ", ".join(names) + "."
+        return True, "No saved Wi-Fi networks to forget."
+    detail = (result.stderr or result.stdout or "Could not forget saved networks.").strip()
+    if "password is required" in detail.lower():
+        detail = "This unit is missing its Wi-Fi permission. Run install.sh again."
+    return False, detail
