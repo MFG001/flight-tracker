@@ -16,7 +16,7 @@ from pathlib import Path
 from unittest import mock
 
 from server import display_setup, wifi_net
-from server.logic import DEFAULT_CONFIG, hhmm_to_hours, hours_to_hhmm, sanitize_config
+from server.logic import CONFIG_SCHEMA, DEFAULT_CONFIG, hhmm_to_hours, hours_to_hhmm, sanitize_config
 from server.migrate import migrate_config
 from server.rings import ring_distances
 from server.updater import pack_tree
@@ -206,7 +206,7 @@ class ConfigTests(unittest.TestCase):
     def test_migration_to_1_0_2(self) -> None:
         old = {"schema": 2, "sweep": {"enabled": True, "periodSec": 4}, "weather": {"enabled": False, "opacity": 0.6}}
         new = migrate_config(deepcopy(old))
-        self.assertEqual(new["schema"], 3)
+        self.assertGreaterEqual(new["schema"], 3)
         self.assertEqual(new["sweep"]["periodSec"], 8)
         self.assertTrue(new["weather"]["enabled"])
         self.assertEqual(new["display"]["rotation"], 270)
@@ -224,11 +224,11 @@ class ConfigTests(unittest.TestCase):
         path = tmp / "config.json"
         path.write_text(json.dumps({"schema": 2, "sweep": {"periodSec": 4}}), encoding="utf-8")
         subprocess.run([sys.executable, str(ROOT / "server/migrate.py"), "--config", str(path), "--no-system"], check=True)
-        self.assertEqual(json.loads(path.read_text())["schema"], 3)
+        self.assertGreaterEqual(json.loads(path.read_text())["schema"], 3)
 
     def test_example_config_is_current(self) -> None:
         example = json.loads((ROOT / "data/config.example.json").read_text())
-        self.assertEqual(example["schema"], 3)
+        self.assertEqual(example["schema"], CONFIG_SCHEMA)
         cfg, errors = sanitize_config(example)
         self.assertEqual(errors, [])
         self.assertEqual(migrate_config(deepcopy(cfg)), cfg)

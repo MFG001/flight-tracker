@@ -295,7 +295,7 @@ body.kiosk #attrib {
   pointer-events: none;
 }
 #idle-title { color: #ffd089; letter-spacing: 0.04em; font-size: 14px; }
-#idle-clock { font-size: 28px; letter-spacing: 0.12em; margin: 6px 0; }
+#idle-clock { font-size: 36px; letter-spacing: 0.08em; margin: 6px 0; }
 #idle-clock.hold-target {
   pointer-events: auto;
   touch-action: none;
@@ -591,7 +591,8 @@ body[data-feed="remote"] .local-only { display: none; }
 /* Idle / watch screen: one backed block with even spacing so the text does
    not sit on map labels, ring numbers, or the home marker. */
 #idle {
-  width: 54%;
+  /* 1.0.15: a little wider so the larger clock stays on one line at 480. */
+  width: 64%;
   padding: 12px 14px;
   border-radius: 18px;
   /* 1.0.7: see-through enough that radar echoes around home show under the
@@ -604,9 +605,11 @@ body[data-feed="remote"] .local-only { display: none; }
 }
 #idle[hidden] { display: none; }
 #idle p { margin: 0; line-height: 1.25; }
-#idle-clock { margin: 2px 0; }
-#idle-metar { font-size: 11px; }
-#idle-wx { font-size: 11px; letter-spacing: 0.04em; color: #9fd8ff; }
+/* 1.0.15: larger time and weather on the standby card only. The traffic-view
+   clock and METAR pills at the bottom of the glass stay as they were. */
+#idle-clock { margin: 2px 0; font-size: 36px; letter-spacing: 0.08em; white-space: nowrap; }
+#idle-metar { font-size: 15px; }
+#idle-wx { font-size: 15px; letter-spacing: 0.04em; color: #9fd8ff; }
 #idle-wx[data-tone="bad"] { color: #ffb3a8; }
 #idle-wx[data-tone="warn"] { color: #ffd089; }
 

@@ -572,6 +572,21 @@
         return parsed;
       }
 
+      function icaoHomeName(name) {
+        const text = String(name || "").trim().toUpperCase();
+        if (/^[A-Z0-9]{3,4}$/.test(text) && text !== "POS" && text !== "HOME") return text;
+        return "";
+      }
+
+      function metarFollowsHome(station, homeName) {
+        const code = String(station || "").trim().toUpperCase();
+        const home = String(homeName || "").trim().toUpperCase();
+        if (!code) return true;
+        if (code === home) return true;
+        if (code === "KJFK" && home === "KJFK") return true;
+        return false;
+      }
+
       function fill(cfg) {
         $("lat").value = cfg.home.lat;
         $("lon").value = cfg.home.lon;
@@ -977,6 +992,10 @@
           home = { name: "POS", lat: parsed.lat, lon: parsed.lon };
         }
         const current = await api("/api/config");
+        if (metarFollowsHome(current.metarStation, current.home && current.home.name)) {
+          current.metarStation = icaoHomeName(home.name);
+          $("metar-station").value = current.metarStation;
+        }
         current.home = home;
         await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(current) });
         return "Saved. The glass is now centred here.";

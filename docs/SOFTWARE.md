@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.14 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
+How to install, set up, and run Flight Tracker 1.0.15 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
@@ -119,7 +119,7 @@ Fields that are read: `hex`, `flight`, `lat`, `lon`, `alt_baro` (including `"gro
 6. After the home network connects, the card changes to “Connected” and a QR code for `http://flighttracker.local/`, then closes. Open that address any time from a phone on the LAN.
 7. **MNU → WI-FI SETUP** opens the card again.
 
-The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR defaults to KJFK. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
+The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR starts at KJFK and follows the home airport when you change home by airport search. A latitude and longitude home uses the nearest station, unless you type a METAR station on the setup page. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
 
 The round display opens the Join setup card only while the FlightTracker-Setup hotspot is actually up. While it is waiting for a saved network after boot, that card stays hidden. QR codes are drawn on the Pi with the open-source `qrcode` library. No QR image is fetched from the network.
 
@@ -168,7 +168,7 @@ Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add.
 | `facingDeg` | Used for track-up when no aircraft is selected |
 | `altitudeBand` | `all`, `low` (below 10,000 ft), `mid`, `high`, `upper` |
 | `brightness` | 0–100. Written to the panel as 0–255 with the Waveshare terminal command |
-| `metarStation` | ICAO code, or blank to use the nearest observation |
+| `metarStation` | ICAO code. Follows the home airport when home is set by airport search; blank uses the nearest observation |
 | `feed.mode` | `adsbfi` (default, internet), `local` (receiver file), `remote` (receiver URL), or `demo` |
 | `feed.host`, `feed.port` | readsb/dump1090 host. The JSON URL is `http://host:port/data/aircraft.json` unless `remoteUrl` is set |
 | `gpio` | Optional buttons and encoder. Off by default |

@@ -36,6 +36,7 @@ from logic import (
     backlight_value,
     demo_document,
     haversine_nm,
+    metar_station_after_save,
     normalize_aircraft,
     resolved_feed_url,
     sanitize_config,
@@ -44,7 +45,7 @@ from logic import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.14 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.15 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -175,6 +176,7 @@ class App:
         if errors:
             return None, errors
         with self.lock:
+            cfg["metarStation"] = metar_station_after_save(self.config, cfg)
             self.config = cfg
             self._write_config(cfg)
         self.feed_overridden = True

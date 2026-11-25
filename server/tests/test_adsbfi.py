@@ -196,7 +196,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(migrate_config(cfg, path_exists=lambda p: True)["feed"]["mode"], "local")
         cfg = {"schema": 1, "feed": {"mode": "remote", "localPath": "/run/readsb/aircraft.json"}}
         self.assertEqual(migrate_config(cfg, path_exists=lambda p: False)["feed"]["mode"], "remote")
-        self.assertEqual(cfg["schema"], 3)
+        self.assertGreaterEqual(cfg["schema"], 3)
 
 
 if __name__ == "__main__":

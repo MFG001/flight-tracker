@@ -40,7 +40,7 @@ QUADRATURE = (0, 1, -1, 0, -1, 0, 0, 1, 1, 0, 0, -1, 0, -1, 1, 0)
 SWEEP_DEFAULT_SEC = 8
 SWEEP_MIN_SEC = 3
 SWEEP_MAX_SEC = 16
-CONFIG_SCHEMA = 3
+CONFIG_SCHEMA = 4
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "schema": CONFIG_SCHEMA,
@@ -387,6 +387,67 @@ def _pin(value: Any) -> int | None:
     if 2 <= pin <= 27:
         return pin
     return None
+
+
+# 1.0.0–1.0.14 shipped METAR locked to KJFK, the default home. 1.0.15
+# follows the home airport, or the nearest station for a lat/lon home.
+DEFAULT_METAR_STATION = "KJFK"
+HOME_PLACEHOLDER_NAMES = {"POS", "HOME"}
+
+
+def icao_home_name(name: Any) -> str:
+    """Return a 3–4 character airport code, or "" for a lat/lon placeholder."""
+    text = str(name or "").strip().upper()
+    if re.fullmatch(r"[A-Z0-9]{3,4}", text) and text not in HOME_PLACEHOLDER_NAMES:
+        return text
+    return ""
+
+
+def metar_follows_home(station: Any, home_name: Any) -> bool:
+    """True when the METAR station is still tied to home, or is blank (nearest)."""
+    code = str(station or "").strip().upper()
+    home = str(home_name or "").strip().upper()
+    if not code:
+        return True
+    if code == home:
+        return True
+    if code == DEFAULT_METAR_STATION and home == DEFAULT_METAR_STATION:
+        return True
+    return False
+
+
+def metar_station_for_home(home_name: Any) -> str:
+    """Home ICAO, or blank so the server fetches the nearest observation."""
+    return icao_home_name(home_name)
+
+
+def migrate_default_metar_station(cfg: dict[str, Any]) -> None:
+    """On upgrade, fix units still on the shipped KJFK default after home moved."""
+    station = str(cfg.get("metarStation") or "").strip().upper()
+    home = cfg.get("home") if isinstance(cfg.get("home"), dict) else {}
+    home_name = str(home.get("name") or "").strip().upper()
+    if station != DEFAULT_METAR_STATION or home_name == DEFAULT_METAR_STATION:
+        return
+    cfg["metarStation"] = metar_station_for_home(home_name)
+
+
+def metar_station_after_save(previous: dict[str, Any] | None, new_cfg: dict[str, Any]) -> str:
+    """Keep an explicit METAR override; otherwise follow a home change."""
+    new_station = str((new_cfg or {}).get("metarStation") or "").strip().upper()
+    if not isinstance(previous, dict):
+        return new_station
+    old_station = str(previous.get("metarStation") or "").strip().upper()
+    old_home_obj = previous.get("home") if isinstance(previous.get("home"), dict) else {}
+    new_home_obj = new_cfg.get("home") if isinstance(new_cfg.get("home"), dict) else {}
+    old_home = str(old_home_obj.get("name") or "")
+    new_home = str(new_home_obj.get("name") or "")
+    if new_station != old_station:
+        return new_station
+    if old_home.strip().upper() == new_home.strip().upper():
+        return new_station
+    if metar_follows_home(old_station, old_home):
+        return metar_station_for_home(new_home)
+    return new_station
 
 
 def sanitize_config(payload: Any) -> tuple[dict[str, Any], list[str]]:

@@ -29,12 +29,10 @@ OLD_MAKERWORLD = "https://makerworld.com/en/models/3666834-flight-tracker-instru
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1014_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.14")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.14")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.14", "1.0.14"))
-        self.assertIn("FlightTracker/1.0.14 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_1014(self) -> None:
+        # 1.0.15 moved on; test_v1015 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 14))
 
 
 class MakerWorldLinkTests(unittest.TestCase):

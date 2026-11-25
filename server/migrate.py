@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA = 3
+SCHEMA = 4
 PUBLIC_REPO = "MFG001/flight-tracker"
 PUBLIC_MANIFEST_URL = f"https://github.com/{PUBLIC_REPO}/releases/latest/download/manifest.json"
 OLD_SWEEP_SEC = 4
@@ -56,6 +56,11 @@ def migrate_rings(cfg: dict[str, Any]) -> None:
 
 
 def migrate_config(cfg: dict[str, Any], path_exists: Any = None) -> dict[str, Any]:
+    try:
+        from logic import migrate_default_metar_station
+    except ImportError:
+        from server.logic import migrate_default_metar_station
+
     migrate_update_source(cfg)
     migrate_range(cfg)
     migrate_rings(cfg)
@@ -106,6 +111,13 @@ def migrate_config(cfg: dict[str, Any], path_exists: Any = None) -> dict[str, An
         if isinstance(weather, dict) and weather.get("enabled") is False:
             weather["enabled"] = True
         cfg["schema"] = 3
+        schema = 3
+    if schema < 4:
+        # 1.0.15: METAR was shipped as KJFK and did not follow a later home
+        # change. Point leftover defaults at the home airport, or nearest
+        # for a lat/lon home. An explicit station other than KJFK is kept.
+        migrate_default_metar_station(cfg)
+        cfg["schema"] = 4
     return cfg
 
 

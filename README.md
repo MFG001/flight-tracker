@@ -65,7 +65,7 @@ Photos and full steps: **[docs/BUILD.md](docs/BUILD.md)**. Printable sheet: [ass
 
 ## Software
 
-Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.14](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.14).
+Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.15](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.15).
 
 1. Flash Raspberry Pi OS (64-bit) with Raspberry Pi Imager 2.0.12 or newer. Fill in every customisation step: hostname and user `flighttracker`, Wi-Fi country, and SSH with password login. An Ethernet cable is the most reliable first install. If you use Wi-Fi, check the card with [`prep-sd-card.sh`](https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh) before the first boot. Tip: if your Wi-Fi name starts or ends with a space, Imager drops it and the Pi never joins. Either rename the network so it has no leading or trailing space, or fix the card with `bash prep-sd-card.sh wifi`. The screen stays blank until the software is installed. Full steps: [build guide, sections 6 and 7](docs/BUILD.md#6-flashing-the-os).
 2. From a Mac or Linux computer on the same network as the tracker, install or update the software with `deploy/push-update.sh`. This is the manual update path when CHECK FOR UPDATES on `flighttracker.local` cannot be used.
