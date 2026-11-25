@@ -63,7 +63,7 @@ try {
     console.error("720x720: expected a full key set, got", device.keyCount, device.labels);
     failed = true;
   }
-  if (!device.labels.includes("q") || !device.labels.includes("p") || !device.labels.includes("space")) {
+  if (!device.labels.includes("q") || !device.labels.includes("p") || !device.labels.includes("space") || !device.labels.includes("connect")) {
     console.error("720x720: missing expected keys", device.labels);
     failed = true;
   }
@@ -76,6 +76,76 @@ try {
     failed = true;
   }
   if (!failed) console.log("720x720: all", device.keyCount, "keys sit inside the circle.");
+
+  // Typing via the on-device keyboard must fill the inputs that CONNECT submits,
+  // and CONNECT itself must stay tappable (1.0.16 covered it 100%).
+  const posts = [];
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    if (req.url().includes("/api/wifi/connect") && req.method() === "POST") {
+      posts.push(req.postData() || "");
+      req.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, detail: "Connected.", wifi: { state: "connected", devices: [] } }) });
+      return;
+    }
+    req.continue();
+  });
+  const typeKey = async (key) => {
+    const handle = await page.evaluateHandle((k) => {
+      const root = document.getElementById("ft-osk");
+      return [...(root?.querySelectorAll("button") || [])].find((b) => b.dataset.key === k);
+    }, key);
+    const el = handle.asElement();
+    if (!el) throw new Error("missing key " + key);
+    const box = await el.boundingBox();
+    await handle.dispose();
+    if (!box) throw new Error("no box for key " + key);
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  };
+  await page.evaluate(() => {
+    document.getElementById("wifi-ssid").value = "";
+    document.getElementById("wifi-pass").value = "";
+    document.getElementById("wifi-ssid").focus();
+  });
+  await wait(150);
+  for (const ch of "HomeNet") await typeKey(ch.toLowerCase());
+  await page.evaluate(() => document.getElementById("wifi-pass").focus());
+  await wait(150);
+  for (const ch of "secret99") await typeKey(ch);
+  const filled = await page.evaluate(() => ({
+    ssid: document.getElementById("wifi-ssid").value,
+    pass: document.getElementById("wifi-pass").value,
+  }));
+  if (filled.ssid !== "homenet" || filled.pass !== "secret99") {
+    console.error("720x720: OSK did not write into the inputs that CONNECT submits", filled);
+    failed = true;
+  }
+  const coverage = await page.evaluate(() => {
+    const osk = document.getElementById("ft-osk");
+    const join = document.getElementById("wifi-join");
+    const o = osk.getBoundingClientRect();
+    const j = join.getBoundingClientRect();
+    const overlap = !(j.right < o.left || j.left > o.right || j.bottom < o.top || j.top > o.bottom);
+    const area = Math.max(0, Math.min(j.right, o.right) - Math.max(j.left, o.left)) * Math.max(0, Math.min(j.bottom, o.bottom) - Math.max(j.top, o.top));
+    const coveredPct = j.width * j.height ? 100 * area / (j.width * j.height) : 0;
+    return { overlap, coveredPct: +coveredPct.toFixed(1), joinTop: +j.top.toFixed(1), oskTop: +o.top.toFixed(1) };
+  });
+  if (coverage.coveredPct >= 40) {
+    console.error("720x720: CONNECT is covered by the keyboard", coverage);
+    failed = true;
+  } else {
+    console.log("720x720: CONNECT stays clear of the keyboard", coverage);
+  }
+  posts.length = 0;
+  await typeKey("connect");
+  await wait(400);
+  let body = {};
+  try { body = JSON.parse(posts[0] || "{}"); } catch { body = { raw: posts[0] }; }
+  if (posts.length !== 1 || body.ssid !== "homenet" || body.password !== "secret99") {
+    console.error("720x720: connect key did not submit the OSK values", { posts, body, filled });
+    failed = true;
+  } else {
+    console.log("720x720: connect key submitted OSK values.");
+  }
 
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.goto(setupUrl, { waitUntil: "domcontentloaded", timeout: 30000 });

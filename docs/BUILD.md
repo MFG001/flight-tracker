@@ -7,7 +7,7 @@
 
 Flight Tracker by **Maverick Field Gear**. Purpose-built. Field-proven.
 
-This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.16](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.16). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
+This is the step-by-step build for the compact B desk instrument: a 140 mm printed case, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). The current software release is [v1.0.17](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.17). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear)).
 
 A one-page letter assembly sheet, with the hardware photographs, a parts list, and print settings, is shown below. A printable PDF of the same sheet is on the [Pages build guide](https://mfg001.github.io/flight-tracker/build.html) as [assembly_sheet.pdf](https://mfg001.github.io/flight-tracker/assets/build/assembly_sheet.pdf).
 
@@ -195,7 +195,7 @@ Raspberry Pi OS (Legacy) Bookworm also works, but `prep-sd-card.sh` can only che
 Do this from a Mac or Linux computer on the **same network** as the tracker, not on the Pi. If your router has more than one network (for example a main LAN and a separate IoT or guest network), the Mac and the tracker must be on the same one.
 
 1. Find the tracker. Open your router's app (UniFi Network, for example) and look in the client list for **flighttracker**. Note its IP address. If it is not listed after 5 minutes, see [the Wi-Fi checks in Troubleshooting](#9-troubleshooting).
-2. Download the release. The current release is [v1.0.16](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.16). Download `flight-tracker-1.0.16.tar.gz` from that page. Safari may unzip the download to a `.tar` file, which also works.
+2. Download the release. The current release is [v1.0.17](https://github.com/MFG001/flight-tracker/releases/tag/v1.0.17). Download `flight-tracker-1.0.17.tar.gz` from that page. Safari may unzip the download to a `.tar` file, which also works.
 3. In Terminal, run these one at a time, pressing Return after each:
 
    ```bash
@@ -209,10 +209,10 @@ Do this from a Mac or Linux computer on the **same network** as the tracker, not
    If it says `Could not resolve hostname flighttracker.local`, use the IP address from step 1 instead, keeping the user `flighttracker`. Replace `TRACKER-IP` with that address:
 
    ```bash
-   bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.16.tar flighttracker@TRACKER-IP
+   bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.17.tar flighttracker@TRACKER-IP
    ```
 
-The script asks for the tracker's password for SSH, then again when `sudo` on the Pi asks. This is your own Pi login password, the one you set for the user `flighttracker` in Raspberry Pi Imager. It is not a GitHub password: downloading from GitHub needs no account or password. The first time, SSH also asks `Are you sure you want to continue connecting?`. Type `yes`. It copies the release, unpacks it, and runs `sudo bash install.sh` on the Pi. When it finishes it prints `flight-tracker.service is running 1.0.16`. Then reboot so the display overlay is applied:
+The script asks for the tracker's password for SSH, then again when `sudo` on the Pi asks. This is your own Pi login password, the one you set for the user `flighttracker` in Raspberry Pi Imager. It is not a GitHub password: downloading from GitHub needs no account or password. The first time, SSH also asks `Are you sure you want to continue connecting?`. Type `yes`. It copies the release, unpacks it, and runs `sudo bash install.sh` on the Pi. When it finishes it prints `flight-tracker.service is running 1.0.17`. Then reboot so the display overlay is applied:
 
 ```bash
 ssh flighttracker@flighttracker.local 'sudo reboot'

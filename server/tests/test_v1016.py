@@ -14,12 +14,10 @@ from server.logic import CONFIG_SCHEMA, DEFAULT_CONFIG  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1016_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.16")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.16")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.16", "1.0.16"))
-        self.assertIn("FlightTracker/1.0.16 ", (ROOT / "server/flighttracker.py").read_text())
+    def test_version_is_at_least_1016(self) -> None:
+        # 1.0.17 moved on; test_v1017 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 16))
         self.assertEqual(CONFIG_SCHEMA, 4)
         self.assertEqual(DEFAULT_CONFIG["schema"], 4)
 

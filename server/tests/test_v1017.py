@@ -1,0 +1,40 @@
+"""1.0.17: on-device Wi-Fi keyboard keeps CONNECT visible and submits OSK values."""
+from __future__ import annotations
+
+import json
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "server"))
+sys.path.insert(0, str(ROOT))
+
+from server.logic import CONFIG_SCHEMA, DEFAULT_CONFIG  # noqa: E402
+
+
+class VersionPinTests(unittest.TestCase):
+    def test_version_is_1017_everywhere(self) -> None:
+        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.17")
+        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.17")
+        lock = json.loads((ROOT / "package-lock.json").read_text())
+        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.17", "1.0.17"))
+        self.assertIn("FlightTracker/1.0.17 ", (ROOT / "server/flighttracker.py").read_text())
+        self.assertEqual(CONFIG_SCHEMA, 4)
+        self.assertEqual(DEFAULT_CONFIG["schema"], 4)
+
+
+class FeaturePresenceTests(unittest.TestCase):
+    def test_device_wifi_connect_stays_clear_of_the_keyboard(self) -> None:
+        html = (ROOT / "setup" / "index.html").read_text(encoding="utf-8")
+        bind = html[html.index("function bindWifiOsk()") :]
+        self.assertIn("function pinJoinButton(", bind)
+        self.assertIn('"connect"', bind)
+        self.assertIn('$("wifi-join")?.click()', bind)
+        checker = (ROOT / "scripts" / "check-wifi-osk.mjs").read_text(encoding="utf-8")
+        self.assertIn("CONNECT is covered by the keyboard", checker)
+        self.assertIn("connect key did not submit the OSK values", checker)
+
+
+if __name__ == "__main__":
+    unittest.main()

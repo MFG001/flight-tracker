@@ -261,6 +261,13 @@
         color: #ffd89a;
       }
       #ft-osk button.osk-action { font-size: 12px; letter-spacing: 0.04em; background: #121a22; }
+      #ft-osk button.osk-connect {
+        font-size: 12px; letter-spacing: 0.08em; font-weight: 700;
+        background: #3a2a12; border-color: var(--amber); color: #ffd89a;
+      }
+      #wifi-join.osk-pinned {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+      }
       body.ft-osk-open #wifi-ssid,
       body.ft-osk-open #wifi-pass { scroll-margin-top: 16vh; scroll-margin-bottom: 52vh; }
 
@@ -1259,14 +1266,14 @@
           ["q","w","e","r","t","y","u","i","o","p"],
           ["a","s","d","f","g","h","j","k","l"],
           ["shift","z","x","c","v","b","n","m","back"],
-          ["sym","space","done"],
+          ["sym","space","connect"],
         ];
         const SYMBOLS = [
           ["!","@","#","$","%","^","&","*","(",")"],
           ["-","_","=","+","[","]","{","}","\\","|"],
           [";",":","'","\"",",",".","/","<",">"],
           ["shift","~","`","?","back"],
-          ["abc","space","done"],
+          ["abc","space","connect"],
         ];
         let shifted = false;
         let symbols = false;
@@ -1300,7 +1307,7 @@
               if (key === "space") { btn.dataset.wide = "5"; btn.className = "osk-action"; btn.textContent = "space"; }
               else if (key === "shift") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "shift"; btn.setAttribute("aria-pressed", String(shifted)); }
               else if (key === "back") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "delete"; }
-              else if (key === "done") { btn.dataset.wide = "3"; btn.className = "osk-action"; btn.textContent = "done"; }
+              else if (key === "connect") { btn.dataset.wide = "3"; btn.className = "osk-connect"; btn.textContent = "connect"; }
               else if (key === "sym") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "?123"; }
               else if (key === "abc") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "ABC"; }
               else {
@@ -1341,6 +1348,47 @@
           root.style.top = Math.round(top) + "px";
           root.style.width = Math.round(width) + "px";
           root.style.height = Math.round(kbH) + "px";
+          pinJoinButton(top);
+        }
+
+        function clearJoinPin() {
+          const join = $("wifi-join");
+          if (!join) return;
+          join.classList.remove("osk-pinned");
+          join.style.position = "";
+          join.style.left = "";
+          join.style.top = "";
+          join.style.width = "";
+          join.style.height = "";
+          join.style.zIndex = "";
+          join.style.margin = "";
+        }
+
+        // Keep CONNECT visible and tappable just above the keyboard. In 1.0.16
+        // the keyboard covered the button completely, and a tap typed a key.
+        function pinJoinButton(kbTop) {
+          const join = $("wifi-join");
+          if (!join || !isDevicePanel() || root.hidden) { clearJoinPin(); return; }
+          const w = window.innerWidth, h = window.innerHeight;
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) / 2 - 22;
+          const btnH = 44;
+          const gap = 8;
+          const top = Math.round(kbTop - gap - btnH);
+          const bottom = top + btnH;
+          const chord = (y) => {
+            const d = y - cy;
+            return 2 * Math.sqrt(Math.max(0, radius * radius - d * d));
+          };
+          const width = Math.max(200, Math.min(260, Math.min(chord(top), chord(bottom)) - 16));
+          join.classList.add("osk-pinned");
+          join.style.position = "fixed";
+          join.style.zIndex = "81";
+          join.style.left = Math.round(cx - width / 2) + "px";
+          join.style.top = top + "px";
+          join.style.width = Math.round(width) + "px";
+          join.style.height = btnH + "px";
+          join.style.margin = "0";
         }
 
         function setOpen(on, field) {
@@ -1357,6 +1405,7 @@
             root.hidden = true;
             root.setAttribute("aria-hidden", "true");
             document.body.classList.remove("ft-osk-open");
+            clearJoinPin();
           }
         }
 
@@ -1413,7 +1462,11 @@
           if (key === "abc") { symbols = false; shifted = false; paint(); return; }
           if (key === "back") { backspace(); return; }
           if (key === "space") { insert(" "); return; }
-          if (key === "done") { if (target) target.blur(); setOpen(false); return; }
+          if (key === "connect") {
+            setOpen(false);
+            $("wifi-join")?.click();
+            return;
+          }
           const ch = (shifted && /^[a-z]$/.test(key)) ? key.toUpperCase() : key;
           insert(ch);
           if (shifted && /^[a-z]$/i.test(key)) { shifted = false; paint(); }
@@ -1424,8 +1477,10 @@
           field.addEventListener("input", refreshPreview);
         }
         document.addEventListener("focusin", (event) => {
+          if (event.target === $("wifi-join")) return;
           if (!fields.includes(event.target)) setOpen(false);
         });
+        $("wifi-join")?.addEventListener("click", () => setOpen(false), true);
         window.addEventListener("resize", () => { applyFieldPolicy(); layout(); });
         paint();
         applyFieldPolicy();

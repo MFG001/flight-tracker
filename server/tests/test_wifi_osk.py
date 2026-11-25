@@ -24,6 +24,16 @@ class WifiOskSourceTests(unittest.TestCase):
         self.assertIn('"none"', html)
         self.assertIn("wifi-ssid", html[html.index("function bindWifiOsk()") :])
         self.assertIn("wifi-pass", html[html.index("function bindWifiOsk()") :])
+        # CONNECT must stay usable on the glass: a connect key submits the
+        # values the OSK wrote into the inputs, and the form button is pinned
+        # above the keyboard so a tap cannot type a character instead.
+        bind = html[html.index("function bindWifiOsk()"):]
+        self.assertIn('dataset.key = key', bind)
+        self.assertIn('"connect"', bind)
+        self.assertIn('pinJoinButton', bind)
+        self.assertIn('$("wifi-join")?.click()', bind)
+        self.assertIn('function insert(text)', bind)
+        self.assertIn("target.value = next", bind)
         # Do not fight the phone OS keyboard.
         self.assertIn("min >= 600", html)
 
