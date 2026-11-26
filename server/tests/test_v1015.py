@@ -30,11 +30,11 @@ POS = {"name": "POS", "lat": 28.1, "lon": -80.65}
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1015(self) -> None:
-        # 1.0.18 moved on; test_v1018 pins the exact number.
+        # 1.0.19 moved on; test_v1019 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 15))
-        self.assertEqual(CONFIG_SCHEMA, 4)
-        self.assertEqual(DEFAULT_CONFIG["schema"], 4)
+        self.assertEqual(CONFIG_SCHEMA, 5)
+        self.assertEqual(DEFAULT_CONFIG["schema"], 5)
         self.assertEqual(DEFAULT_CONFIG["metarStation"], "KJFK")
         self.assertEqual(DEFAULT_CONFIG["home"]["name"], "KJFK")
 
@@ -100,33 +100,33 @@ class MetarMigrationTests(unittest.TestCase):
     def test_leftover_kjfk_default_follows_home_airport(self) -> None:
         cfg = {"schema": 3, "home": KMLB, "metarStation": "KJFK", "rangeNm": 20}
         out = migrate_config(deepcopy(cfg))
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
         self.assertEqual(out["metarStation"], "KMLB")
 
     def test_leftover_kjfk_default_with_lat_lon_home_uses_nearest(self) -> None:
         cfg = {"schema": 3, "home": POS, "metarStation": "KJFK", "rangeNm": 20}
         out = migrate_config(deepcopy(cfg))
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
         self.assertEqual(out["metarStation"], "")
 
     def test_default_home_keeps_kjfk(self) -> None:
         cfg = {"schema": 3, "home": KJFK, "metarStation": "KJFK", "rangeNm": 20}
         out = migrate_config(deepcopy(cfg))
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
         self.assertEqual(out["metarStation"], "KJFK")
 
     def test_explicit_override_is_kept(self) -> None:
         cfg = {"schema": 3, "home": KMLB, "metarStation": "KXMR", "rangeNm": 20}
         out = migrate_config(deepcopy(cfg))
         self.assertEqual(out["metarStation"], "KXMR")
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
 
     def test_schema_4_does_not_overwrite_an_explicit_kjfk(self) -> None:
         # After the one-time upgrade, a user who then chooses KJFK keeps it.
         cfg = {"schema": 4, "home": KMLB, "metarStation": "KJFK", "rangeNm": 20}
         out = migrate_config(deepcopy(cfg))
         self.assertEqual(out["metarStation"], "KJFK")
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
 
     def test_migration_is_idempotent_for_a_fixed_unit(self) -> None:
         cfg = {"schema": 3, "home": KMLB, "metarStation": "KJFK", "rangeNm": 20}
@@ -141,15 +141,15 @@ class MetarMigrationTests(unittest.TestCase):
 
     def test_example_and_default_are_already_current(self) -> None:
         example = json.loads((ROOT / "data/config.example.json").read_text())
-        self.assertEqual(example["schema"], 4)
+        self.assertEqual(example["schema"], 5)
         self.assertEqual(example["metarStation"], "KJFK")
         cfg, errors = sanitize_config(example)
         self.assertEqual(errors, [])
         self.assertEqual(migrate_config(deepcopy(cfg)), cfg)
 
-    def test_old_schema_2_lands_on_4(self) -> None:
+    def test_old_schema_2_lands_on_current_schema(self) -> None:
         out = migrate_config({"schema": 2, "home": KMLB, "metarStation": "KJFK", "rangeNm": 20})
-        self.assertEqual(out["schema"], 4)
+        self.assertEqual(out["schema"], 5)
         self.assertEqual(out["metarStation"], "KMLB")
 
 

@@ -319,9 +319,9 @@ class RotorSpinTests(unittest.TestCase):
         # Size is unchanged.
         self.assertIn("export const ROTOR_ICON_SCALE = 1.22;", icons)
         self.assertIn("rotorRad: rotorAngle(now, Boolean(aircraft.ground))", radar)
-        # The fuselage path no longer bakes in a static blade cross (classic).
-        classic = icons[icons.index("function drawClassic"):icons.index("function drawPlanform")]
-        self.assertNotIn("ctx.moveTo(-11, -1)", classic)
+        # The fuselage path does not bake in a static blade cross.
+        rotor = icons[icons.index("function drawMaverickRotor"):icons.index("function drawMaverickAirship")]
+        self.assertNotIn("ctx.moveTo(-11, -1)", rotor)
 
     @unittest.skipUnless(node_ts_ok(), "node with --experimental-strip-types not installed")
     def test_rotor_angle_is_slower_on_the_ground(self) -> None:

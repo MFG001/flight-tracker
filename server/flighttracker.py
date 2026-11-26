@@ -31,7 +31,7 @@ from typing import Any
 from adsbfi import AdsbFiFeed, query_radius_nm, radius_url
 from airports import search_airports
 from gpio_input import GpioService
-from wifi_net import connect_wifi, forget_wifi, load_hotspot, set_country, start_setup_hotspot, wifi_scan, wifi_status
+from wifi_net import connect_wifi, forget_wifi, load_hotspot, prefer_wifi, saved_wifi, set_country, set_wifi_password, start_setup_hotspot, wifi_scan, wifi_status
 from logic import (
     backlight_value,
     demo_document,
@@ -43,9 +43,13 @@ from logic import (
     valid_frame_id,
     valid_tile,
 )
+try:
+    from backlight import list_nodes, write_nodes
+except ImportError:
+    from server.backlight import list_nodes, write_nodes
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.18 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.19 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -134,7 +138,9 @@ class App:
         self.receiver_cache: dict[str, Any] = {"ok": False, "detail": "No data"}
         self.cache.mkdir(parents=True, exist_ok=True)
         self.gpio.apply(self.config)
-        self.apply_brightness(self.config["brightness"])
+        self.backlight_ok = False
+        self._applied_brightness = None
+        self.apply_effective_brightness()
 
     def _load_config(self) -> dict[str, Any]:
         example = ROOT / "data" / "config.example.json"
@@ -181,7 +187,7 @@ class App:
             self._write_config(cfg)
         self.feed_overridden = True
         self.gpio.apply(cfg)
-        self.apply_brightness(cfg["brightness"])
+        self.apply_effective_brightness()
         self.metar_cache["at"] = 0
         return cfg, []
 
@@ -190,33 +196,10 @@ class App:
             return json.loads(json.dumps(self.config))
 
     def night_status(self) -> dict[str, Any]:
-        from datetime import datetime
-
-        try:
-            from solar import is_night, schedule_night, solar_hours
-        except ImportError:
-            from server.solar import is_night, schedule_night, solar_hours
-        cfg = self.snapshot()
-        night = cfg.get("night") or {}
-        mode = str(night.get("mode") or "off")
-        local = datetime.now().astimezone()
-        offset = local.utcoffset()
-        tz_hours = 0.0 if offset is None else offset.total_seconds() / 3600
-        events = solar_hours(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local.date(), tz_hours)
-        hour = local.hour + local.minute / 60
-        active = False
-        if mode == "sun":
-            flag = is_night(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local)
-            active = bool(flag)
-        elif mode == "schedule":
-            active = schedule_night(hour, _night_hours(night, "from", "fromHour"), _night_hours(night, "to", "toHour"))
-        return {
-            "mode": mode,
-            "night": active,
-            "brightness": int(night.get("brightness") or 25),
-            "sunrise": None if not events else round(events[0], 2),
-            "sunset": None if not events else round(events[1], 2),
-        }
+        status = self.night_status_only()
+        self.apply_effective_brightness()
+        status["backlightOk"] = self.backlight_ok
+        return status
 
     def touch_activity(self) -> None:
         path = self.config_path.with_name("activity")
@@ -596,24 +579,77 @@ class App:
         return self.update_config(cfg)
 
     def backlight_nodes(self) -> list[str]:
-        return sorted(glob.glob("/sys/class/backlight/*/brightness"))
+        return [str(path) for path in list_nodes()]
+
+    def effective_brightness(self) -> float:
+        """Daytime percent, or the lower night setting when night dim is on."""
+        cfg = self.snapshot()
+        day = float(cfg["brightness"])
+        night = self.night_status_only()
+        if night["night"]:
+            return min(day, float(night["brightness"]))
+        return day
+
+    def night_status_only(self) -> dict[str, Any]:
+        """Night flag without writing the backlight (used to compute the level)."""
+        from datetime import datetime
+
+        try:
+            from solar import is_night, schedule_night, solar_hours
+        except ImportError:
+            from server.solar import is_night, schedule_night, solar_hours
+        cfg = self.snapshot()
+        night = cfg.get("night") or {}
+        mode = str(night.get("mode") or "off")
+        local = datetime.now().astimezone()
+        offset = local.utcoffset()
+        tz_hours = 0.0 if offset is None else offset.total_seconds() / 3600
+        events = solar_hours(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local.date(), tz_hours)
+        hour = local.hour + local.minute / 60
+        active = False
+        if mode == "sun":
+            active = bool(is_night(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local))
+        elif mode == "schedule":
+            active = schedule_night(hour, _night_hours(night, "from", "fromHour"), _night_hours(night, "to", "toHour"))
+        return {
+            "mode": mode,
+            "night": active,
+            "brightness": int(night.get("brightness") or 25),
+            "sunrise": None if not events else round(events[0], 2),
+            "sunset": None if not events else round(events[1], 2),
+        }
+
+    def apply_effective_brightness(self) -> bool:
+        percent = self.effective_brightness()
+        if self._applied_brightness == percent and self.backlight_ok:
+            return True
+        ok = self.apply_brightness(percent)
+        if ok:
+            self._applied_brightness = percent
+        return ok
 
     def apply_brightness(self, percent: float) -> bool:
         """Write the panel backlight the way the 4inch DSI LCD (C) wiki specifies.
 
-        Returns True when a sysfs node accepted the value. The desktop demo
-        has no node; the page then dims itself instead of pretending the
-        panel backlight changed.
+        Returns True when a sysfs node accepted the value. The glass uses a
+        CSS dim overlay when this returns False, including when a node exists
+        but cannot be written (missing sudoers or udev on an OTA-updated unit).
         """
         value = backlight_value(percent)
         nodes = self.backlight_nodes()
         if not nodes:
+            self.backlight_ok = False
             return False
+        written = write_nodes(value)
+        if written:
+            print(f"Backlight {value}/255 via {', '.join(Path(p).parent.name for p in written)}", flush=True)
+            self.backlight_ok = True
+            return True
         wrapper = Path("/usr/local/sbin/flight-tracker-brightness")
         script = wrapper if wrapper.is_file() else ROOT / "scripts" / "brightness.sh"
         if script.is_file():
             result = subprocess.run(
-                ["sudo", "-n", str(script), str(value)],
+                ["/usr/bin/sudo", "-n", str(script), str(value)],
                 timeout=3,
                 check=False,
                 capture_output=True,
@@ -621,21 +657,13 @@ class App:
             )
             if result.returncode == 0:
                 print(f"Backlight {value}/255 via {script.name}", flush=True)
+                self.backlight_ok = True
                 return True
             detail = (result.stderr or result.stdout or "").strip()
             print(f"Backlight sudo write failed ({detail or result.returncode})", flush=True)
-        # Same sysfs path as the wiki. Used only when this process can write
-        # the node without sudo. TODO: the wiki always shows sudo tee and
-        # does not say the node is group-writable.
-        wrote = False
-        for path in nodes:
-            try:
-                Path(path).write_text(str(value), encoding="ascii")
-            except OSError as exc:
-                print(f"Backlight write {path} failed: {exc}", flush=True)
-            else:
-                wrote = True
-        return wrote
+        print("Backlight write failed; the glass will dim in software.", flush=True)
+        self.backlight_ok = False
+        return False
 
     def hotspot(self) -> dict[str, str]:
         return load_hotspot(self.hotspot_path)
@@ -719,7 +747,7 @@ class App:
             self.config = cfg
             self._write_config(cfg)
         self.feed_overridden = True
-        self.apply_brightness(cfg["brightness"])
+        self.apply_effective_brightness()
         return cfg
 
     def restart_display(self) -> tuple[bool, str]:
@@ -1232,6 +1260,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                         "demoLock": app.force_demo,
                         "gpioError": app.gpio.last_error,
                         "backlightNodes": app.backlight_nodes(),
+                        "backlightOk": app.backlight_ok,
                     }
                 )
                 return
@@ -1282,6 +1311,11 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                     return
                 rescan = query.get("rescan", ["1"])[0] != "0"
                 self._json({"networks": wifi_scan(rescan=rescan)})
+                return
+            if path == "/api/wifi/saved":
+                if not self._allowed(app):
+                    return
+                self._json({"networks": saved_wifi(), "wifi": app.wifi()})
                 return
             if path == "/api/airports":
                 self._json({"airports": search_airports(query.get("q", [""])[0])})
@@ -1384,7 +1418,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                     return
                 self._json(app.update_view(ok=True))
                 return
-            if parsed.path in ("/api/config", "/api/brightness", "/api/display/restart", "/api/feed/test", "/api/wifi/connect", "/api/wifi/country", "/api/wifi/hotspot", "/api/wifi/forget", "/api/config/reset"):
+            if parsed.path in ("/api/config", "/api/brightness", "/api/display/restart", "/api/feed/test", "/api/wifi/connect", "/api/wifi/country", "/api/wifi/hotspot", "/api/wifi/forget", "/api/wifi/prefer", "/api/wifi/password", "/api/config/reset"):
                 app.touch_activity()
             if parsed.path == "/api/config":
                 cfg, errors = app.update_config(payload)
@@ -1405,7 +1439,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 if errors or saved is None:
                     self._json({"errors": errors}, 400)
                     return
-                self._json({"brightness": saved["brightness"], "hardware": app.backlight_nodes() != []})
+                self._json({"brightness": saved["brightness"], "hardware": app.backlight_ok})
                 return
             if parsed.path == "/api/config/reset":
                 self._json(app.reset_config())
@@ -1434,12 +1468,32 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 self._json({"ok": ok, "detail": detail, "wifi": app.wifi()}, 200 if ok else 500)
                 return
             if parsed.path == "/api/wifi/forget":
-                ok, detail = forget_wifi()
-                if ok:
+                ok, detail, start_ap = forget_wifi(
+                    name=str(payload.get("name") or ""),
+                    uuid=str(payload.get("uuid") or ""),
+                )
+                if ok and start_ap:
                     started, start_detail = start_setup_hotspot(app.hotspot())
                     if started:
                         detail = (detail + " " + start_detail).strip()
-                self._json({"ok": ok, "detail": detail, "wifi": app.wifi()}, 200 if ok else 500)
+                self._json({"ok": ok, "detail": detail, "wifi": app.wifi(), "networks": saved_wifi()}, 200 if ok else 500)
+                return
+            if parsed.path == "/api/wifi/prefer":
+                ok, detail = prefer_wifi(
+                    name=str(payload.get("name") or ""),
+                    uuid=str(payload.get("uuid") or ""),
+                )
+                self._json({"ok": ok, "detail": detail, "wifi": app.wifi(), "networks": saved_wifi()}, 200 if ok else 400)
+                return
+            if parsed.path == "/api/wifi/password":
+                # The new password is passed to the root helper on stdin and is
+                # never printed or logged (log_message records only the path).
+                ok, detail = set_wifi_password(
+                    name=str(payload.get("name") or ""),
+                    uuid=str(payload.get("uuid") or ""),
+                    password=str(payload.get("password") or ""),
+                )
+                self._json({"ok": ok, "detail": detail, "wifi": app.wifi(), "networks": saved_wifi()}, 200 if ok else 400)
                 return
             if parsed.path == "/api/wifi/country":
                 country = str(payload.get("country") or "").strip().upper()

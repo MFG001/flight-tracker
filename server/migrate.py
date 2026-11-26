@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA = 4
+SCHEMA = 5
 PUBLIC_REPO = "MFG001/flight-tracker"
 PUBLIC_MANIFEST_URL = f"https://github.com/{PUBLIC_REPO}/releases/latest/download/manifest.json"
 OLD_SWEEP_SEC = 4
@@ -118,6 +118,14 @@ def migrate_config(cfg: dict[str, Any], path_exists: Any = None) -> dict[str, An
         # for a lat/lon home. An explicit station other than KJFK is kept.
         migrate_default_metar_station(cfg)
         cfg["schema"] = 4
+        schema = 4
+    if schema < 5:
+        # Maverick is now the only aircraft icon set. A saved Linecut, Classic,
+        # Planform, Compact, or silhouette value becomes maverick. Missing
+        # values are filled in too. 1.0.18 can still read "maverick", so a
+        # rollback stays valid.
+        cfg["icons"] = "maverick"
+        cfg["schema"] = 5
     return cfg
 
 
@@ -133,6 +141,23 @@ def post_update_system_steps(config_path: Path) -> list[str]:
     here = Path(__file__).resolve().parent
     import subprocess
     import sys
+
+    # Permissions must be in place before the new server starts, otherwise a
+    # backlight node exists, the glass turns off the software dim, and a
+    # failed sysfs write leaves BRT doing nothing on the panel.
+    try:
+        from backlight import install_permissions
+    except ImportError:
+        try:
+            from server.backlight import install_permissions
+        except ImportError:
+            install_permissions = None  # type: ignore
+    if install_permissions is not None:
+        try:
+            result = install_permissions(reload_udev=True)
+            notes.append(f"Backlight permissions: {result}")
+        except Exception as exc:
+            notes.append(f"Backlight permissions skipped: {exc}")
 
     display = here / "display_setup.py"
     if display.is_file():

@@ -7,10 +7,17 @@
 #                        country code. The password never appears in argv of
 #                        sudo, so it is not written to the sudo/auth log.
 #                        After a successful join, this network is preferred
-#                        (autoconnect-priority 100) and other saved client
-#                        profiles have autoconnect turned off so an old
-#                        network is not retried.
-#   forget               delete saved client (non-hotspot) Wi-Fi profiles
+#                        (autoconnect-priority 100). Other saved client
+#                        profiles stay autoconnect-yes at a lower priority
+#                        so the unit can join home or shop when in range.
+#   saved                print saved client profiles (uuid, name, ssid,
+#                        active, autoconnect, priority). Never prints secrets.
+#   forget               delete all saved client (non-hotspot) profiles
+#   forget uuid|id REF   delete one saved client profile
+#   prefer uuid|id REF   make one saved client profile preferred
+#   password uuid|id REF
+#                        set that profile's PSK (password on stdin only).
+#                        If it is the connected network, reconnect.
 #   country CC           set the Wi-Fi regulatory country (two letters)
 #   hotspot [ssid] [pw] [iface]
 #   client-profiles      print saved client (non-hotspot) Wi-Fi profile names
@@ -18,10 +25,8 @@
 #                        start the setup hotspot when no client Wi-Fi
 #                        profile is saved, or when saved profiles exist but
 #                        none connects within a grace period (~2 minutes).
-#                        Ethernet does not count. Then, while the hotspot is
-#                        up, periodically retry saved networks unless a
-#                        station is associated or setup/test is in progress
-#                        (flight-tracker-wifi.service)
+#                        Ethernet does not count. The setup AP then stays
+#                        up (no retry loop that tears it down).
 #   test-hotspot [minutes]
 #                        brief, self-reverting setup-hotspot test (default 10,
 #                        max 30). Records the active client profile exactly,
@@ -195,25 +200,199 @@ hotspot_busy() {
   [[ "$count" != "0" ]]
 }
 
-# After a successful join, prefer this SSID and stop older saved client
-# profiles from autoconnecting (they are a different network, or the same
-# name with a stale password). Profiles are matched on the wireless SSID,
-# including any spaces, not only the NetworkManager connection name.
-promote_client_network() {
-  local ssid="$1" mode name prof_ssid
-  while IFS="$SEP" read -r mode name; do
-    [[ -n "$name" ]] || continue
+# Active connection UUIDs, one per line (unescaped).
+active_uuids() {
+  local line
+  while IFS= read -r line; do
+    nm_unescape "$line"
+    printf '\n'
+  done < <(nmcli -t -f UUID connection show --active 2>/dev/null || true)
+}
+
+# Wi-Fi connections as "uuid<US>name". NAME is last so it may contain colons.
+wifi_connection_ids() {
+  local line uuid typ name
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    uuid="$(nm_unescape "${line%%:*}")"
+    typ="${line#*:}"
+    name="$(nm_unescape "${typ#*:}")"
+    typ="$(nm_unescape "${typ%%:*}")"
+    [[ "$typ" == "802-11-wireless" ]] || continue
+    printf '%s%s%s\n' "$uuid" "$SEP" "$name"
+  done < <(nmcli -t -f UUID,TYPE,NAME connection show 2>/dev/null || true)
+}
+
+profile_mode() {
+  nmcli -g 802-11-wireless.mode connection show uuid "$1" 2>/dev/null || true
+}
+
+profile_ssid() {
+  nmcli -g 802-11-wireless.ssid connection show uuid "$1" 2>/dev/null || true
+}
+
+# Resolve uuid|id to "uuid<US>name". Refuses the setup AP. The id value is
+# used exactly as given (spaces, including trailing spaces, are kept).
+resolve_client() {
+  local kind="$1" value="$2" uuid name mode
+  if [[ -z "$value" ]]; then
+    echo "Say which saved network." >&2
+    return 1
+  fi
+  if [[ "$kind" == "uuid" ]]; then
+    if [[ ! "$value" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+      echo "That saved network id is not valid." >&2
+      return 1
+    fi
+    uuid="$value"
+    name="$(nmcli -g connection.id connection show uuid "$uuid" 2>/dev/null || true)"
+    if [[ -z "$name" ]]; then
+      echo "That saved network was not found." >&2
+      return 1
+    fi
+  elif [[ "$kind" == "id" ]]; then
+    name="$value"
+    uuid="$(nmcli -g connection.uuid connection show id "$name" 2>/dev/null || true)"
+    if [[ -z "$uuid" ]]; then
+      echo "That saved network was not found." >&2
+      return 1
+    fi
+  else
+    echo "Say which saved network." >&2
+    return 1
+  fi
+  mode="$(profile_mode "$uuid")"
+  if is_hotspot_profile "$mode" "$name"; then
+    echo "The setup network cannot be changed this way." >&2
+    return 1
+  fi
+  printf '%s%s%s\n' "$uuid" "$SEP" "$name"
+}
+
+# Mark the given client UUIDs preferred (autoconnect yes, priority 100).
+# Every other client profile stays autoconnect-yes so known networks at
+# another location still join automatically; a priority of 100 or more is
+# lowered so the preferred network wins when more than one is in range.
+set_preferred_uuids() {
+  local uuid name mode prio pref
+  declare -A want=()
+  for pref in "$@"; do
+    [[ -n "$pref" ]] || continue
+    want["$pref"]=1
+  done
+  if [[ ${#want[@]} -eq 0 ]]; then
+    return 0
+  fi
+  while IFS="$SEP" read -r uuid name; do
+    [[ -n "$uuid" ]] || continue
+    mode="$(profile_mode "$uuid")"
     is_hotspot_profile "$mode" "$name" && continue
-    prof_ssid="$(nmcli -g 802-11-wireless.ssid connection show id "$name" 2>/dev/null || true)"
-    if [[ "$prof_ssid" == "$ssid" ]]; then
-      nmcli connection modify id "$name" \
+    if [[ -n "${want[$uuid]:-}" ]]; then
+      nmcli connection modify uuid "$uuid" \
         connection.autoconnect yes \
         connection.autoconnect-priority 100 >/dev/null 2>&1 || true
     else
-      nmcli connection modify id "$name" connection.autoconnect no >/dev/null 2>&1 || true
+      prio="$(nmcli -g connection.autoconnect-priority connection show uuid "$uuid" 2>/dev/null || true)"
+      prio="${prio:-0}"
+      [[ "$prio" =~ ^-?[0-9]+$ ]] || prio=0
+      if (( prio >= 100 )); then
+        nmcli connection modify uuid "$uuid" \
+          connection.autoconnect yes \
+          connection.autoconnect-priority 50 >/dev/null 2>&1 || true
+      else
+        nmcli connection modify uuid "$uuid" connection.autoconnect yes >/dev/null 2>&1 || true
+      fi
     fi
-  done < <(wifi_profiles)
+  done < <(wifi_connection_ids)
 }
+
+# After a successful join, prefer this SSID. Other saved client profiles
+# keep autoconnect on, at a lower priority. Match on the wireless SSID,
+# including any spaces, not only the NetworkManager connection name.
+promote_client_network() {
+  local ssid="$1" uuid name mode prof_ssid
+  local -a matches=()
+  while IFS="$SEP" read -r uuid name; do
+    [[ -n "$uuid" ]] || continue
+    mode="$(profile_mode "$uuid")"
+    is_hotspot_profile "$mode" "$name" && continue
+    prof_ssid="$(profile_ssid "$uuid")"
+    if [[ "$prof_ssid" == "$ssid" ]]; then
+      matches+=("$uuid")
+    fi
+  done < <(wifi_connection_ids)
+  set_preferred_uuids "${matches[@]}"
+}
+
+# Saved client rows: uuid, name, ssid, active, autoconnect, priority.
+# Secrets (psk and so on) are never queried or printed.
+saved_client_profiles() {
+  local uuid name mode ssid auto prio active_list active
+  active_list="$(active_uuids)"
+  while IFS="$SEP" read -r uuid name; do
+    [[ -n "$uuid" ]] || continue
+    mode="$(profile_mode "$uuid")"
+    is_hotspot_profile "$mode" "$name" && continue
+    ssid="$(profile_ssid "$uuid")"
+    [[ -n "$ssid" ]] || ssid="$name"
+    auto="$(nmcli -g connection.autoconnect connection show uuid "$uuid" 2>/dev/null || true)"
+    prio="$(nmcli -g connection.autoconnect-priority connection show uuid "$uuid" 2>/dev/null || true)"
+    prio="${prio:-0}"
+    active=no
+    if grep -Fxq -- "$uuid" <<<"$active_list"; then
+      active=yes
+    fi
+    printf '%s%s%s%s%s%s%s%s%s%s%s\n' "$uuid" "$SEP" "$name" "$SEP" "$ssid" "$SEP" "$active" "$SEP" "${auto:-no}" "$SEP" "$prio"
+  done < <(wifi_connection_ids)
+}
+
+forget_one_client() {
+  local kind="$1" value="$2" uuid name
+  IFS="$SEP" read -r uuid name < <(resolve_client "$kind" "$value") || return 1
+  if nmcli connection delete uuid "$uuid" >/dev/null 2>&1; then
+    printf '%s\n' "$name"
+    return 0
+  fi
+  echo "Could not forget that saved network." >&2
+  return 1
+}
+
+prefer_one_client() {
+  local kind="$1" value="$2" uuid name
+  IFS="$SEP" read -r uuid name < <(resolve_client "$kind" "$value") || return 1
+  set_preferred_uuids "$uuid"
+  echo "Preferred $name."
+}
+
+# The new password is read from stdin only, never from argv, and is never
+# printed. The existing PSK is never read back. On a reconnect failure the
+# profile (and the new PSK) is kept so the user can try again.
+set_client_password() {
+  local kind="$1" value="$2" password="" uuid name active_list
+  IFS= read -r password || true
+  if [[ -z "$password" || ${#password} -lt 8 || ${#password} -gt 64 ]]; then
+    echo "Wi-Fi passwords are 8 to 63 characters." >&2
+    return 1
+  fi
+  IFS="$SEP" read -r uuid name < <(resolve_client "$kind" "$value") || return 1
+  if ! nmcli connection modify uuid "$uuid" \
+      802-11-wireless-security.key-mgmt wpa-psk \
+      802-11-wireless-security.psk "$password" >/dev/null 2>&1; then
+    echo "Could not update the saved password." >&2
+    return 1
+  fi
+  active_list="$(active_uuids)"
+  if grep -Fxq -- "$uuid" <<<"$active_list"; then
+    if nmcli --wait 45 connection up uuid "$uuid" >/dev/null 2>&1; then
+      echo "Password updated and reconnected."
+      return 0
+    fi
+    echo "Password was saved, but the unit could not reconnect. Check the password and try again." >&2
+    return 1
+  fi
+  echo "Password updated."
+}
+
 
 # Remove saved client networks so the unit stops retrying them. The setup
 # hotspot profile is left alone. Prints the names it deleted.
@@ -588,11 +767,24 @@ case "$cmd" in
   hotspot)
     start_hotspot "${1:-$HOTSPOT_SSID}" "${2:-}" "${3:-wlan0}"
     ;;
+  saved)
+    saved_client_profiles
+    ;;
   client-profiles)
     client_profiles
     ;;
   forget)
-    forget_client_profiles
+    if [[ -z "${1:-}" ]]; then
+      forget_client_profiles
+    else
+      forget_one_client "${1}" "${2:-}"
+    fi
+    ;;
+  prefer)
+    prefer_one_client "${1:-}" "${2:-}"
+    ;;
+  password)
+    set_client_password "${1:-}" "${2:-}"
     ;;
   boot-hotspot)
     boot_hotspot_cmd "${1:-}" "${2:-}" "${3:-}"
@@ -601,7 +793,7 @@ case "$cmd" in
     test_hotspot_cmd "$@"
     ;;
   *)
-    echo "Use scan, connect, forget, country, hotspot, client-profiles, boot-hotspot, or test-hotspot." >&2
+    echo "Use scan, connect, saved, forget, prefer, password, country, hotspot, client-profiles, boot-hotspot, or test-hotspot." >&2
     exit 1
     ;;
 esac

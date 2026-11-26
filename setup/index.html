@@ -265,11 +265,49 @@
         font-size: 12px; letter-spacing: 0.08em; font-weight: 700;
         background: #3a2a12; border-color: var(--amber); color: #ffd89a;
       }
-      #wifi-join.osk-pinned {
+      #wifi-join.osk-pinned, #wifi-saved-save.osk-pinned {
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
       }
       body.ft-osk-open #wifi-ssid,
-      body.ft-osk-open #wifi-pass { scroll-margin-top: 16vh; scroll-margin-bottom: 52vh; }
+      body.ft-osk-open #wifi-pass,
+      body.ft-osk-open #wifi-saved-pass { scroll-margin-top: 16vh; scroll-margin-bottom: 52vh; }
+      #wifi-join.osk-pinned, #wifi-saved-save.osk-pinned {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+      }
+      .subhead { margin: 14px 0 4px; font-size: 11px; letter-spacing: .14em; color: var(--muted); font-weight: 600; }
+      #saved-nets { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+      #saved-nets > li {
+        border: 1px solid #31404c;
+        border-radius: 12px;
+        background: #0b1014;
+        padding: 8px;
+        display: grid;
+        gap: 6px;
+      }
+      #saved-nets .saved-name {
+        font-weight: 600;
+        letter-spacing: 0;
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #saved-nets .saved-meta { font-size: 12px; letter-spacing: 0; color: var(--muted); }
+      #saved-nets .saved-meta .saved-now { color: #8fe3a8; }
+      #saved-nets .saved-meta .saved-pref { color: #ffd089; }
+      #saved-nets .saved-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      #saved-nets .saved-actions button,
+      .saved-pass-panel button {
+        margin: 0;
+        padding: 10px 8px;
+        min-height: 44px;
+        letter-spacing: .06em;
+        font-size: 11px;
+      }
+      #saved-nets .saved-prefer { grid-column: 1 / -1; }
+      #saved-nets .saved-confirm { font-size: 13px; letter-spacing: 0; color: #ffd089; margin: 0; }
+      .saved-pass-panel { margin-top: 10px; padding: 8px; border: 1px solid rgba(232, 162, 58, .55); border-radius: 12px; background: rgba(58, 42, 18, .35); }
+      .saved-pass-panel .saved-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+      .saved-pass-panel .primary { margin-top: 0; }
 
     </style>
   </head>
@@ -288,6 +326,19 @@
           <h2>WI-FI</h2>
           <p id="wifi-text" class="note">Checking NetworkManager…</p>
           <p id="wifi-ips" class="small"></p>
+          <h3 class="subhead">SAVED NETWORKS</h3>
+          <p class="note">Saved networks stay available at each location. Forget one you no longer use, make one preferred when more than one is in range, or change a password if that network's password changed.</p>
+          <ul id="saved-nets" aria-label="Saved networks"></ul>
+          <div id="saved-pass-panel" class="saved-pass-panel hidden">
+            <p id="saved-pass-title" class="note">New password</p>
+            <label>New password <input id="wifi-saved-pass" type="password" autocomplete="off" maxlength="64" /></label>
+            <label class="check"><input id="wifi-saved-show" type="checkbox" /> Show password</label>
+            <div class="saved-actions">
+              <button id="wifi-saved-save" class="primary" type="button">SAVE PASSWORD</button>
+              <button id="wifi-saved-cancel" type="button">CANCEL</button>
+            </div>
+            <p id="saved-pass-status" class="note"></p>
+          </div>
           <button id="wifi-scan" type="button">REFRESH LIST</button>
           <ul id="nets" aria-label="Nearby networks"></ul>
           <label>Network name <input id="wifi-ssid" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="32" /></label>
@@ -376,15 +427,6 @@
               <option value="aviation">NM · KT · FT</option>
               <option value="imperial">MI · MPH · FT</option>
               <option value="metric">KM · KM/H · M</option>
-            </select>
-          </label>
-          <label>Icon set
-            <select id="icons">
-              <option value="maverick">Maverick (default)</option>
-              <option value="linecut">Linecut</option>
-              <option value="classic">Classic</option>
-              <option value="planform">Planform</option>
-              <option value="compact">Compact</option>
             </select>
           </label>
           <label class="check"><input id="show-clock" type="checkbox" /> Show clock on radar screen</label>
@@ -695,7 +737,6 @@
         $("night-to").value = night.to || pad(night.toHour);
         $("night-level").value = night.brightness;
         $("night-label").textContent = $("night-level").value + "%";
-        $("icons").value = cfg.icons || "maverick";
         $("brightness").value = String(Math.min(100, Math.max(20, Math.round((Number(cfg.brightness) || 100) / 10) * 10)));
         $("brt-label").textContent = $("brightness").value + "%";
         $("orientation").value = cfg.orientation === "track" ? "track" : "north";
@@ -739,7 +780,6 @@
           units: $("units").value,
           weather: { enabled: $("wx-on").checked, opacity: Number($("opacity").value) / 100, animate: savedWeather.animate },
           sweep: { enabled: $("sweep").checked, periodSec: Number($("sweep-speed").value) },
-          icons: $("icons").value,
           metar: $("metar").checked,
           metarStation: $("metar-station").value.trim().toUpperCase(),
           feed: draftFeed(),
@@ -1024,7 +1064,139 @@
 
       async function refreshWifi() {
         showWifiState(await api("/api/wifi"));
-        await scanWifi(false);
+        await Promise.all([scanWifi(false), loadSavedNets()]);
+      }
+
+
+        function scrollInside(scroller, el, pad) {
+          if (!scroller || !el) return;
+          const s = scroller.getBoundingClientRect();
+          const r = el.getBoundingClientRect();
+          scroller.scrollTop = Math.max(0, scroller.scrollTop + (r.top - s.top) - (pad || 12));
+        }
+      function closeSavedPassPanel() {
+        const panel = $("saved-pass-panel");
+        if (panel) panel.classList.add("hidden");
+        const field = $("wifi-saved-pass");
+        if (field) field.value = "";
+        const status = $("saved-pass-status");
+        if (status) status.textContent = "";
+        delete panel?.dataset.uuid;
+        delete panel?.dataset.name;
+        delete panel?.dataset.ssid;
+        delete panel?.dataset.active;
+      }
+
+      function openSavedPassPanel(net) {
+        const panel = $("saved-pass-panel");
+        panel.dataset.uuid = net.uuid || "";
+        panel.dataset.name = net.name || "";
+        panel.dataset.ssid = net.ssid || net.name || "";
+        panel.dataset.active = net.active ? "1" : "";
+        $("saved-pass-title").textContent = "New password for " + (net.ssid || net.name || "this network");
+        $("wifi-saved-pass").value = "";
+        $("wifi-saved-show").checked = false;
+        $("wifi-saved-pass").type = "password";
+        $("saved-pass-status").textContent = net.active
+          ? "The unit will reconnect after the password is saved."
+          : "";
+        panel.classList.remove("hidden");
+        scrollInside(panel.closest(".round-scroll"), panel, 12);
+        $("wifi-saved-pass").focus();
+      }
+
+      async function loadSavedNets() {
+        const result = await api("/api/wifi/saved").catch(() => ({ networks: [] }));
+        showSavedNets(result.networks || []);
+      }
+
+      function showSavedNets(networks) {
+        const list = $("saved-nets");
+        list.replaceChildren();
+        if (!networks.length) {
+          const li = document.createElement("li");
+          li.className = "small";
+          li.style.border = "0";
+          li.style.background = "none";
+          li.style.padding = "0";
+          li.textContent = "No saved networks yet. Connect to one below.";
+          list.append(li);
+          return;
+        }
+        for (const net of networks) {
+          const li = document.createElement("li");
+          li.dataset.uuid = net.uuid || "";
+          li.dataset.name = net.name || "";
+          const title = document.createElement("div");
+          title.className = "saved-name";
+          title.textContent = net.ssid || net.name || "Saved network";
+          const meta = document.createElement("div");
+          meta.className = "saved-meta";
+          const bits = [];
+          if (net.active) bits.push("Connected");
+          if (net.preferred) bits.push("Preferred");
+          meta.textContent = bits.length ? bits.join(" · ") : "Saved";
+          if (net.active) meta.classList.add("has-now");
+          const actions = document.createElement("div");
+          actions.className = "saved-actions";
+
+          function refBody() {
+            return net.uuid ? { uuid: net.uuid } : { name: net.name };
+          }
+
+          if (!net.preferred) {
+            const prefer = document.createElement("button");
+            prefer.type = "button";
+            prefer.className = "saved-prefer";
+            prefer.textContent = "MAKE PREFERRED";
+            prefer.addEventListener("click", () => withSave(prefer, async () => {
+              const result = await api("/api/wifi/prefer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(refBody()) });
+              if (result.wifi) showWifiState(result.wifi);
+              showSavedNets(result.networks || []);
+              if (!result.ok) throw new Error(result.detail || "Could not prefer that network.");
+              return result.detail || "Preferred.";
+            }, $("wifi-status"), { busy: "SAVING…", ok: "PREFERRED ✓", bad: "NOT SAVED" }));
+            actions.append(prefer);
+          }
+
+          const forget = document.createElement("button");
+          forget.type = "button";
+          forget.textContent = "FORGET";
+          forget.addEventListener("click", () => {
+            actions.replaceChildren();
+            const warn = document.createElement("p");
+            warn.className = "saved-confirm";
+            warn.textContent = net.active
+              ? "Forgetting this connected network will start the setup hotspot."
+              : "Forget " + (net.ssid || net.name) + "?";
+            const yes = document.createElement("button");
+            yes.type = "button";
+            yes.textContent = net.active ? "FORGET AND START HOTSPOT" : "YES, FORGET";
+            if (net.active) yes.style.gridColumn = "1 / -1";
+            const no = document.createElement("button");
+            no.type = "button";
+            no.textContent = "CANCEL";
+            no.addEventListener("click", () => showSavedNets(networks));
+            yes.addEventListener("click", () => withSave(yes, async () => {
+              const result = await api("/api/wifi/forget", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(refBody()) });
+              if (result.wifi) showWifiState(result.wifi);
+              showSavedNets(result.networks || []);
+              closeSavedPassPanel();
+              if (!result.ok) throw new Error(result.detail || "Could not forget that network.");
+              return result.detail || "Forgotten.";
+            }, $("wifi-status"), { busy: "FORGETTING…", ok: "FORGOTTEN ✓", bad: "NOT FORGOTTEN" }));
+            actions.append(warn, yes, no);
+          });
+
+          const pass = document.createElement("button");
+          pass.type = "button";
+          pass.textContent = "CHANGE PASSWORD";
+          pass.addEventListener("click", () => openSavedPassPanel(net));
+
+          actions.append(forget, pass);
+          li.append(title, meta, actions);
+          list.append(li);
+        }
       }
 
       async function refreshWeatherState() {
@@ -1232,6 +1404,20 @@
       }
       $("wifi-scan").addEventListener("click", () => withSave($("wifi-scan"), async () => { await scanWifi(true); return ""; }, $("wifi-status"), { busy: "SCANNING…", ok: "UPDATED ✓", bad: "SCAN FAILED" }));
       $("wifi-show").addEventListener("change", () => { $("wifi-pass").type = $("wifi-show").checked ? "text" : "password"; });
+      $("wifi-saved-show").addEventListener("change", () => { $("wifi-saved-pass").type = $("wifi-saved-show").checked ? "text" : "password"; $("wifi-saved-pass").dispatchEvent(new Event("input", { bubbles: true })); });
+      $("wifi-saved-cancel").addEventListener("click", () => closeSavedPassPanel());
+      $("wifi-saved-save").addEventListener("click", () => withSave($("wifi-saved-save"), async () => {
+        const panel = $("saved-pass-panel");
+        const password = $("wifi-saved-pass").value;
+        const body = panel.dataset.uuid ? { uuid: panel.dataset.uuid, password } : { name: panel.dataset.name, password };
+        const result = await api("/api/wifi/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        $("wifi-saved-pass").value = "";
+        if (result.wifi) showWifiState(result.wifi);
+        if (result.networks) showSavedNets(result.networks);
+        if (!result.ok) throw new Error(result.detail || "Could not update the password.");
+        closeSavedPassPanel();
+        return result.detail || "Password updated.";
+      }, $("saved-pass-status"), { busy: "SAVING…", ok: "SAVED ✓", bad: "NOT SAVED" }));
       $("wifi-hidden").addEventListener("change", () => { if ($("wifi-hidden").checked) $("wifi-ssid").focus(); });
       $("wifi-country-save").addEventListener("click", () => withSave($("wifi-country-save"), async () => {
         const result = await api("/api/wifi/country", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: $("wifi-country").value }) });
@@ -1242,6 +1428,8 @@
       $("wifi-forget").addEventListener("click", () => withSave($("wifi-forget"), async () => {
         const result = await api("/api/wifi/forget", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
         if (result.wifi) showWifiState(result.wifi);
+        await loadSavedNets();
+        closeSavedPassPanel();
         return result.detail || "Saved networks forgotten.";
       }, $("wifi-status"), { busy: "FORGETTING…", ok: "FORGOTTEN ✓", bad: "NOT FORGOTTEN" }));
       $("wifi-join").addEventListener("click", () => withSave($("wifi-join"), async () => {
@@ -1252,6 +1440,7 @@
         const result = await api("/api/wifi/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ssid, password: $("wifi-pass").value, hidden: $("wifi-hidden").checked }) });
         $("wifi-pass").value = "";
         if (result.wifi) showWifiState(result.wifi);
+        await loadSavedNets();
         const ip = ((result.wifi && result.wifi.devices) || []).find((d) => d.type === "wifi" && d.ip);
         return "Connected to " + ssid + (ip ? ". Wi-Fi address " + ip.ip : "") + ".";
       }, $("wifi-status"), { busy: "CONNECTING…", ok: "CONNECTED ✓", bad: "NOT CONNECTED" }));
@@ -1265,7 +1454,7 @@
 
       function bindWifiOsk() {
         const root = $("ft-osk");
-        const fields = ["wifi-ssid", "wifi-pass"].map($).filter(Boolean);
+        const fields = ["wifi-ssid", "wifi-pass", "wifi-saved-pass"].map($).filter(Boolean);
         if (!root || !fields.length) return;
 
         const LETTERS = [
@@ -1314,7 +1503,7 @@
               if (key === "space") { btn.dataset.wide = "5"; btn.className = "osk-action"; btn.textContent = "space"; }
               else if (key === "shift") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "shift"; btn.setAttribute("aria-pressed", String(shifted)); }
               else if (key === "back") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "delete"; }
-              else if (key === "connect") { btn.dataset.wide = "3"; btn.className = "osk-connect"; btn.textContent = "connect"; }
+              else if (key === "connect") { btn.dataset.wide = "3"; btn.className = "osk-connect"; btn.textContent = (target && target.id === "wifi-saved-pass") ? "save" : "connect"; }
               else if (key === "sym") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "?123"; }
               else if (key === "abc") { btn.dataset.wide = "2"; btn.className = "osk-action"; btn.textContent = "ABC"; }
               else {
@@ -1331,7 +1520,7 @@
           previewLabel.textContent = target.id === "wifi-ssid" ? "NETWORK" : "PASSWORD";
           previewValue.setAttribute("for", target.id);
           const raw = target.value || "";
-          if (target.id === "wifi-pass" && target.type === "password") {
+          if ((target.id === "wifi-pass" || target.id === "wifi-saved-pass") && target.type === "password") {
             previewValue.textContent = raw ? "•".repeat(Math.min(raw.length, 32)) : "";
           } else {
             previewValue.textContent = raw;
@@ -1358,23 +1547,32 @@
           pinJoinButton(top);
         }
 
-        function clearJoinPin() {
-          const join = $("wifi-join");
-          if (!join) return;
-          join.classList.remove("osk-pinned");
-          join.style.position = "";
-          join.style.left = "";
-          join.style.top = "";
-          join.style.width = "";
-          join.style.height = "";
-          join.style.zIndex = "";
-          join.style.margin = "";
+        function oskActionButton() {
+          return (target && target.id === "wifi-saved-pass") ? $("wifi-saved-save") : $("wifi-join");
         }
 
-        // Keep CONNECT visible and tappable just above the keyboard. In 1.0.16
-        // the keyboard covered the button completely, and a tap typed a key.
+        function clearPin(btn) {
+          if (!btn) return;
+          btn.classList.remove("osk-pinned");
+          btn.style.position = "";
+          btn.style.left = "";
+          btn.style.top = "";
+          btn.style.width = "";
+          btn.style.height = "";
+          btn.style.zIndex = "";
+          btn.style.margin = "";
+        }
+
+        function clearJoinPin() {
+          clearPin($("wifi-join"));
+          clearPin($("wifi-saved-save"));
+        }
+
+        // Keep CONNECT or SAVE PASSWORD visible and tappable just above the
+        // keyboard. In 1.0.16 the keyboard covered CONNECT completely.
         function pinJoinButton(kbTop) {
-          const join = $("wifi-join");
+          const join = oskActionButton();
+          clearPin($("wifi-join") === join ? $("wifi-saved-save") : $("wifi-join"));
           if (!join || !isDevicePanel() || root.hidden) { clearJoinPin(); return; }
           const w = window.innerWidth, h = window.innerHeight;
           const cx = w / 2, cy = h / 2;
@@ -1404,9 +1602,14 @@
             root.hidden = false;
             root.setAttribute("aria-hidden", "false");
             document.body.classList.add("ft-osk-open");
+            paint();
             refreshPreview();
             layout();
-            field.scrollIntoView({ block: "center", inline: "nearest" });
+            if (field.id === "wifi-saved-pass") {
+              scrollInside(field.closest(".round-scroll"), $("saved-pass-panel"), 12);
+            } else {
+              field.scrollIntoView({ block: "center", inline: "nearest" });
+            }
           } else {
             target = on ? target : null;
             root.hidden = true;
@@ -1470,8 +1673,10 @@
           if (key === "back") { backspace(); return; }
           if (key === "space") { insert(" "); return; }
           if (key === "connect") {
+            const field = target;
             setOpen(false);
-            $("wifi-join")?.click();
+            if (field && field.id === "wifi-saved-pass") $("wifi-saved-save")?.click();
+            else $("wifi-join")?.click();
             return;
           }
           const ch = (shifted && /^[a-z]$/.test(key)) ? key.toUpperCase() : key;
@@ -1484,10 +1689,11 @@
           field.addEventListener("input", refreshPreview);
         }
         document.addEventListener("focusin", (event) => {
-          if (event.target === $("wifi-join")) return;
+          if (event.target === $("wifi-join") || event.target === $("wifi-saved-save")) return;
           if (!fields.includes(event.target)) setOpen(false);
         });
         $("wifi-join")?.addEventListener("click", () => setOpen(false), true);
+        $("wifi-saved-save")?.addEventListener("click", () => setOpen(false), true);
         window.addEventListener("resize", () => { applyFieldPolicy(); layout(); });
         paint();
         applyFieldPolicy();

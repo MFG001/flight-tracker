@@ -48,7 +48,7 @@ export interface AppConfig {
   night: { mode: "off" | "sun" | "schedule"; fromHour: number; toHour: number; from?: string; to?: string; brightness: number };
   display?: { rotation: number; output: string; touchDevice: string; touchMatrix: boolean };
   wifi?: { country: string };
-  icons: "classic" | "planform" | "compact" | "linecut" | "maverick";
+  icons: "maverick";
   updates: { url: string; repo?: string; channel?: string; auto: boolean };
   gpio: {
     enabled: boolean;

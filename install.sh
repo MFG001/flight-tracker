@@ -236,6 +236,14 @@ if command -v visudo >/dev/null 2>&1; then
   visudo -cf "$SUDOERS"
 fi
 
+# OTA-updated units also get this from updater.refresh_backlight_access.
+# Apply it on a first install too: udev + group-write on live sysfs nodes.
+python3 "$REL/server/backlight.py" --install-permissions --no-udev-reload ||   echo "Backlight permissions could not be applied now; the sudo helper remains the fallback."
+if command -v udevadm >/dev/null 2>&1; then
+  udevadm control --reload-rules >/dev/null 2>&1 || true
+  udevadm trigger --subsystem-match=backlight >/dev/null 2>&1 || true
+fi
+
 sed "s/@USER@/${SERVICE_USER}/g" /opt/flight-tracker/current/deploy/flight-tracker.service > /etc/systemd/system/flight-tracker.service
 # The unit names the service account itself; the --harden drop-in is not needed.
 rm -f /etc/systemd/system/flight-tracker.service.d/10-service-account.conf

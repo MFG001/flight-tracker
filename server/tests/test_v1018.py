@@ -1,7 +1,6 @@
 """1.0.18: boot glass and setup hotspot recover without a saved network."""
 from __future__ import annotations
 
-import json
 import sys
 import unittest
 from pathlib import Path
@@ -15,14 +14,12 @@ import updater as up  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1018_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.18")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.18")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.18", "1.0.18"))
-        self.assertIn("FlightTracker/1.0.18 ", (ROOT / "server/flighttracker.py").read_text())
-        self.assertEqual(CONFIG_SCHEMA, 4)
-        self.assertEqual(DEFAULT_CONFIG["schema"], 4)
+    def test_version_is_at_least_1018(self) -> None:
+        # 1.0.19 moved on; test_v1019 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 18))
+        self.assertEqual(CONFIG_SCHEMA, 5)
+        self.assertEqual(DEFAULT_CONFIG["schema"], 5)
 
 
 class FeaturePresenceTests(unittest.TestCase):

@@ -79,9 +79,8 @@ class RotorIconTests(unittest.TestCase):
         scale = float(line.split("=")[1].strip().rstrip(";"))
         self.assertGreaterEqual(scale, 1.20)
         self.assertLessEqual(scale, 1.25)
-        # Scale is applied once, around the shared paint path, so every icon
-        # set (Maverick, Linecut, Classic, Planform, Compact) is covered and
-        # non-rotor kinds are not scaled.
+        # Scale is applied once, around the shared paint path, so every
+        # helicopter is covered and non-rotor kinds are not scaled.
         paint = icons[icons.index("export function paintAircraftIcon") : icons.index("function markFromKind")]
         self.assertEqual(paint.count("ctx.scale(ROTOR_ICON_SCALE, ROTOR_ICON_SCALE);"), 1)
         self.assertIn('kind === "rotor" || mark === "rotor"', paint)

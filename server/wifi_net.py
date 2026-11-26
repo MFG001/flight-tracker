@@ -384,23 +384,161 @@ def start_setup_hotspot(hotspot: dict[str, str]) -> tuple[bool, str]:
         detail = "This unit is missing its Wi-Fi permission. Run install.sh again."
     return False, detail
 
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 
-def forget_wifi() -> tuple[bool, str]:
-    """Delete saved client Wi-Fi profiles through the root helper.
 
-    The setup hotspot profile is not removed. After this, no saved home
-    network remains for NetworkManager or the boot script to retry.
+def _helper_missing() -> str:
+    return "The Wi-Fi helper is not installed. Run install.sh again."
+
+
+def _sudo_or_detail(detail: str, fallback: str) -> str:
+    text = (detail or fallback).strip()
+    if "password is required" in text.lower():
+        return "This unit is missing its Wi-Fi permission. Run install.sh again."
+    return text
+
+
+def _profile_args(name: str = "", uuid: str = "") -> tuple[list[str] | None, str]:
+    """Build a [uuid|id, value] pair for the helper. Values are not trimmed."""
+    uuid = str(uuid or "")
+    name = str(name or "")
+    if uuid:
+        if any(ch in uuid for ch in "\r\n\x00") or not UUID_RE.fullmatch(uuid):
+            return None, "That saved network id is not valid."
+        return ["uuid", uuid], ""
+    if name:
+        if any(ch in name for ch in "\r\n\x00"):
+            return None, "The network name has a character that is not allowed."
+        return ["id", name], ""
+    return None, "Say which saved network."
+
+
+def parse_saved(text: str) -> list[dict[str, Any]]:
+    """Parse wifi-ctl `saved` rows. Passwords are never present in this format."""
+    rows: list[dict[str, Any]] = []
+    for line in (text or "").splitlines():
+        parts = line.split("\x1f")
+        if len(parts) < 6:
+            continue
+        uuid, name, ssid, active, auto, prio = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+        if not uuid or not (name or ssid):
+            continue
+        try:
+            priority = int(str(prio).strip() or "0")
+        except ValueError:
+            priority = 0
+        rows.append({
+            "uuid": uuid,
+            "name": name,
+            "ssid": ssid or name,
+            "active": active == "yes",
+            "autoconnect": auto == "yes",
+            "priority": priority,
+            "preferred": False,
+        })
+    autos = [row for row in rows if row["autoconnect"]]
+    if autos:
+        top = max(int(row["priority"]) for row in autos)
+        tied = [row for row in autos if int(row["priority"]) == top]
+        if len(tied) == 1:
+            tied[0]["preferred"] = True
+        else:
+            for row in tied:
+                if row["active"]:
+                    row["preferred"] = True
+                    break
+    return rows
+
+
+def saved_wifi() -> list[dict[str, Any]]:
+    """Saved client networks (SSID and status only; never passwords)."""
+    helper = _helper()
+    if not helper.is_file():
+        return []
+    result = _run(["sudo", "-n", str(helper), "saved"], timeout=30)
+    if result.returncode != 0:
+        return []
+    return parse_saved(result.stdout or "")
+
+
+def forget_wifi(name: str = "", uuid: str = "") -> tuple[bool, str, bool]:
+    """Delete one saved client profile, or all of them when no target is given.
+
+    The setup hotspot profile is not removed. The third value is True when
+    the caller should start the setup hotspot (every profile was forgotten,
+    or the forgotten profile was the one in use).
     """
     helper = _helper()
     if not helper.is_file():
-        return False, "The Wi-Fi helper is not installed. Run install.sh again."
-    result = _run(["sudo", "-n", str(helper), "forget"], timeout=30)
+        return False, _helper_missing(), False
+    if name or uuid:
+        ref, error = _profile_args(name=name, uuid=uuid)
+        if ref is None:
+            return False, error, False
+        target_active = False
+        for row in saved_wifi():
+            if (ref[0] == "uuid" and row["uuid"] == ref[1]) or (ref[0] == "id" and row["name"] == ref[1]):
+                target_active = bool(row["active"])
+                break
+        result = _run(["sudo", "-n", str(helper), "forget", *ref], timeout=30)
+        start_ap = target_active
+    else:
+        result = _run(["sudo", "-n", str(helper), "forget"], timeout=30)
+        start_ap = True
     if result.returncode == 0:
         names = [line for line in (result.stdout or "").splitlines() if line.strip()]
         if names:
-            return True, "Forgot " + ", ".join(names) + "."
-        return True, "No saved Wi-Fi networks to forget."
-    detail = (result.stderr or result.stdout or "Could not forget saved networks.").strip()
-    if "password is required" in detail.lower():
-        detail = "This unit is missing its Wi-Fi permission. Run install.sh again."
-    return False, detail
+            return True, "Forgot " + ", ".join(names) + ".", start_ap
+        if name or uuid:
+            return False, "That saved network was not found.", False
+        return True, "No saved Wi-Fi networks to forget.", False
+    return False, _sudo_or_detail(result.stderr or result.stdout, "Could not forget saved networks."), False
+
+
+def prefer_wifi(name: str = "", uuid: str = "") -> tuple[bool, str]:
+    """Give one saved client profile the highest autoconnect priority."""
+    helper = _helper()
+    if not helper.is_file():
+        return False, _helper_missing()
+    ref, error = _profile_args(name=name, uuid=uuid)
+    if ref is None:
+        return False, error
+    result = _run(["sudo", "-n", str(helper), "prefer", *ref], timeout=30)
+    if result.returncode == 0:
+        return True, (result.stdout or "Preferred that network.").strip()
+    return False, _sudo_or_detail(result.stderr or result.stdout, "Could not prefer that network.")
+
+
+def validate_saved_password(password: str) -> str:
+    if any(char in password for char in "\r\n\x00"):
+        return "The password has a character that is not allowed."
+    if not (8 <= len(password) <= 63 or re.fullmatch(r"[0-9A-Fa-f]{64}", password)):
+        return "Wi-Fi passwords are 8 to 63 characters."
+    return ""
+
+
+def set_wifi_password(name: str = "", uuid: str = "", password: str = "") -> tuple[bool, str]:
+    """Update a saved profile's PSK. The existing password is never read.
+
+    The new password is sent to the helper on stdin only. It is never
+    returned. If this is the connected network, the helper reconnects.
+    A failed reconnect keeps the profile (and the new PSK).
+    """
+    problem = validate_saved_password(password)
+    if problem:
+        return False, problem
+    helper = _helper()
+    if not helper.is_file():
+        return False, _helper_missing()
+    ref, error = _profile_args(name=name, uuid=uuid)
+    if ref is None:
+        return False, error
+    result = _run_input(["sudo", "-n", str(helper), "password", *ref], password + "\n", timeout=60)
+    if result.returncode == 0:
+        return True, _scrub(result.stdout, password) or "Password updated."
+    return False, _scrub(
+        _sudo_or_detail(result.stderr or result.stdout, "Could not update the saved password."),
+        password,
+    )

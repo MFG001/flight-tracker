@@ -109,21 +109,48 @@ class EmergencyTests(unittest.TestCase):
 
 
 class IconDefaultTests(unittest.TestCase):
-    def test_missing_icon_choice_is_linecut_and_classic_still_sticks(self) -> None:
+    def test_any_icon_choice_is_normalized_to_maverick(self) -> None:
         from server.logic import sanitize_config
 
         implied, errors = sanitize_config({"home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20})
         self.assertEqual(errors, [])
         self.assertEqual(implied["icons"], "maverick")
-        chosen, chosen_errors = sanitize_config({"home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20, "icons": "classic"})
-        self.assertEqual(chosen_errors, [])
-        self.assertEqual(chosen["icons"], "classic")
-        kept, kept_errors = sanitize_config({"home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20, "icons": "linecut"})
-        self.assertEqual(kept_errors, [])
-        self.assertEqual(kept["icons"], "linecut")
-        dropped, dropped_errors = sanitize_config({"home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20, "icons": "silhouette"})
-        self.assertEqual(dropped_errors, [])
-        self.assertEqual(dropped["icons"], "linecut")
+        for value in ("classic", "linecut", "planform", "compact", "silhouette", "unknown", "maverick"):
+            cfg, cfg_errors = sanitize_config({"home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20, "icons": value})
+            self.assertEqual(cfg_errors, [], value)
+            self.assertEqual(cfg["icons"], "maverick", value)
+
+    def test_migrate_forces_saved_icon_sets_to_maverick_and_bumps_schema(self) -> None:
+        from copy import deepcopy
+        from server.logic import CONFIG_SCHEMA
+        from server.migrate import migrate_config
+
+        for value in ("classic", "linecut", "planform", "compact", "silhouette"):
+            out = migrate_config({"schema": 4, "icons": value, "home": {"name": "KSEA", "lat": 47.45, "lon": -122.3}, "rangeNm": 20})
+            self.assertEqual(out["icons"], "maverick", value)
+            self.assertEqual(out["schema"], CONFIG_SCHEMA, value)
+        already = migrate_config({"schema": 4, "icons": "maverick", "rangeNm": 20})
+        self.assertEqual(already["icons"], "maverick")
+        self.assertEqual(already["schema"], CONFIG_SCHEMA)
+        current = {"schema": CONFIG_SCHEMA, "icons": "maverick", "rangeNm": 20}
+        self.assertEqual(migrate_config(deepcopy(current)), current)
+
+    def test_setup_page_has_no_icon_set_selector(self) -> None:
+        from pathlib import Path
+
+        setup = (Path(__file__).resolve().parents[2] / "setup/index.html").read_text(encoding="utf-8")
+        self.assertNotIn('id="icons"', setup)
+        self.assertNotIn("Icon set", setup)
+        self.assertNotIn('value="linecut"', setup)
+        self.assertNotIn('value="classic"', setup)
+        self.assertNotIn('value="planform"', setup)
+        self.assertNotIn('value="compact"', setup)
+        icons = (Path(__file__).resolve().parents[2] / "src/icons.ts").read_text()
+        self.assertIn('export type IconSetId = "maverick"', icons)
+        self.assertNotIn("function drawClassic", icons)
+        self.assertNotIn("function drawCompact", icons)
+        self.assertNotIn("function drawPlanform", icons)
+        self.assertNotIn("export const ICON_SETS", icons)
 
     def test_maverick_mark_follows_category_and_type(self) -> None:
         self.assertEqual(classify("A1")["mark"], "light")

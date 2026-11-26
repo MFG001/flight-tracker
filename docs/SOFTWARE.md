@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.18 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
+How to install, set up, and run Flight Tracker 1.0.19 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
@@ -84,7 +84,7 @@ From the [4inch DSI LCD (C) wiki](https://www.waveshare.com/wiki/4inch_DSI_LCD_(
 - Bookworm and Trixie: add `dtoverlay=vc4-kms-v3d` and `dtoverlay=vc4-kms-dsi-waveshare-panel,4_0_inchC`. The wiki’s `,dsi0` form is for boards with two MIPI ports (Pi 5 and Compute Modules). A Pi 4 has one DSI connector, the 15-pin FPC, plus the 4-pin lead for 5 V and I2C. The installer writes the Pi 4 line only.
 - Touch on Bookworm and Trixie: the wiki says the touch works after that overlay boots. It does not install a separate touch package. The rotation steps identify the device as **10-0014 Goodix Capacitive TouchScreen**. Binding that touchscreen to the panel in Screen Configuration is a manual step if you rotate the display. The installer does not do that.
 - Bullseye and Buster are a different driver. The manual example is `sudo bash ./WS_xinchDSI_MAIN.sh 40C I2C0`. A preinstalled-image snippet on the same page uses `I2C_bus=10`. Those are not the same instruction, so the installer does not write a Bullseye touch overlay.
-- Backlight, terminal method: `echo N | sudo tee /sys/class/backlight/*/brightness`. `N` is 0 (darkest) through 255 (brightest). The wiki does not name the backlight device, so the glob is used as published. **BRT** stores a percent and writes `round(percent / 100 * 255)` with that command. The desktop demo has no backlight node, so it darkens the page instead. On the Pi the page is not darkened again when a backlight node exists.
+- Backlight, terminal method: `echo N | sudo tee /sys/class/backlight/*/brightness`. `N` is 0 (darkest) through 255 (brightest). The Waveshare driver registers a 0–255 RAW backlight, usually named like `10-0045` or `11-0045`. **BRT** stores a percent and writes a value scaled onto each node's `max_brightness`. A udev rule (installed by install.sh and by OTA) lets the `video` group write the node; `sudo` on `/usr/local/sbin/flight-tracker-brightness` is the fallback. The glass darkens itself when a write does not succeed, including when a sysfs node exists but is not writable.
 
 Waveshare lists the display area as a square. The glass is round, and they do not publish a smaller active-pixel diameter inside the 720 × 720 framebuffer. The visible image is the inscribed circle: diameter 101.52 mm, 720 px. Flight Tracker clips all drawing to that circle.
 
@@ -195,7 +195,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | Range readout | Glass, under the top key | − and + step 10, 20, 30, 40, 50, 75, 100 nm (100 is the maximum). The value between them is the current range. Scroll and pinch do the same. Rings animate; the outer ring is the selected range |
 | Default range | Setup page only | The range used at startup |
 | Radar sweep | MNU, and the same switch on the setup page | Green sweep line and fading trail on every background. The map keeps its own colours. Off by default |
-| Icon set | Setup page only | Maverick is the default. Linecut, Classic, Planform, and Compact stay available |
+| Icon set | — | Maverick is the only aircraft icon set |
 | Sweep speed | Setup page only | 2–6 seconds per revolution, default 4 |
 | Weather opacity | Setup page, Weather | 10–100 percent, steps of 10, default 60. The WX key only turns the overlay on or off |
 | Location | Setup page, Location section | Airport code (ICAO or IATA) or latitude and longitude. Save applies it. The glass stays centred there; it cannot be panned on the display |
@@ -212,7 +212,7 @@ The map fills the round glass. Text and cards stay inside a margin equal to 90 p
 
 Range rings are redrawn for the selected range. At 10 nm they read 2.5, 5, 7.5, 10. At 30 nm they read 10, 20, 30. At 40 nm they read 10, 20, 30, 40. At 50 nm they read 10, 20, 30, 40, 50. At 75 nm they read 25, 50, 75. At 100 nm they read 25, 50, 75, 100. Auto (the default) picks the ring count so those labels stay even and round; a fixed count of 2–6 can still be set on the setup page. Changing range eases the rings and the scale instead of jumping.
 
-Aircraft icons follow the ADS-B emitter category: A1/A2 light, A3–A6 jet, A7 rotorcraft, B2 lighter-than-air, B6 UAV. Anything else stays a neutral diamond. Maverick, the default set, uses a separate filled silhouette for a light single, a twin, a business or regional jet, an airliner, a fighter, and a drone. Helicopters and airships keep the Linecut shapes. Every aircraft is white with a thin dark outline. Military is a green outline (`#14944A`), distinct from the sweep. A squawk of 7500, 7600, or 7700, or a readsb emergency flag other than none, flashes the icon red about once a second and overrides the green outline. A watched aircraft has a cyan ring while the watch list is on. It comes from readsb `dbFlags` bit 0. An optional `data/military-hex-ranges.json` is used only when you add one; the usual compiled table has no license, so it is not included. An optional `data/aircraft-types.json` can map an ICAO type designator to a class when the category is empty. The legend is in MNU About only.
+Aircraft icons follow the ADS-B emitter category: A1/A2 light, A3–A6 jet, A7 rotorcraft, B2 lighter-than-air, B6 UAV. Anything else stays a neutral diamond. Maverick, the only icon set, uses a separate filled silhouette for a light single, a twin, a business or regional jet, an airliner, a fighter, and a drone. Helicopters use a slender rotorcraft body with spinning blades; airships use an envelope with fins. Every aircraft is white with a thin dark outline. Military is a green outline (`#14944A`), distinct from the sweep. A squawk of 7500, 7600, or 7700, or a readsb emergency flag other than none, flashes the icon red about once a second and overrides the green outline. A watched aircraft has a cyan ring while the watch list is on. It comes from readsb `dbFlags` bit 0. An optional `data/military-hex-ranges.json` is used only when you add one; the usual compiled table has no license, so it is not included. An optional `data/aircraft-types.json` can map an ICAO type designator to a class when the category is empty. The legend is in MNU About only.
 
 The watch list accepts a US N-number, which converts to the ICAO address offline, another registration matched to readsb's `r` field or `data/registrations.json`, or a 6-digit hex. Hyphens and case are ignored.
 
@@ -396,7 +396,7 @@ Not verified, because this environment has no Pi 4 and no panel:
 - Avahi at `flighttracker.local`, binding port 80, the setup hotspot, a phone joining from the QR code, and captive-portal detection
 - A real over-the-air install on the Pi, including the systemd timer, the health-check restart, and rollback after a failed service start
 - The touch zones lining up with the printed bezel legends. The glass no longer draws those names
-- The BRT write to `/sys/class/backlight/*/brightness` on the real panel, including whether 0 only dims the backlight
+- The BRT write to the real Waveshare 4inch DSI LCD (C) backlight node on hardware (0–255, device names such as 10-0045 / 11-0045)
 - Which backlight node exists if the Pi also has another display. The wiki writes every match of the glob
 - Sectional coverage outside the United States. The FAA tiles do not cover the whole world
 

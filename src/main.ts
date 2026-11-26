@@ -23,7 +23,7 @@ import {
   type UpdateView,
 } from "./updatepop";
 import { recordTrails as addTrailPoints, trailLines, type TrailPoint } from "./trails";
-import { ICON_KINDS, ICON_SETS, MAVERICK_LEGEND, iconSetId, paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
+import { MAVERICK_LEGEND, iconSetId, paintAircraftIcon, type IconSetId, type MaverickMark } from "./icons";
 import { MAX_RANGE_NM, MIN_RANGE_NM, RANGE_STEPS, resolveRings, snapRange } from "./rings";
 import { bearingDeg, haversineNm } from "./geo";
 import {
@@ -385,7 +385,9 @@ function syncChrome(): void {
     attrib.removeAttribute("target");
   }
   const dimLevel = nightOn ? Math.min(brightness, nightLevel) : brightness;
-  dim.style.opacity = hardwareBacklight && !nightOn ? "0" : String(((100 - dimLevel) / 100) * 0.82);
+  // Only skip the overlay when a sysfs write actually succeeded. A node can
+  // exist on the Pi and still be unwritable, which used to leave BRT doing nothing.
+  dim.style.opacity = hardwareBacklight ? "0" : String(((100 - dimLevel) / 100) * 0.82);
   sweepBtn.textContent = sweepOn ? "SWEEP ON" : "SWEEP OFF";
   sweepBtn.setAttribute("aria-pressed", String(sweepOn));
   aboutStatus.textContent = statusEl.textContent ?? "";
@@ -626,15 +628,10 @@ function paintLegend(): void {
   if (!list) return;
   const set = activeIconSet();
   list.replaceChildren();
-  if (set === "maverick") {
-    for (const item of MAVERICK_LEGEND) appendLegendIcon(list, item.kind, set, item.label, item.mark);
-    return;
-  }
-  const names: Record<string, string> = { jet: "Jet", light: "Light", rotor: "Rotor", uav: "UAV", lighter: "Airship", unknown: "Unknown" };
-  for (const kind of ICON_KINDS) appendLegendIcon(list, kind, set, names[kind]);
+  for (const item of MAVERICK_LEGEND) appendLegendIcon(list, item.kind, set, item.label, item.mark);
 }
 
-function appendLegendIcon(list: HTMLElement, kind: (typeof ICON_KINDS)[number], set: IconSetId, label: string, mark?: MaverickMark): void {
+function appendLegendIcon(list: HTMLElement, kind: (typeof MAVERICK_LEGEND)[number]["kind"], set: IconSetId, label: string, mark?: MaverickMark): void {
   const li = document.createElement("li");
   const canvas = document.createElement("canvas");
   canvas.width = 36;
@@ -656,28 +653,18 @@ function buildSheet(): void {
   root.hidden = false;
   root.replaceChildren();
   const title = document.createElement("h1");
-  title.textContent = "Aircraft icon sets";
+  title.textContent = "Aircraft icons";
   const note = document.createElement("p");
-  note.textContent = "Maverick is the default. Linecut, Classic, Planform, and Compact stay available on the setup page. Large icons are above the 28 px size used on the glass. The last icon in each row is a military jet.";
+  note.textContent = "Maverick is the icon set on the glass. Large icons are above the 28 px size used on the glass. The last icon in each row is a military jet.";
   root.append(title, note);
-  const kinds = [...ICON_KINDS, "jet" as const];
-  const labels = ["Jet", "Light", "Rotor", "UAV", "Airship", "Unknown", "Military"];
-  for (const set of ICON_SETS) {
-    const section = document.createElement("section");
-    const heading = document.createElement("h2");
-    heading.textContent = set.label;
-    section.append(heading);
-    if (set.id === "maverick") {
-      section.append(maverickRow(2.35, "#1a2128", false, "Large"));
-      section.append(maverickRow(1, "#24303a", false, "28 px on a dark map"));
-      section.append(maverickRow(1, "#e7eef3", true, "28 px on a light map"));
-    } else {
-      section.append(iconRow(set.id, kinds, labels, 2.35, "#1a2128", false, "Large"));
-      section.append(iconRow(set.id, kinds, labels, 1, "#24303a", false, "28 px on a dark map"));
-      section.append(iconRow(set.id, kinds, labels, 1, "#e7eef3", true, "28 px on a light map"));
-    }
-    root.append(section);
-  }
+  const section = document.createElement("section");
+  const heading = document.createElement("h2");
+  heading.textContent = "Maverick";
+  section.append(heading);
+  section.append(maverickRow(2.35, "#1a2128", false, "Large"));
+  section.append(maverickRow(1, "#24303a", false, "28 px on a dark map"));
+  section.append(maverickRow(1, "#e7eef3", true, "28 px on a light map"));
+  root.append(section);
   window.__ftReady = true;
 }
 
@@ -716,51 +703,6 @@ function maverickRow(scale: number, background: string, light: boolean, caption:
     cell.append(canvas, name);
     strip.append(cell);
   }
-  row.append(strip);
-  return row;
-}
-
-function iconRow(
-  set: IconSetId,
-  kinds: Array<typeof ICON_KINDS[number] | "jet">,
-  labels: string[],
-  scale: number,
-  background: string,
-  light: boolean,
-  caption: string,
-): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "sheet-row";
-  const cap = document.createElement("p");
-  cap.textContent = caption;
-  row.append(cap);
-  const strip = document.createElement("div");
-  strip.className = `sheet-strip ${light ? "is-light" : "is-dark"}`;
-  strip.style.background = background;
-  kinds.forEach((kind, index) => {
-    const cell = document.createElement("figure");
-    const canvas = document.createElement("canvas");
-    const css = scale === 1 ? 44 : 104;
-    canvas.width = css * 2;
-    canvas.height = css * 2;
-    canvas.style.width = `${css}px`;
-    canvas.style.height = `${css}px`;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.setTransform(2, 0, 0, 2, canvas.width / 2, canvas.height / 2);
-      ctx.scale(scale, scale);
-      paintAircraftIcon(ctx, kind, set, {
-        fill: "#ffffff",
-        military: labels[index] === "Military",
-        emergency: false,
-      });
-    }
-    const name = document.createElement("figcaption");
-    name.textContent = labels[index];
-    name.style.color = light ? "#1a2128" : "#e7eef4";
-    cell.append(canvas, name);
-    strip.append(cell);
-  });
   row.append(strip);
   return row;
 }
@@ -1484,9 +1426,10 @@ async function pollNight(): Promise<void> {
   }
   const response = await fetch("/api/night");
   if (!response.ok) return;
-  const body = (await response.json()) as { night?: boolean; brightness?: number };
+  const body = (await response.json()) as { night?: boolean; brightness?: number; backlightOk?: boolean };
   nightOn = Boolean(body.night);
   nightLevel = body.brightness ?? 25;
+  if (typeof body.backlightOk === "boolean") hardwareBacklight = body.backlightOk;
   syncChrome();
 }
 
@@ -1755,9 +1698,9 @@ async function loadDisplay(): Promise<boolean> {
       throw new Error("Display server is not ready");
     }
     basemaps = (await mapRes.json()) as Record<string, BasemapInfo>;
-    const health = (await healthRes.json()) as { demoLock?: boolean; backlightNodes?: string[] };
+    const health = (await healthRes.json()) as { demoLock?: boolean; backlightNodes?: string[]; backlightOk?: boolean };
     demoLock = Boolean(health.demoLock);
-    hardwareBacklight = Array.isArray(health.backlightNodes) && health.backlightNodes.length > 0;
+    hardwareBacklight = health.backlightOk === true;
     applyConfig((await cfgRes.json()) as AppConfig);
     booted = true;
     await pollAircraft().catch(() => undefined);

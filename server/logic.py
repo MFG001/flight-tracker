@@ -40,7 +40,7 @@ QUADRATURE = (0, 1, -1, 0, -1, 0, 0, 1, 1, 0, 0, -1, 0, -1, 1, 0)
 SWEEP_DEFAULT_SEC = 8
 SWEEP_MIN_SEC = 3
 SWEEP_MAX_SEC = 16
-CONFIG_SCHEMA = 4
+CONFIG_SCHEMA = 5
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "schema": CONFIG_SCHEMA,
@@ -766,13 +766,8 @@ def sanitize_config(payload: Any) -> tuple[dict[str, Any], list[str]]:
     else:
         errors.append("Night settings must be an object.")
 
-    icons = str(payload.get("icons", "maverick"))
-    if icons == "silhouette":
-        cfg["icons"] = "linecut"
-    elif icons in ("classic", "planform", "compact", "linecut", "maverick"):
-        cfg["icons"] = icons
-    else:
-        cfg["icons"] = "maverick"
+    # Maverick is the only aircraft icon set. Any saved or posted value is ignored.
+    cfg["icons"] = "maverick"
 
     display = payload.get("display", {})
     if isinstance(display, dict):

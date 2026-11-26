@@ -846,6 +846,30 @@ def install_display_unit(release: Path, name: str, dest_dir: Path, user: str) ->
         return False
 
 
+def refresh_backlight_access(
+    release: Path,
+    *,
+    udev_path: Path = Path("/etc/udev/rules.d/99-flight-tracker-backlight.rules"),
+    sudoers_path: Path = Path("/etc/sudoers.d/flight-tracker-brightness"),
+    user: str = "ft-server",
+    reload_udev: bool = True,
+) -> dict[str, object]:
+    """Install the backlight udev rule and sudoers line on OTA (install.sh does not rerun)."""
+    server_dir = release / "server"
+    if server_dir.is_dir() and str(server_dir) not in sys.path:
+        sys.path.insert(0, str(server_dir))
+    try:
+        from backlight import install_permissions
+    except ImportError:
+        from server.backlight import install_permissions
+    return install_permissions(
+        udev_path=udev_path,
+        sudoers_path=sudoers_path,
+        user=user,
+        reload_udev=reload_udev,
+    )
+
+
 def refresh_display_units(
     release: Path,
     unit_dir: Path = SYSTEM_UNIT_DIR,
@@ -1057,6 +1081,7 @@ def apply_update(
         refresh_helpers(final, wrapper.parent)
         refresh_systemd_units(final)
         refresh_display_units(final)
+        refresh_backlight_access(final)
         installed = {
             "current": found["version"],
             "version": found["version"],
