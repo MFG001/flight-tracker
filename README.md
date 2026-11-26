@@ -15,7 +15,7 @@ The kit is free on GitHub and MakerWorld. It is not sold.
 
 ## Features
 
-- **Live aircraft radar.** Planform icons, colour-coded altitude, callsign and speed, and range rings. Select **10, 20, 30, 40, 50, 75, or 100 NM**. **100 NM is the maximum**. Tap a target for identity, track, vertical speed, distance, and squawk. Use the public [adsb.fi](https://adsb.fi/) feed, or point the unit at your own readsb or dump1090 receiver.
+- **Live aircraft radar.** Maverick aircraft icons, colour-coded altitude, callsign and speed, and range rings. Select **10, 20, 30, 40, 50, 75, or 100 NM**. **100 NM is the maximum**. Tap a target for identity, track, vertical speed, distance, and squawk. Use the public [adsb.fi](https://adsb.fi/) feed, or point the unit at your own readsb or dump1090 receiver.
 - **Weather radar.** A precipitation overlay, animated from RainViewer, with a NEXRAD composite fallback. The nearest METAR sits on the glass. The WX key toggles the overlay; opacity is set on the setup page.
 - **Emergency alerts.** A squawk of 7500, 7600, or 7700, or an emergency flag from the receiver, flashes the icon red. An optional chime can be armed. Only an emergency holds off a waiting software-update prompt.
 - **Signed, tokenless updates.** When a new signed release is ready, the round screen offers **UPDATE NOW** or **LATER**. Later, or no answer within two minutes, books the install for the time you set on the Software card (2:00 AM Eastern by default). Automatic night installs are off until you turn them on. Releases are signed with Ed25519 and published on this public repository — no API token on the Pi. A failed health check rolls the previous version back.
@@ -69,7 +69,7 @@ The illustrated, step-by-step guide and a one-page assembly sheet are in the [bu
 4. Thread the USB-C cable through the rear exit from the outside, then plug it into the Pi.
 5. Front-load the display, Pi, and fan. Fit the three M4s from the rear.
 6. Fit the faceplate with four M2.5 screws, press on the caps, and snap in the knob.
-7. On first boot, scan the on-screen QR to join Wi-Fi. The scope opens on KJFK until you set a home airport on the setup page at `flighttracker.local`.
+7. On first boot, scan the on-screen QR to join the setup network, then save your own network at `http://10.42.0.1/`. After the unit joins, the Connected card shows its IPv4 address; use that if `flighttracker.local` does not resolve. The scope opens on KJFK until you set a home airport.
 
 ## Install
 
@@ -79,7 +79,7 @@ Flash Raspberry Pi OS Bookworm or Trixie with a desktop. Connect the 4inch DSI L
 sudo bash install.sh
 ```
 
-Reboot after the display overlay is added. The hostname is `flighttracker`. The setup page answers at `flighttracker.local`. If no Wi-Fi is saved, the display shows a QR code for a setup network. Join it, then save your own network.
+Reboot after the display overlay is added. The hostname is `flighttracker`. The setup page answers at `flighttracker.local`. If no Wi-Fi is saved, the display shows a QR code for the FlightTracker-Setup network. Join it, then save your own network at `http://10.42.0.1/`. After it connects, the Connected card shows the unit’s IPv4 address. **MNU → WI-FI SETUP** starts the setup network immediately when saved Wi-Fi is out of range.
 
 The installer writes the Pi 4 display overlay, starts the local server and the fullscreen kiosk, and leaves settings in `/etc/flight-tracker/config.json`. Full hardware notes and the control map live in this repository.
 

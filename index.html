@@ -70,7 +70,7 @@
           <span class="code">01</span>
           <div>
             <h3>Live aircraft radar</h3>
-            <p>Planform icons, colour-coded altitude, callsign, speed, and range rings. Select 10, 20, 30, 40, 50, 75, or 100 NM — 100 NM is the maximum. Tap a target for identity, track, vertical speed, distance, and squawk. Traffic can come from the public adsb.fi feed, or from your own readsb or dump1090 receiver.</p>
+            <p>Maverick aircraft icons, colour-coded altitude, callsign, speed, and range rings. Select 10, 20, 30, 40, 50, 75, or 100 NM — 100 NM is the maximum. Tap a target for identity, track, vertical speed, distance, and squawk. Traffic can come from the public adsb.fi feed, or from your own readsb or dump1090 receiver.</p>
           </div>
         </li>
         <li>
@@ -196,7 +196,7 @@
         <li><span><strong>Stack.</strong> Front-load the display, Pi, and fan. Fit the three M4s from the rear.</span></li>
         <li><span><strong>Bezel.</strong> Fit the faceplate with four M2.5×8 screws, press on the original dome caps, and snap in the knob.</span></li>
         <li><span><strong>Software.</strong> Flash Raspberry Pi OS (hostname and user <code>flighttracker</code>), then install <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.20">v1.0.20</a> with <code>deploy/push-update.sh</code>. Full commands are in the <a href="build.html">build guide</a>.</span></li>
-        <li><span><strong>After install.</strong> If no Wi-Fi is saved, scan the on-screen QR to join Wi-Fi. The scope opens on KJFK until you set your own location on the setup page at <code>flighttracker.local</code>.</span></li>
+        <li><span><strong>After install.</strong> If no Wi-Fi is saved, scan the on-screen QR to join the setup network, then save your own network at <code>http://10.42.0.1/</code>. After the unit joins, the Connected card shows its IPv4 address; use that if <code>flighttracker.local</code> does not resolve. The scope opens on KJFK until you set your own location.</span></li>
       </ol>
       <p class="fine kit-note">The illustrated, step-by-step guide — including a one-page assembly sheet — is in the <a href="build.html">build guide</a>.</p>
       <div class="pair">
@@ -230,7 +230,7 @@
         <li><span><strong>Connect.</strong> An Ethernet cable is the most reliable first install. Power on and wait about five minutes. The screen stays blank until the software is installed.</span></li>
         <li><span><strong>Install.</strong> From a Mac or Linux computer on the same network, download the <a href="https://github.com/MFG001/flight-tracker/releases/tag/v1.0.20">v1.0.20</a> release tarball and run <code>deploy/push-update.sh</code>. It asks for your own Pi password, the one you set in Imager. No GitHub account is needed. If <code>flighttracker.local</code> does not answer, use the tracker’s IP address from your router.</span></li>
         <li><span><strong>Reboot.</strong> The hostname is <code>flighttracker</code>. The setup page answers at <code>flighttracker.local</code>.</span></li>
-        <li><span><strong>Wi-Fi by QR.</strong> QR setup only works after the software is installed. If no Wi-Fi is saved, the display then shows a QR code for a setup network. Join it, then save your own network. The scope opens centred on KJFK until you set a home airport.</span></li>
+        <li><span><strong>Wi-Fi by QR.</strong> QR setup only works after the software is installed. If no Wi-Fi is saved, the display then shows a QR code for the FlightTracker-Setup network. Join it, then save your own network at <code>http://10.42.0.1/</code>. After it connects, the Connected card shows the unit’s IPv4 address; use that if <code>flighttracker.local</code> does not resolve. <strong>MNU → WI-FI SETUP</strong> starts the setup network immediately when saved Wi-Fi is out of range. The scope opens centred on KJFK until you set a home airport.</span></li>
       </ol>
       <p class="fine kit-note">Full steps are in the build guide on GitHub: <a href="https://github.com/MFG001/flight-tracker/blob/main/docs/BUILD.md#6-flashing-the-os">6. Flashing the OS</a> and <a href="https://github.com/MFG001/flight-tracker/blob/main/docs/BUILD.md#7-installing-the-software">7. Installing the software</a>. The installer writes the display overlay for a Pi 4, starts the local server and the fullscreen kiosk, and leaves settings in <code>/etc/flight-tracker/config.json</code>. Full hardware notes and the control map are in the repository README.</p>
     </section>
