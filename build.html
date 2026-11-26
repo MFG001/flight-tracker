@@ -29,6 +29,7 @@
     <nav aria-label="Primary">
       <a href="index.html">Home</a>
       <a href="build.html">Build guide</a>
+      <a href="index.html#booklets">Instruction booklets</a>
       <a href="https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar">Print on MakerWorld</a>
       <a href="https://github.com/MFG001/flight-tracker/releases/latest">Latest release</a>
       <a href="LICENSE">License</a>
@@ -42,7 +43,7 @@
       <div class="hero-copy">
         <p class="kicker">Build guide <span>//</span> Flight Tracker 1.0.20</p>
         <h1>Print, stack, install, fly.</h1>
-        <p class="lede">Step-by-step instructions for the compact B case: a 140 mm printed instrument, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). Software is the signed v1.0.20 release.</p>
+        <p class="lede">Step-by-step instructions for this Flight Tracker case: a 140 mm printed instrument, a Raspberry Pi 4, and a Waveshare 4inch DSI LCD (C). Software is the signed v1.0.20 release.</p>
         <p class="tag">Purpose-built. Field-proven.</p>
         <div class="cta">
           <a class="btn primary" href="https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar">Print on MakerWorld</a>
@@ -51,6 +52,7 @@
           <a class="btn ghost" href="LICENSE">License</a>
         </div>
         <p class="fine">A printable PDF of the assembly sheet is attached on this page. A preview of the same sheet is in the software repository as <code>docs/build/assembly_sheet-web.jpg</code>.</p>
+        <p class="fine">Instruction booklets (PDF): <a href="assets/docs/Flight_Tracker_Overview_and_Build_Booklet.pdf">Overview and Build</a> · <a href="assets/docs/Flight_Tracker_Software_Booklet.pdf">Software</a>.</p>
       </div>
       <div>
         <a class="sheet-card" href="assets/build/assembly_sheet.pdf">
@@ -95,11 +97,10 @@
       </figure>
       <h3>Printed parts</h3>
       <table>
-        <thead><tr><th>Part</th><th>Colour</th><th>Delivery file (print the .gcode.3mf)</th></tr></thead>
+        <thead><tr><th>Part</th><th>Color</th><th>Delivery file (print the .gcode.3mf)</th></tr></thead>
         <tbody>
           <tr><td>Set A: 140 mm thin faceplate and BRT knob</td><td>Black #161616 with Dark Gull Gray #545C61 legend inlays (AMS)</td><td><code>FlightTracker_SetA_faceplate_knob_black_H2S.gcode.3mf</code></td></tr>
           <tr><td>Set B: can + foot, and four original dome caps</td><td>Dark Gull Gray #545C61</td><td><code>FlightTracker_SetB_can_caps_gray_H2S.gcode.3mf</code></td></tr>
-          <tr><td>Optional insert-fit coupon</td><td>Gray</td><td><code>FlightTracker_compactB_H2S_insert_coupon.gcode.3mf</code></td></tr>
         </tbody>
       </table>
       <p class="prose">Print both plates from the <a href="https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar">MakerWorld listing</a>. Set A is the thin faceplate and the knob. Set B is the can and foot, plus the four original ribbed dome caps (<code>caps_fit_v2</code>, Ø12 × 5.51, with a hex dimple) in Dark Gull Gray, matching the photographs. These are the original dome caps, not the later flush (flat) plugs.</p>
@@ -116,7 +117,7 @@
         <thead><tr><th>Qty</th><th>Part</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td>1</td><td>Raspberry Pi 4</td><td>The installer default is a Pi 4.</td></tr>
-          <tr><td>1</td><td>Waveshare 4inch DSI LCD (C), 720 × 720 capacitive touch</td><td>Confirm the model on the board. This is not the 4-DSI-TOUCH-C.</td></tr>
+          <tr><td>1</td><td>Waveshare 4inch DSI LCD (C), 720 × 720 capacitive touch</td><td>Confirm the model on the board says 4inch DSI LCD (C).</td></tr>
           <tr><td>1</td><td>USB-C power supply suitable for a Raspberry Pi 4, and a microSD card</td><td>Raspberry Pi OS Bookworm or Trixie, with a desktop. An “official” supply is not specified in the design files.</td></tr>
           <tr><td>1</td><td>USB-C cable, straight plug</td><td>15–20 mm body, cable no thicker than about Ø4.8 mm. No 90° adapter.</td></tr>
           <tr><td>1</td><td>Cooling fan and heatsink on the Pi</td><td>Waveshare PI4-FAN-PWM (Armor-lite + 3510 fan). Designed around a 17 mm stack plus a 6 mm intake gap. <strong>Verified</strong> on the built unit: this stack fits and works.</td></tr>
@@ -144,13 +145,12 @@
       <table>
         <thead><tr><th>Set</th><th>Time</th><th>Filament</th></tr></thead>
         <tbody>
-          <tr><td>Set A, thin faceplate + knob in black (AMS)</td><td>1 h 18 m 51 s</td><td>43.08 g (42.39 g black + 0.68 g grey)</td></tr>
+          <tr><td>Set A, thin faceplate + knob in black (AMS)</td><td>1 h 18 m 51 s</td><td>43.08 g (42.39 g black + 0.68 g gray)</td></tr>
           <tr><td>Set B, can + foot + 4 dome caps in Dark Gull Gray #545C61</td><td>4 h 37 m 32 s</td><td>181.13 g</td></tr>
-          <tr><td>Optional insert-fit coupon</td><td>11 m 9 s</td><td>5.53 g</td></tr>
           <tr><td><strong>Set total</strong> (A + B)</td><td><strong>5 h 56 m 23 s</strong></td><td><strong>224.21 g</strong></td></tr>
         </tbody>
       </table>
-      <p class="prose">Times are slicer predictions. The coupon is extra. Print the <code>.gcode.3mf</code> for your printer. The faceplate prints face-down. Peel the brim. There are no supports to remove.</p>
+      <p class="prose">Times are slicer predictions. Print the <code>.gcode.3mf</code> for your printer. The faceplate prints face-down. Peel the brim. There are no supports to remove.</p>
       <figure class="photo">
         <img src="assets/build/photo-can-rear.jpg" width="1440" height="1920" alt="Rear of the gray can, with three M4 ports, a hexagonal fan grille, and a wedge foot.">
         <figcaption>Rear ports, grille, and foot.</figcaption>
@@ -173,7 +173,6 @@
         <li><span>Set each insert flush with the column face, and square to it.</span></li>
         <li><span>Let the inserts cool before you load the electronics.</span></li>
       </ol>
-      <p class="prose">Print the optional coupon first if you want to confirm the insert fit.</p>
     </section>
 
     <section id="mounting">
@@ -196,7 +195,7 @@
         <img src="assets/build/03-display-seated.jpg" width="1440" height="1920" alt="The round display seated in the open gray can, before the faceplate is fitted.">
         <figcaption>3. Display seated in the can, before the faceplate.</figcaption>
       </figure>
-      <p class="prose">Display orientation in this case: USB-C at the lower left, pointing left. Confirm the board is 4inch DSI LCD (C), not 4-DSI-TOUCH-C.</p>
+      <p class="prose">Display orientation in this case: USB-C at the lower left, pointing left. Confirm the board is 4inch DSI LCD (C).</p>
     </section>
 
     <section id="closing">
@@ -226,7 +225,7 @@
       </header>
       <ol class="steps">
         <li><span>Use <a href="https://www.raspberrypi.com/software/">Raspberry Pi Imager</a> 2.0.12 or newer on a computer, not the Pi. Choose Raspberry Pi 4, then <strong>Raspberry Pi OS (64-bit)</strong>, the one with a desktop (Trixie).</span></li>
-        <li><span>Fill in <strong>every</strong> customisation step: hostname <code>flighttracker</code>, your Wi-Fi country, username <code>flighttracker</code> with a password you will remember (you type it during the install), your Wi-Fi name and password, or nothing if you use Ethernet, and SSH on with password authentication.</span></li>
+        <li><span>Fill in <strong>every</strong> customization step: hostname <code>flighttracker</code>, your Wi-Fi country, username <code>flighttracker</code> with a password you will remember (you type it during the install), your Wi-Fi name and password, or nothing if you use Ethernet, and SSH on with password authentication.</span></li>
         <li><span>Write the card. Take it out and put it back in the computer; a disk named <strong>bootfs</strong> appears. Check it with <a href="https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh"><code>prep-sd-card.sh</code></a>, below.</span></li>
         <li><span>Eject the card, put it in the Pi, plug in Ethernet if you use it, and power on. Wait about five minutes. The screen stays blank until the software is installed.</span></li>
       </ol>
@@ -256,14 +255,22 @@ bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.20.tar.gz flighttracke
     <section id="setup">
       <header>
         <p class="kicker">08 — First setup</p>
-        <h2>Home location, Wi-Fi QR, and updates.</h2>
+        <h2>Connect Wi-Fi, set your location, and check for updates.</h2>
       </header>
       <div class="prose">
-        <p>The setup page is <code>http://flighttracker.local/</code>. The scope opens centred on <strong>KJFK</strong> (latitude 40.6399, longitude −73.7787). Set your own home on the setup page. Save writes <code>/etc/flight-tracker/config.json</code> and the running display picks it up without a reboot.</p>
-        <p>If the Pi has no saved Wi-Fi, the glass raises a WPA hotspot named <strong>FlightTracker-Setup</strong>. The password is random per device, eight letters, and is shown under a QR code. When the phone joins, a second QR code opens <code>http://10.42.0.1/</code>. On that hotspot, <code>http://flighttracker.local/</code> also resolves to the unit. Save the home Wi-Fi there. After the home network connects, the card changes to “Connected” and a QR code for the unit’s current IPv4 address, then closes. Join that same Wi-Fi, then scan or type the address. On the 720×720 round display, the on-device Wi-Fi setup page uses a keyboard fitted inside the glass, with <strong>CONNECT</strong> just above it. <strong>MNU → WI-FI SETUP</strong> opens the card again and starts the setup network immediately when saved Wi-Fi is out of range.</p>
-        <p>The setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change a saved password. <strong>FORGET SAVED NETWORKS</strong> removes every saved profile and starts the setup hotspot.</p>
-        <p>In Night, <strong>Sunrise and sunset</strong> hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates, entered in that section, not as the map centre. The page then shows tonight’s dim and bright times for that location, using the device’s clock time zone. You cannot save that mode until a valid location is entered.</p>
-        <p>A daily update check runs at about <strong>09:00 AM Eastern</strong>, with up to five minutes of random delay. <strong>CHECK FOR UPDATES</strong> on the Software card always runs at once. Automatic night installs are off until you turn them on. Releases are Ed25519-signed; no API token is stored on the Pi. A failed health check rolls the previous version back.</p>
+        <p>Everyday use is in the <a href="https://github.com/MFG001/flight-tracker/blob/main/docs/SOFTWARE.md">software guide</a>. The radar opens centered on <strong>KJFK</strong> until you set your own home.</p>
+        <ol>
+          <li>Hold the clock for 2 seconds, then tap <strong>WI-FI SETUP</strong>. Or use the join card if it is already on the screen.</li>
+          <li>Scan the QR code on the screen with your phone to join <strong>FlightTracker-Setup</strong>.</li>
+          <li>When the card shows <strong>PHONE JOINED</strong>, scan the next QR code to open the setup page.</li>
+          <li>Open <strong>WI-FI</strong>, pick your network, enter the password, and tap <strong>CONNECT</strong>.</li>
+          <li>You are done when the screen shows <strong>CONNECTED</strong>.</li>
+          <li>Join the same Wi-Fi on your phone. Open <code>http://flighttracker.local/</code>, or the address on the <strong>CONNECTED</strong> card.</li>
+          <li>Under <strong>LOCATION</strong>, use <strong>AIRPORT CODE</strong> or <strong>LAT / LONG</strong>, then tap <strong>SAVE</strong>.</li>
+          <li>For night dim, open <strong>NIGHT</strong>, choose <strong>Sunrise and sunset</strong>, enter a US ZIP code or coordinates, and tap <strong>SAVE NIGHT</strong>.</li>
+          <li>For updates, open <strong>SOFTWARE</strong> and tap <strong>CHECK FOR UPDATES</strong>. Then tap <strong>INSTALL UPDATE</strong>, and <strong>UPDATE NOW</strong> when the screen asks.</li>
+        </ol>
+        <p>On the setup page, <strong>WI-FI</strong> lists saved networks. You can forget one, make one preferred, or change a saved password. <strong>FORGET SAVED NETWORKS</strong> removes every saved network.</p>
       </div>
     </section>
 
@@ -272,26 +279,26 @@ bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.20.tar.gz flighttracke
         <p class="kicker">09 — Troubleshooting</p>
         <h2>On-screen steps first.</h2>
       </header>
-      <p class="prose">If the glass is up but the display is stuck or blank, open the setup page and tap <strong>RESTART DISPLAY</strong>. If you cannot reach the setup page, power-cycle the unit. The first-install rows below are for when <code>push-update.sh</code> cannot reach the Pi. After the software is installed, use the setup page and the on-screen Wi-Fi card rather than logging in with SSH.</p>
+      <p class="prose">If the screen is up but stuck or blank, open the setup page and tap <strong>RESTART DISPLAY</strong>. If you cannot reach the setup page, power-cycle the unit. The first-install rows below are for when <code>push-update.sh</code> cannot reach the Pi. After the software is installed, use the setup page and the on-screen Wi-Fi card rather than logging in with SSH.</p>
       <table>
         <thead><tr><th>Symptom</th><th>What to try</th></tr></thead>
         <tbody>
           <tr><td><code>flighttracker.local</code> does not resolve, and the tracker is not in the router’s client list</td><td>It has not joined the network. Before the software is installed there is no QR setup. Use an Ethernet cable, or check the card with <a href="https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh"><code>prep-sd-card.sh</code></a>. If the Wi-Fi name starts or ends with a space, rename the network, or fix the card with <code>bash prep-sd-card.sh wifi</code>. The network should offer 2.4 GHz or 5 GHz (not 6 GHz only) and WPA2 or WPA2/WPA3 (not WPA3 only).</td></tr>
           <tr><td><code>flighttracker.local</code> does not resolve, but the tracker is in the client list</td><td>Use its IP address from the list. After the software is installed, the Connected card on the display also shows the unit’s IPv4 address. Check your computer is on the same network. Multicast or mDNS blocking on the router can also stop <code>.local</code> names.</td></tr>
           <tr><td>The script cannot log in</td><td>Hostname and username should both be <code>flighttracker</code>. Enable SSH with password authentication in Imager. The password is the one you set in Imager for <code>flighttracker</code>.</td></tr>
-          <tr><td>The card was flashed without customisation</td><td>There is no <code>flighttracker</code> user and SSH is off, so nothing can log in, even over Ethernet. Flash it again and fill in every customisation step.</td></tr>
+          <tr><td>The card was flashed without customization</td><td>There is no <code>flighttracker</code> user and SSH is off, so nothing can log in, even over Ethernet. Flash it again and fill in every customization step.</td></tr>
           <tr><td><code>REMOTE HOST IDENTIFICATION HAS CHANGED</code> after reflashing</td><td>A fresh card has new SSH host keys. Run <code>ssh-keygen -R flighttracker.local</code> (and <code>ssh-keygen -R</code> with the IP address if you used one), then try again. Two units both named <code>flighttracker</code> on one network also clash; use each unit’s IP address, or power one off while you set up the other.</td></tr>
           <tr><td>Safari turned the download into <code>.tar</code></td><td>That is fine. Pass the <code>.tar</code> path to <code>push-update.sh</code>.</td></tr>
           <tr><td>The display is blank after the first install</td><td>Reboot so the Waveshare overlay loads. Confirm the board is 4inch DSI LCD (C).</td></tr>
-          <tr><td>No Wi-Fi after the software is installed</td><td>Use the on-screen FlightTracker-Setup QR, then save the home network at <code>http://10.42.0.1/</code>. On the setup hotspot, <code>http://flighttracker.local/</code> also resolves to the unit. <strong>MNU → WI-FI SETUP</strong> starts the setup network immediately when saved Wi-Fi is out of range.</td></tr>
-          <tr><td>An update never appears</td><td>Tap <strong>CHECK FOR UPDATES</strong> on the Software card. The automatic check is at 9:00 AM Eastern.</td></tr>
+          <tr><td>No Wi-Fi after the software is installed</td><td>Hold the clock for 2 seconds, then tap <strong>WI-FI SETUP</strong>. Or use the join card if it is already on the screen. Scan the QR to join <strong>FlightTracker-Setup</strong>. Scan the next QR to open setup. Open <strong>WI-FI</strong>, pick your network, enter the password, and tap <strong>CONNECT</strong>. You are done when the screen shows <strong>CONNECTED</strong>.</td></tr>
+          <tr><td>An update never appears</td><td>Tap <strong>CHECK FOR UPDATES</strong> on the Software card. The automatic check is at 09:00 AM Eastern.</td></tr>
         </tbody>
       </table>
     </section>
 
     <section id="screens">
       <header>
-        <p class="kicker">10 — The glass</p>
+        <p class="kicker">10 — The screen</p>
         <h2>Sample screens from v1.0.13.</h2>
         <p>Bundled demo traffic, home at KJFK, 20 NM — not a live feed. Each preview sits on a different background. Tap the tail-number label, not the aircraft icon, for the detail card.</p>
       </header>
@@ -342,7 +349,7 @@ bash deploy/push-update.sh ~/Downloads/flight-tracker-1.0.20.tar.gz flighttracke
         <p><strong>Verified on the built unit.</strong> The three rear display screws are M4×8 button heads, into the display’s own bosses. The cooling stack is a Waveshare PI4-FAN-PWM (Armor-lite + 3510 fan); the 17 mm height the case was designed around, with a 6 mm intake gap, fits and works.</p>
       </div>
       <div class="note-unverified prose">
-        <p><strong>Still unverified.</strong> USB-C plug body length: 15–20 mm all fit by design; the photographs show a straight plug in place. First boot on the physical 720 × 720 panel, touch alignment, Avahi, the setup hotspot, and a real over-the-air install were not verified in this environment. The repository README lists those items in full.</p>
+        <p>A straight 15–20 mm USB-C plug is designed to fit, and the photographs show a straight plug in place. Lab notes about what was not tried on a physical Pi are in the <a href="https://github.com/MFG001/flight-tracker/blob/main/docs/DEVELOPER.md">developer notes</a>.</p>
       </div>
     </section>
   </main>

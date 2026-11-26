@@ -5,21 +5,22 @@
 **Maverick Field Gear**  
 Purpose-built. Field-proven.
 
-A free DIY kit: a cockpit-style ADS-B display for a Raspberry Pi 4 and a Waveshare 4-inch, 720×720 DSI touch panel. Live traffic is drawn inside the circular glass, with range rings, precipitation radar, emergency alerts, and five map styles. The eight bezel actions are printed on the case.
+A free DIY kit: a cockpit-style ADS-B display for a Raspberry Pi 4 and a Waveshare 4-inch, 720×720 DSI touch panel. Live traffic is drawn inside the circular screen, with range rings, precipitation radar, emergency alerts, and five map styles. The names printed on the case are labels only.
 
 The kit is free on GitHub and MakerWorld. It is not sold.
 
 - Software and signed releases: [github.com/MFG001/flight-tracker](https://github.com/MFG001/flight-tracker)
 - Print files: [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar) ([@mavfieldgear](https://makerworld.com/en/@mavfieldgear))
+- Instruction booklets (PDF): [Overview and Build](assets/docs/Flight_Tracker_Overview_and_Build_Booklet.pdf) · [Software](assets/docs/Flight_Tracker_Software_Booklet.pdf)
 - New units open on **KJFK** until you set your own location
 
 ## Features
 
-- **Live aircraft radar.** Maverick aircraft icons, colour-coded altitude, callsign and speed, and range rings. Select **10, 20, 30, 40, 50, 75, or 100 NM**. **100 NM is the maximum**. Tap a target for identity, track, vertical speed, distance, and squawk. Use the public [adsb.fi](https://adsb.fi/) feed, or point the unit at your own readsb or dump1090 receiver.
-- **Weather radar.** A precipitation overlay, animated from RainViewer, with a NEXRAD composite fallback. The nearest METAR sits on the glass. The WX key toggles the overlay; opacity is set on the setup page.
-- **Emergency alerts.** A squawk of 7500, 7600, or 7700, or an emergency flag from the receiver, flashes the icon red. An optional chime can be armed. Only an emergency holds off a waiting software-update prompt.
-- **Signed, tokenless updates.** When a new signed release is ready, the round screen offers **UPDATE NOW** or **LATER**. Later, or no answer within two minutes, books the install for the time you set on the Software card (2:00 AM Eastern by default). Automatic night installs are off until you turn them on. Releases are signed with Ed25519 and published on this public repository — no API token on the Pi. A failed health check rolls the previous version back.
-- **Five map styles.** Dark canvas, street map, satellite, FAA VFR sectional, and a drawn radar scope. Cycle them with the MAP key.
+- **Live aircraft radar.** Maverick aircraft icons, color-coded altitude, callsign and speed, and range rings. Select **10, 20, 30, 40, 50, 75, or 100 NM**. 100 NM is the maximum. Tap a tail-number box for flight details. The default feed is [adsb.fi](https://adsb.fi/).
+- **Weather radar.** A precipitation overlay on the screen, plus the nearest METAR. Turn the overlay on or off, and set opacity, on the setup page under **WEATHER**.
+- **Emergency alerts.** A squawk of 7500, 7600, or 7700 flashes the icon red. You can also turn on a chime on the setup page under **ALERTS**.
+- **Updates.** Open **SOFTWARE** on the setup page and tap **CHECK FOR UPDATES**. Then tap **INSTALL UPDATE**, and **UPDATE NOW** when the screen asks.
+- **Five map styles.** Dark canvas, street map, satellite, FAA VFR sectional, and a drawn radar scope. Choose a style on the setup page under **BACKGROUND**.
 
 Demo screenshots below use bundled sample tracks, home at KJFK, 20 NM.
 
@@ -27,9 +28,9 @@ Demo screenshots below use bundled sample tracks, home at KJFK, 20 NM.
 | --- | --- | --- | --- | --- |
 | ![Dark map](assets/map-dark-thumb.png) | ![Light map with weather](assets/map-light-wx-thumb.png) | ![Satellite](assets/map-satellite-thumb.png) | ![FAA sectional](assets/map-sectional-thumb.png) | ![Radar scope](assets/map-scope-thumb.png) |
 
-![Compact B printed case](assets/case-front.png)
+![Flight Tracker printed case](assets/case-front.png)
 
-The compact B case is 140 × 155 × 100 mm, printed as two plates. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). H2S, Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
+The Flight Tracker case is 140 × 155 × 100 mm, printed as two plates. Both H2S and A1 print profiles are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar). H2S, Set A + Set B — Full case (2 plates): about 5 h 56 m, 224 g. A1 — Full case (2 plates): about 7 h 16 m, 224 g; plate 1 needs AMS lite for the gray legends. Supports off.
 
 ## What you need
 
@@ -37,7 +38,7 @@ The compact B case is 140 × 155 × 100 mm, printed as two plates. Both H2S and 
 
 About 5 hours 56 minutes and 224 g for the set (Set A + Set B). Finished size 140 × 154.7 × 100.3 mm.
 
-- Set A: thin faceplate and BRT knob — black with grey legend inlays
+- Set A: thin faceplate and BRT knob — black with gray legend inlays
 - Set B: can + foot, and four original dome caps — Dark Gull Gray
 
 ### Electronics
@@ -61,7 +62,7 @@ The illustrated, step-by-step guide and a one-page assembly sheet are in the [bu
 
 ## Build overview
 
-![Exploded assembly of the compact B case](assets/case-exploded-wide.png)
+![Exploded assembly of the Flight Tracker case](assets/case-exploded-wide.png)
 
 1. Print Set A (thin faceplate and knob, black) and Set B (can, foot, and four dome caps, Dark Gull Gray). Supports off.
 2. Press the four M2.5×4 heat-set inserts into the front corners of the can.
@@ -69,7 +70,7 @@ The illustrated, step-by-step guide and a one-page assembly sheet are in the [bu
 4. Thread the USB-C cable through the rear exit from the outside, then plug it into the Pi.
 5. Front-load the display, Pi, and fan. Fit the three M4s from the rear.
 6. Fit the faceplate with four M2.5 screws, press on the caps, and snap in the knob.
-7. On first boot, scan the on-screen QR to join the setup network, then save your own network at `http://10.42.0.1/`. After the unit joins, the Connected card shows its IPv4 address; use that if `flighttracker.local` does not resolve. The scope opens on KJFK until you set a home airport.
+7. Hold the clock for 2 seconds, then tap **WI-FI SETUP**. Or use the join card if it is already on the screen. Scan the QR to join **FlightTracker-Setup**. Scan the next QR to open setup. Open **WI-FI**, pick your network, enter the password, and tap **CONNECT**. You are done when the screen shows **CONNECTED**. The radar opens centered on KJFK until you set a home airport. Everyday use is in the [software guide](https://github.com/MFG001/flight-tracker/blob/main/docs/SOFTWARE.md).
 
 ## Install
 
@@ -79,22 +80,18 @@ Flash Raspberry Pi OS Bookworm or Trixie with a desktop. Connect the 4inch DSI L
 sudo bash install.sh
 ```
 
-Reboot after the display overlay is added. The hostname is `flighttracker`. The setup page answers at `flighttracker.local`. If no Wi-Fi is saved, the display shows a QR code for the FlightTracker-Setup network. Join it, then save your own network at `http://10.42.0.1/`. After it connects, the Connected card shows the unit’s IPv4 address. **MNU → WI-FI SETUP** starts the setup network immediately when saved Wi-Fi is out of range.
+Reboot after the display overlay is added. The hostname is `flighttracker`. The installer sets up this unit's Waveshare 4inch DSI LCD (C) and starts Flight Tracker.
 
-The installer writes the Pi 4 display overlay, starts the local server and the fullscreen kiosk, and leaves settings in `/etc/flight-tracker/config.json`. Full hardware notes and the control map live in this repository.
+Then connect Wi-Fi, set your location, and check for updates with the [software guide](https://github.com/MFG001/flight-tracker/blob/main/docs/SOFTWARE.md). Hold the clock for 2 seconds, then tap **WI-FI SETUP**. Or use the join card if it is already on the screen. Scan the QR to join **FlightTracker-Setup**. Scan the next QR to open setup. Open **WI-FI**, pick your network, enter the password, and tap **CONNECT**. You are done when the screen shows **CONNECTED**.
 
 ## Updates
 
-Releases are Ed25519-signed and published on this public repository. The unit fetches the latest manifest over HTTPS, with no API token and no credentials. It refuses older or equal versions, mismatched signatures, and downloads that are not from approved GitHub hosts.
+1. Open **SOFTWARE** on the setup page.
+2. Tap **CHECK FOR UPDATES**.
+3. Tap **INSTALL UPDATE**.
+4. When the screen asks, tap **UPDATE NOW**.
 
-When an update is ready, the round screen asks **UPDATE NOW** or **LATER**:
-
-- **UPDATE NOW** starts the install immediately.
-- **LATER**, or no answer within two minutes, books the install for the next “Install later at” time on the Software card. That time defaults to **2:00 AM Eastern**; you can change it.
-- Automatic installs at that hour are **off** by default.
-- Only an emergency alert holds off the prompt.
-
-After install, a health check runs. If it fails, the previous version is restored.
+Updates are signed and published on this public GitHub repository. No account is needed. If an update does not start cleanly, the unit goes back to the previous version.
 
 ## License
 
