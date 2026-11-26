@@ -327,7 +327,7 @@ h3 { font-size: 1.15rem; color: var(--cream); margin-bottom: 0.35rem; }
   background: #d9d3c6;
   border: 1px solid var(--line);
   box-shadow: 0 0 0 6px #070809, 0 0 0 7px rgba(125, 255, 168, 0.28);
-  padding: 8.1%;
+  padding: 2.5%;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
