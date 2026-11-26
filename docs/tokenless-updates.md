@@ -2,7 +2,7 @@
 
 [Flight Tracker](../README.md) / Signed updates
 
-**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · **Signed updates** · [Wi-Fi QR test](wifi-qr-test.md)
+**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · [Developer notes](DEVELOPER.md) · **Signed updates** · [Wi-Fi QR test](wifi-qr-test.md)
 
 
 ## Channel
@@ -11,7 +11,7 @@
 - Device checks `https://github.com/<repo>/releases/latest/download/manifest.json` anonymously.
   github.com 302s to `release-assets.githubusercontent.com`; this is not the REST API, so the
   60/hour/IP anonymous API limit does not apply. Checks: 90 s after boot, then every 6 h, plus the
-  09:00 AM Eastern daily check, a 03:10 AM Eastern auto-install run when auto-update is on, and manual CHECK NOW.
+  09:00 AM Eastern daily check, a 03:10 AM Eastern auto-install run when auto-update is on, and manual CHECK FOR UPDATES.
 - Hosts allowed (HTTPS:443 only, no credentials, every redirect checked): github.com,
   release-assets.githubusercontent.com, objects.githubusercontent.com. Tarball URL must be under
   `github.com/<pinned repo>/releases/download/v…`. No Authorization header is ever sent.

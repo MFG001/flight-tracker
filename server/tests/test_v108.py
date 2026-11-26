@@ -41,7 +41,7 @@ class RangeStepTests(unittest.TestCase):
         main = (ROOT / "src/main.ts").read_text()
         self.assertIn("rangeNm: 20,", main)
         software = (ROOT / "docs/SOFTWARE.md").read_text()
-        self.assertIn("step 10, 20, 30, 40, 50, 75, 100 nm", software)
+        self.assertIn("The steps are 10, 20, 30, 40, 50, 75, and 100 nm", software)
         self.assertNotIn("Steps 2, 5, 10", software)
         self.assertNotIn("At 2 nm they read", software)
 

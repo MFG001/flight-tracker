@@ -169,8 +169,8 @@ class PushUpdateTtyTests(unittest.TestCase):
         self.assertIn('trap \'rm -rf "$dir"\' EXIT', PUSH)
         self.assertIn("for url in http://127.0.0.1:8741/api/health http://127.0.0.1/api/health; do", PUSH)
         self.assertIn("Run this on the Mac", PUSH)
-        software = (ROOT / "docs/SOFTWARE.md").read_text(encoding="utf-8")
-        self.assertIn("Run these on the Mac (in Terminal), not on the Pi.", software)
+        build = (ROOT / "docs/BUILD.md").read_text(encoding="utf-8")
+        self.assertIn("Run these on the Mac (in Terminal), not on the Pi.", build)
 
 
 if __name__ == "__main__":

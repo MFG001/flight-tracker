@@ -97,13 +97,49 @@ def png_text(data: bytes) -> bytes:
     return b"\n".join(out)
 
 
+def pdf_text(data: bytes) -> str:
+    """Visible text and document info from a PDF.
+
+    Raw PDF bytes include font bounding boxes and compressed streams that can
+    look like phone numbers or e-mail addresses. Those are not personal data.
+    """
+    import shutil
+    import tempfile
+
+    if not data.startswith(b"%PDF"):
+        return ""
+    if not shutil.which("pdftotext"):
+        return ""
+    parts: list[str] = []
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+        tmp.write(data)
+        tmp.flush()
+        text = subprocess.run(
+            ["pdftotext", "-enc", "UTF-8", tmp.name, "-"],
+            capture_output=True,
+            check=False,
+        )
+        if text.returncode == 0:
+            parts.append(text.stdout.decode("utf-8", errors="replace"))
+        if shutil.which("pdfinfo"):
+            info = subprocess.run(["pdfinfo", tmp.name], capture_output=True, check=False)
+            if info.returncode == 0:
+                parts.append(info.stdout.decode("utf-8", errors="replace"))
+    return "\n".join(parts)
+
+
 def text_of(data: bytes) -> str:
+    if data.startswith(b"%PDF"):
+        extracted = pdf_text(data)
+        if extracted:
+            return extracted
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return png_text(data).decode("utf-8", errors="replace")
     if b"\x00" in data[:8192]:
         # Other binaries: only readable runs, like `strings`, so compressed noise stays quiet.
         return "\n".join(m.group(0).decode("ascii") for m in PRINTABLE.finditer(data))
     return data.decode("utf-8", errors="replace")
+
 
 
 def scan_bytes(label: str, data: bytes, extra: frozenset[str]) -> list[str]:

@@ -2,7 +2,7 @@
 
 [Flight Tracker](../README.md) / Wi-Fi QR test
 
-**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · [Signed updates](tokenless-updates.md) · **Wi-Fi QR test**
+**[README](../README.md)** · [Build guide](BUILD.md) · [Software](SOFTWARE.md) · [Developer notes](DEVELOPER.md) · [Signed updates](tokenless-updates.md) · **Wi-Fi QR test**
 
 
 This is a short, self-reverting test of the FlightTracker-Setup hotspot and the NO WI-FI join QR card on the round display. It is safe to run while the unit is already on your home Wi-Fi: the test records that profile (spaces in the name are kept exactly), starts the setup hotspot, and then brings the same profile back.
