@@ -238,7 +238,15 @@ If the Pi has no saved Wi-Fi, the round display raises a WPA hotspot named **Fli
 
 When the phone joins, the display switches to a second QR code for `http://10.42.0.1/`. That is the setup hotspot address. On that hotspot, `http://flighttracker.local/` also resolves to the unit. Save the home Wi-Fi there. After the home network connects, the card changes to “Connected” and a QR code for the unit’s current IPv4 address, then closes. Join that same Wi-Fi, then scan or type the address.
 
-**MNU → WI-FI SETUP** opens the card again.
+On the 720×720 round display, the on-device Wi-Fi setup page uses a keyboard fitted inside the glass so every key is visible. **CONNECT** stays just above the keyboard, and a connect key on the keyboard also submits the name and password you typed.
+
+**MNU → WI-FI SETUP** opens the card again. If the setup network is not already up (for example after a move, while saved Wi-Fi is out of range), this starts it immediately.
+
+The setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot. After a grace period of about two minutes at boot, the setup hotspot stays up instead of repeatedly trying a network that is out of range.
+
+### Night
+
+In Night, **Sunrise and sunset** hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates, entered in that section, not as the map centre. The page then shows tonight's dim and bright times for that location, using the device's clock time zone. You cannot save that mode until a valid location is entered. A unit already using sunrise/sunset without a location keeps its current hours until one is entered.
 
 ### Updates
 
@@ -253,32 +261,27 @@ The Software section on `http://flighttracker.local/` is the place to check, rea
 
 ## 9. Troubleshooting
 
-Restart the kiosk if the glass is up but the display is stuck or blank:
+If the glass is up but the display is stuck or blank, open the setup page and tap **RESTART DISPLAY**. If you cannot reach the setup page, power-cycle the unit.
 
-```bash
-ssh flighttracker@flighttracker.local 'sudo systemctl restart flight-tracker-kiosk'
-```
-
-Other useful checks:
-
-```bash
-ssh flighttracker@flighttracker.local 'systemctl status flight-tracker.service flight-tracker-kiosk.service'
-ssh flighttracker@flighttracker.local 'sudo journalctl -u flight-tracker.service -n 50 --no-pager'
-```
+The first-install rows below are for when `push-update.sh` cannot reach the Pi. After the software is installed, use the setup page and the on-screen Wi-Fi card rather than logging in with SSH.
 
 | Symptom | What to try |
 | --- | --- |
 | `flighttracker.local` does not resolve, and the tracker is not in the router’s client list | It has not joined the network. Before the software is installed there is no QR setup. Use an Ethernet cable, or put the card in the Mac and run [`prep-sd-card.sh`](https://raw.githubusercontent.com/MFG001/flight-tracker/main/deploy/prep-sd-card.sh) (`bash prep-sd-card.sh`). If the Wi-Fi name starts or ends with a space, rename the network, or fix the card with `bash prep-sd-card.sh wifi`. Check the router: the network should offer 2.4 GHz or 5 GHz (not 6 GHz only), WPA2 or WPA2/WPA3 (not WPA3 only), and MLO off. |
-| `flighttracker.local` does not resolve, but the tracker is in the client list | Use its IP address from the list. Check the Mac is on the same network (same first three numbers of the IP address). Multicast or mDNS blocking on the router can also stop `.local` names. |
+| `flighttracker.local` does not resolve, but the tracker is in the client list | Use its IP address from the list. After the software is installed, the Connected card on the display also shows the unit's IPv4 address. Check the Mac is on the same network (same first three numbers of the IP address). Multicast or mDNS blocking on the router can also stop `.local` names. |
 | The script cannot log in | Hostname and username should both be `flighttracker`. Enable SSH with password authentication in Imager. Run `bash prep-sd-card.sh` on the card to check. The password is the one you set in Imager for `flighttracker`. |
 | The card was flashed without customisation | There is no `flighttracker` user and SSH is off, so nothing can log in, even over Ethernet. Flash it again and fill in every customisation step. |
 | `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!` after reflashing | A fresh card has new SSH host keys, so your computer's saved key for the old card no longer matches. Remove it with `ssh-keygen -R flighttracker.local`, and also `ssh-keygen -R` followed by the IP address if you used one, then run the command again. Two units both named `flighttracker` on one network also clash: they share the name `flighttracker.local`. Use each unit's IP address, or power one off while you set up the other. |
 | `sudo: a terminal is required` | Use the `push-update.sh` from this release (1.0.6 and later). Run it in a real Terminal window, not a pipe. |
 | Safari turned the download into `.tar` | That is fine. Pass the `.tar` path to `push-update.sh`. |
 | The display is blank or the wrong size after the first install | Reboot so the Waveshare overlay loads. Confirm the board is 4inch DSI LCD (C), not 4-DSI-TOUCH-C. |
-| No Wi-Fi after the software is installed | Use the on-screen FlightTracker-Setup QR, then save the home network at `http://10.42.0.1/`. |
+| The display hangs on the title or home screen and the program never opens | Power-cycle the unit. This boot hang was fixed in 1.0.16; on an older release, open the setup page when you can and run **CHECK FOR UPDATES**. |
+| The glass is white after an update, or the setup hotspot never starts | That could happen after the 1.0.16 update on some units. If the unit still has a saved network, bring that network in range — a phone hotspot with the same name and password works — then open the setup page and run **CHECK FOR UPDATES**. 1.0.18 and later also refresh the display service units during an update, so the display opens even if the local server is late. |
+| No Wi-Fi after the software is installed | Use the on-screen FlightTracker-Setup QR, then save the home network at `http://10.42.0.1/`. On the setup hotspot, `http://flighttracker.local/` also resolves to the unit. **MNU → WI-FI SETUP** starts the setup network immediately when saved Wi-Fi is out of range. |
+| The unit keeps trying a Wi-Fi network that is no longer valid | On the setup page Wi-Fi section, forget that network, or tap **FORGET SAVED NETWORKS** to clear every saved profile and start the setup hotspot. Then join a network that is in range. From 1.0.18, after a short grace period at boot the setup hotspot stays up instead of repeatedly retrying the old network. |
+| Brightness (BRT) does not change the panel after an update | Run **CHECK FOR UPDATES** and install 1.0.19 or later, which adds the backlight permission the panel needs. Until then, the glass still dims itself so BRT is not a no-op. |
 | An update never appears | Tap **CHECK FOR UPDATES** on the Software card. The automatic check is at 9:00 AM Eastern. |
-| The kiosk does not come back after an update | Restart it with the command above. `journalctl` on `flight-tracker.service` shows whether the server came up as the new version. |
+| The display does not come back after an update | Open the setup page and tap **RESTART DISPLAY**, or power-cycle the unit. Then confirm the Software card shows the new version. |
 
 ## What the glass shows
 

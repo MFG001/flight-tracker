@@ -34,7 +34,7 @@ python3 -m unittest discover -s server/tests -v
 
 ## What you see
 
-Traffic is centred on a home latitude and longitude. Each aircraft is a planform icon turned to its track, with a one-line tail-number box (registration when the feed has it, otherwise the callsign, then the ICAO hex). Altitude is colour-coded on the icon. Helicopter rotors spin while the body keeps its heading. Tap the tail-number box — not the icon — to open the detail card: identity, altitude, speed, track, vertical speed, distance, bearing, squawk and category. A row in the traffic list does the same and still shows the flight data. Range rings match the selected range. North is marked. Targets just outside the range sit on the outer ring as ticks. A small © 2026 Maverick Field Gear line sits at the bottom of the glass, above the south S.
+Traffic is centred on a home latitude and longitude. Each aircraft is a Maverick icon turned to its track, with a one-line tail-number box (registration when the feed has it, otherwise the callsign, then the ICAO hex). Altitude is colour-coded on the icon. Helicopter rotors spin while the body keeps its heading. Tap the tail-number box — not the icon — to open the detail card: identity, altitude, speed, track, vertical speed, distance, bearing, squawk and category. A row in the traffic list does the same and still shows the flight data. Range rings match the selected range. North is marked. Targets just outside the range sit on the outer ring as ticks. A small © 2026 Maverick Field Gear line sits at the bottom of the glass, above the south S.
 
 Backgrounds, cycled by **MAP**:
 
@@ -112,18 +112,22 @@ Fields that are read: `hex`, `flight`, `lat`, `lon`, `alt_baro` (including `"gro
 ## First boot
 
 1. Flash Raspberry Pi OS Bookworm or Trixie with a desktop. Connect the 4inch DSI LCD (C) with the 15-pin FPC and the 4-pin power/I2C lead.
-2. Clone this repository and run `sudo bash install.sh`. Add `--admin-password` only if the setup page should ask for one. It is off by default.
+2. Clone this repository and run `sudo bash install.sh`.
 3. Reboot. The hostname is `flighttracker`. Avahi answers `flighttracker.local`.
 4. If the Pi has no saved Wi-Fi, or a saved network is out of range for about two minutes after boot, it raises a WPA2-PSK hotspot named **FlightTracker-Setup** (PMF not required, so iPhones can join). The password is random per device, eight letters, and is shown under the QR code on the round display. A phone camera can scan `WIFI:T:WPA;S:FlightTracker-Setup;P:<password>;;`.
 5. When the phone associates, the display switches to a second QR code for `http://10.42.0.1/`. That is the setup hotspot address (pinned in NetworkManager). On that hotspot, `http://flighttracker.local/` also resolves to the unit. Save the home Wi-Fi there.
 6. After the home network connects, the card changes to “Connected” and a QR code for the unit’s current IPv4 address, then closes. Join that same Wi-Fi on your phone, then scan or type the address. `http://flighttracker.local/` works when the network allows mDNS.
 7. **MNU → WI-FI SETUP** opens the card again. If the setup network is not already up (for example after a move, while saved Wi-Fi is out of range), this starts it immediately.
 
+On the 720×720 round display, the on-device Wi-Fi setup page uses a keyboard fitted inside the glass so every key is visible. **CONNECT** stays just above the keyboard, and a connect key on the keyboard also submits the name and password you typed.
+
+The setup page Wi-Fi section lists saved networks. You can forget one network, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot. After a grace period of about two minutes at boot, the setup hotspot stays up instead of repeatedly trying a network that is out of range.
+
 The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR starts at KJFK and follows the home airport when you change home by airport search. A latitude and longitude home uses the nearest station, unless you type a METAR station on the setup page. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
 
 The round display opens the Join setup card only while the FlightTracker-Setup hotspot is actually up. While it is waiting for a saved network after boot, that card stays hidden. QR codes are drawn on the Pi with the open-source `qrcode` library. No QR image is fetched from the network.
 
-TODO: the hotspot, captive-portal redirects, `10.42.0.1`, `iw` station detection, WPA2-PSK/PMF settings, the two-minute fallback, and AP/STA retries were not run on a Raspberry Pi. The scripts call Raspberry Pi OS Trixie NetworkManager (`nmcli dev wifi hotspot` on brcmfmac). If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
+TODO: the hotspot, captive-portal redirects, `10.42.0.1`, `iw` station detection, WPA2-PSK/PMF settings, and the two-minute boot grace period were not run on a Raspberry Pi. After that grace period the setup hotspot stays up instead of periodically tearing down to retry a failing saved network. The scripts call Raspberry Pi OS Trixie NetworkManager (`nmcli dev wifi hotspot` on brcmfmac). If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
 
 ## Install on the Pi
 
@@ -144,7 +148,7 @@ That script:
 - appends the 4inch DSI LCD (C) overlay for a Pi 4 when no Waveshare DSI overlay is already there
 - sets the hostname to `flighttracker` and enables Avahi
 - allows backlight, Wi-Fi helper, and kiosk restart through sudoers
-- enables a service that starts the setup hotspot when no Wi-Fi is saved, or when saved Wi-Fi stays down for about two minutes, and retries saved networks while the hotspot is up
+- enables a service that starts the setup hotspot when no Wi-Fi is saved, or when saved Wi-Fi stays down for about two minutes at boot. After that grace period the hotspot stays up instead of repeatedly trying a network that is out of range
 
 Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add. The kiosk script waits for Wayland or X11 and passes `--ozone-platform=wayland` when `wayland-0` exists. That path has not been run on a physical Pi in this project’s test environment.
 
@@ -167,12 +171,17 @@ Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add.
 | `orientation` | `north` or `track` |
 | `facingDeg` | Used for track-up when no aircraft is selected |
 | `altitudeBand` | `all`, `low` (below 10,000 ft), `mid`, `high`, `upper` |
-| `brightness` | 0–100. Written to the panel as 0–255 with the Waveshare terminal command |
+| `brightness` | 0–100. Written to the Waveshare backlight node (0–255, scaled to `max_brightness`). A udev rule installed by `install.sh` and by an update lets the service write the node; if a write fails, the glass dims itself. Night dim uses the same hardware backlight |
 | `metarStation` | ICAO code. Follows the home airport when home is set by airport search; blank uses the nearest observation |
 | `feed.mode` | `adsbfi` (default, internet), `local` (receiver file), `remote` (receiver URL), or `demo` |
 | `feed.host`, `feed.port` | readsb/dump1090 host. The JSON URL is `http://host:port/data/aircraft.json` unless `remoteUrl` is set |
 | `gpio` | Optional buttons and encoder. Off by default |
 | `fan` | Optional `gpio-fan` pin and temperature |
+| `night.mode` | `off`, `sun` (sunrise and sunset), or `schedule` (fixed hours) |
+| `night.from`, `night.to` | Custom hours as `HHMM`, used when `mode` is `schedule`, or as a fallback when `mode` is `sun` and no location is entered yet |
+| `night.loc` | `zip` (US ZIP code) or coordinates (`lat` / `lon`) for sunrise and sunset. This is for this unit, not the map centre |
+| `night.zip`, `night.lat`, `night.lon` | Night-dim location. A US ZIP is looked up offline from the bundled Census ZCTA table |
+| `icons` | Always Maverick. Any other saved value is switched to Maverick on update |
 
 Track-up rotates the chart so the selected aircraft’s track is at the top of the glass. With nothing selected, it uses `facingDeg`. Rotation is around the home location. **NAV** clears the selection. The centre itself changes only on the setup page.
 
@@ -195,15 +204,15 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | Range readout | Glass, under the top key | − and + step 10, 20, 30, 40, 50, 75, 100 nm (100 is the maximum). The value between them is the current range. Scroll and pinch do the same. Rings animate; the outer ring is the selected range |
 | Default range | Setup page only | The range used at startup |
 | Radar sweep | MNU, and the same switch on the setup page | Green sweep line and fading trail on every background. The map keeps its own colours. Off by default |
-| Icon set | — | Maverick is the only aircraft icon set |
 | Sweep speed | Setup page only | 2–6 seconds per revolution, default 4 |
 | Weather opacity | Setup page, Weather | 10–100 percent, steps of 10, default 60. The WX key only turns the overlay on or off |
 | Location | Setup page, Location section | Airport code (ICAO or IATA) or latitude and longitude. Save applies it. The glass stays centred there; it cannot be panned on the display |
-| Units, METAR, ADS-B source, demo mode, Wi-Fi join, restart, reset | Setup page only | `http://flighttracker.local/` |
+| Units, METAR, ADS-B source, demo mode, restart, reset | Setup page only | `http://flighttracker.local/` |
+| Saved Wi-Fi | Setup page, Wi-Fi | Lists saved networks. Forget one, make one preferred, or change its password. **FORGET SAVED NETWORKS** clears every saved profile and starts the setup hotspot |
 | Watch list | Setup page, Watch | Tails or hex. Off by default. Glass shows only a WATCH count |
 | Alerts | Setup page, Alerts | Flash and optional chime. Off by default |
 | Trails | Setup page, Trails | Fading history, off by default |
-| Night dim | Setup page, Night | Sunrise and sunset at a US ZIP code or exact coordinates, or a fixed schedule |
+| Night dim | Setup page, Night | Off, fixed hours, or **Sunrise and sunset**. That mode hides the custom From/Until hours and needs a US ZIP code (offline Census lookup) or exact coordinates (**OUTSIDE THE US / EXACT COORDINATES**). The page then shows tonight's dim (sunset) and bright (sunrise) times for that location, using the device's clock time zone. You cannot save until a valid location is entered. A unit already on sunrise/sunset without a location keeps its saved hours until one is entered |
 | Receiver | Setup page, Receiver | Rate, count, signal if present, last-message age |
 
 The status chips on the glass (N-UP, altitude band, WATCH count) only show the current state. They are not second copies of the keys.
@@ -218,7 +227,7 @@ The watch list accepts a US N-number, which converts to the ICAO address offline
 
 The flight card does not show origin or destination. No keyless, licence-compatible route feed was reliable enough to depend on, so the card does not guess a route.
 
-Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from a US ZIP code or exact coordinates for this unit (not the map center), or the hours you set. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
+Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from a US ZIP code or exact coordinates entered in the Night section for this unit (not the map centre), or the fixed hours you set. In sunrise/sunset mode the custom hours are hidden, and the setup page shows tonight's dim and bright times once a location is entered. Those times follow the device's clock time zone. Until a unit already using sunrise/sunset has a location, it keeps the saved hours. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
 
 ## Bezel
 
@@ -265,7 +274,7 @@ Flight Tracker is source-available, not open source. It is released under the **
 
 The 3D-printable case files are published separately under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) (Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International), not under the software license.
 
-Bundled third-party components (node-qrcode, IBM Plex fonts) keep their own licenses; see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). Map, weather, and aircraft data terms stay with their owners.
+Bundled third-party components (node-qrcode, IBM Plex fonts, and the US Census Bureau ZCTA Gazetteer used for night-dim ZIP centroids) keep their own licenses and attributions; see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). Map, weather, and aircraft data terms stay with their owners.
 
 ## Software updates
 
