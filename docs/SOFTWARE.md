@@ -84,7 +84,7 @@ From the [4inch DSI LCD (C) wiki](https://www.waveshare.com/wiki/4inch_DSI_LCD_(
 - Bookworm and Trixie: add `dtoverlay=vc4-kms-v3d` and `dtoverlay=vc4-kms-dsi-waveshare-panel,4_0_inchC`. The wiki’s `,dsi0` form is for boards with two MIPI ports (Pi 5 and Compute Modules). A Pi 4 has one DSI connector, the 15-pin FPC, plus the 4-pin lead for 5 V and I2C. The installer writes the Pi 4 line only.
 - Touch on Bookworm and Trixie: the wiki says the touch works after that overlay boots. It does not install a separate touch package. The rotation steps identify the device as **10-0014 Goodix Capacitive TouchScreen**. Binding that touchscreen to the panel in Screen Configuration is a manual step if you rotate the display. The installer does not do that.
 - Bullseye and Buster are a different driver. The manual example is `sudo bash ./WS_xinchDSI_MAIN.sh 40C I2C0`. A preinstalled-image snippet on the same page uses `I2C_bus=10`. Those are not the same instruction, so the installer does not write a Bullseye touch overlay.
-- Backlight, terminal method: `echo N | sudo tee /sys/class/backlight/*/brightness`. `N` is 0 (darkest) through 255 (brightest). The Waveshare driver registers a 0–255 RAW backlight, usually named like `10-0045` or `11-0045`. **BRT** stores a percent and writes a value scaled onto each node's `max_brightness`. A udev rule (installed by install.sh and by OTA) lets the `video` group write the node; `sudo` on `/usr/local/sbin/flight-tracker-brightness` is the fallback. The glass darkens itself when a write does not succeed, including when a sysfs node exists but is not writable.
+- Backlight, terminal method: `echo N | sudo tee /sys/class/backlight/*/brightness`. `N` is 0 (darkest) through 255 (brightest). The Waveshare driver registers a 0–255 RAW backlight, usually named like `10-0045` or `11-0045`. **BRT** stores a percent and writes a value scaled onto each node's `max_brightness`. A udev rule (installed by install.sh) lets the `video` group write the node; `sudo` on `/usr/local/sbin/flight-tracker-brightness` is the fallback. The glass darkens itself when a write does not succeed, including when a sysfs node exists but is not writable.
 
 Waveshare lists the display area as a square. The glass is round, and they do not publish a smaller active-pixel diameter inside the 720 × 720 framebuffer. The visible image is the inscribed circle: diameter 101.52 mm, 720 px. Flight Tracker clips all drawing to that circle.
 
@@ -121,13 +121,13 @@ Fields that are read: `hex`, `flight`, `lat`, `lon`, `alt_baro` (including `"gro
 
 On the 720×720 round display, the on-device Wi-Fi setup page uses a keyboard fitted inside the glass so every key is visible. **CONNECT** stays just above the keyboard, and a connect key on the keyboard also submits the name and password you typed.
 
-The setup page Wi-Fi section lists saved networks. You can forget one network, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot. After a grace period of about two minutes at boot, the setup hotspot stays up instead of repeatedly trying a network that is out of range.
+The setup page Wi-Fi section lists saved networks. You can forget one network, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot.
 
 The scope opens centred on KJFK, New York John F. Kennedy International Airport. The reference point is latitude 40.6399, longitude -73.7787, the FAA airport reference point reported by the Aviation Weather Center airport API (`type` ARP, `source` FAA). METAR starts at KJFK and follows the home airport when you change home by airport search. A latitude and longitude home uses the nearest station, unless you type a METAR station on the setup page. The setup page can still change home (latitude and longitude, or an onboard airport-code search), range, background, weather and opacity, METAR station, units, brightness, and the ADS-B source. **Test connection** reads the file or URL and reports how many aircraft have a position. Save writes `/etc/flight-tracker/config.json` and the running display picks it up without a reboot. **Restart display** restarts the Chromium kiosk. **Reset defaults** restores the built-in settings.
 
 The round display opens the Join setup card only while the FlightTracker-Setup hotspot is actually up. While it is waiting for a saved network after boot, that card stays hidden. QR codes are drawn on the Pi with the open-source `qrcode` library. No QR image is fetched from the network.
 
-TODO: the hotspot, captive-portal redirects, `10.42.0.1`, `iw` station detection, WPA2-PSK/PMF settings, and the two-minute boot grace period were not run on a Raspberry Pi. After that grace period the setup hotspot stays up instead of periodically tearing down to retry a failing saved network. The scripts call Raspberry Pi OS Trixie NetworkManager (`nmcli dev wifi hotspot` on brcmfmac). If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
+TODO: the hotspot, captive-portal redirects, `10.42.0.1`, `iw` station detection, WPA2-PSK/PMF settings, and the two-minute fallback were not run on a Raspberry Pi. The scripts call Raspberry Pi OS Trixie NetworkManager (`nmcli dev wifi hotspot` on brcmfmac). If the radio is not `wlan0`, edit `scripts/wifi-ctl.sh`.
 
 ## Install on the Pi
 
@@ -148,7 +148,7 @@ That script:
 - appends the 4inch DSI LCD (C) overlay for a Pi 4 when no Waveshare DSI overlay is already there
 - sets the hostname to `flighttracker` and enables Avahi
 - allows backlight, Wi-Fi helper, and kiosk restart through sudoers
-- enables a service that starts the setup hotspot when no Wi-Fi is saved, or when saved Wi-Fi stays down for about two minutes at boot. After that grace period the hotspot stays up instead of repeatedly trying a network that is out of range
+- enables a service that starts the setup hotspot when no Wi-Fi is saved, or when saved Wi-Fi stays down for about two minutes at boot
 
 Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add. The kiosk script waits for Wayland or X11 and passes `--ozone-platform=wayland` when `wayland-0` exists. That path has not been run on a physical Pi in this project’s test environment.
 
@@ -171,17 +171,17 @@ Optional GPIO buttons need `python3-gpiozero`, which the installer tries to add.
 | `orientation` | `north` or `track` |
 | `facingDeg` | Used for track-up when no aircraft is selected |
 | `altitudeBand` | `all`, `low` (below 10,000 ft), `mid`, `high`, `upper` |
-| `brightness` | 0–100. Written to the Waveshare backlight node (0–255, scaled to `max_brightness`). A udev rule installed by `install.sh` and by an update lets the service write the node; if a write fails, the glass dims itself. Night dim uses the same hardware backlight |
+| `brightness` | 0–100. Written to the Waveshare backlight node (0–255, scaled to `max_brightness`). A udev rule installed by `install.sh` lets the service write the node; if a write fails, the glass dims itself. Night dim uses the same hardware backlight |
 | `metarStation` | ICAO code. Follows the home airport when home is set by airport search; blank uses the nearest observation |
 | `feed.mode` | `adsbfi` (default, internet), `local` (receiver file), `remote` (receiver URL), or `demo` |
 | `feed.host`, `feed.port` | readsb/dump1090 host. The JSON URL is `http://host:port/data/aircraft.json` unless `remoteUrl` is set |
 | `gpio` | Optional buttons and encoder. Off by default |
 | `fan` | Optional `gpio-fan` pin and temperature |
 | `night.mode` | `off`, `sun` (sunrise and sunset), or `schedule` (fixed hours) |
-| `night.from`, `night.to` | Custom hours as `HHMM`, used when `mode` is `schedule`, or as a fallback when `mode` is `sun` and no location is entered yet |
+| `night.from`, `night.to` | Custom hours as `HHMM`, used when `mode` is `schedule` |
 | `night.loc` | `zip` (US ZIP code) or coordinates (`lat` / `lon`) for sunrise and sunset. This is for this unit, not the map centre |
 | `night.zip`, `night.lat`, `night.lon` | Night-dim location. A US ZIP is looked up offline from the bundled Census ZCTA table |
-| `icons` | Always Maverick. Any other saved value is switched to Maverick on update |
+| `icons` | Always Maverick |
 
 Track-up rotates the chart so the selected aircraft’s track is at the top of the glass. With nothing selected, it uses `facingDeg`. Rotation is around the home location. **NAV** clears the selection. The centre itself changes only on the setup page.
 
@@ -212,7 +212,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | Watch list | Setup page, Watch | Tails or hex. Off by default. Glass shows only a WATCH count |
 | Alerts | Setup page, Alerts | Flash and optional chime. Off by default |
 | Trails | Setup page, Trails | Fading history, off by default |
-| Night dim | Setup page, Night | Off, fixed hours, or **Sunrise and sunset**. That mode hides the custom From/Until hours and needs a US ZIP code (offline Census lookup) or exact coordinates (**OUTSIDE THE US / EXACT COORDINATES**). The page then shows tonight's dim (sunset) and bright (sunrise) times for that location, using the device's clock time zone. You cannot save until a valid location is entered. A unit already on sunrise/sunset without a location keeps its saved hours until one is entered |
+| Night dim | Setup page, Night | Off, fixed hours, or **Sunrise and sunset**. That mode hides the custom From/Until hours and needs a US ZIP code (offline Census lookup) or exact coordinates (**OUTSIDE THE US / EXACT COORDINATES**). The page then shows tonight's dim (sunset) and bright (sunrise) times for that location, using the device's clock time zone. You cannot save until a valid location is entered |
 | Receiver | Setup page, Receiver | Rate, count, signal if present, last-message age |
 
 The status chips on the glass (N-UP, altitude band, WATCH count) only show the current state. They are not second copies of the keys.
@@ -227,7 +227,7 @@ The watch list accepts a US N-number, which converts to the ICAO address offline
 
 The flight card does not show origin or destination. No keyless, licence-compatible route feed was reliable enough to depend on, so the card does not guess a route.
 
-Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from a US ZIP code or exact coordinates entered in the Night section for this unit (not the map centre), or the fixed hours you set. In sunrise/sunset mode the custom hours are hidden, and the setup page shows tonight's dim and bright times once a location is entered. Those times follow the device's clock time zone. Until a unit already using sunrise/sunset has a location, it keeps the saved hours. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
+Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from a US ZIP code or exact coordinates entered in the Night section for this unit (not the map centre), or the fixed hours you set. In sunrise/sunset mode the custom hours are hidden, and the setup page shows tonight's dim and bright times once a location is entered. Those times follow the device's clock time zone. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
 
 ## Bezel
 

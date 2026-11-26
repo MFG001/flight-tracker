@@ -87,7 +87,7 @@ Install notes: **[docs/SOFTWARE.md](docs/SOFTWARE.md)**. Current release: [v1.0.
 4. Open `http://flighttracker.local/` and set your location. If that name does not load, use the IPv4 address shown on the Connected card. The scope starts on KJFK.
 5. Use the setup page Software card for updates. Auto-update is off by default.
 
-After the unit is online, the setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change its password. **FORGET SAVED NETWORKS** clears every saved profile and starts the setup hotspot. In Night, **Sunrise and sunset** hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates; tonight's dim and bright times then show below. You cannot save that mode until a valid location is entered. Units already using sunrise/sunset without a location keep their current hours until one is entered. Full notes: [docs/SOFTWARE.md](docs/SOFTWARE.md).
+After the unit is online, the setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change its password. **FORGET SAVED NETWORKS** clears every saved profile and starts the setup hotspot. In Night, **Sunrise and sunset** hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates; tonight's dim and bright times then show below. You cannot save that mode until a valid location is entered. Full notes: [docs/SOFTWARE.md](docs/SOFTWARE.md).
 
 ## License
 

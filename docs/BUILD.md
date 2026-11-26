@@ -242,11 +242,11 @@ On the 720×720 round display, the on-device Wi-Fi setup page uses a keyboard fi
 
 **MNU → WI-FI SETUP** opens the card again. If the setup network is not already up (for example after a move, while saved Wi-Fi is out of range), this starts it immediately.
 
-The setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot. After a grace period of about two minutes at boot, the setup hotspot stays up instead of repeatedly trying a network that is out of range.
+The setup page Wi-Fi section lists saved networks. You can forget one, make one preferred, or change a saved password. The unit still auto-joins whichever saved network is in range; the preferred or most recently joined network is tried first. Forgetting the network you are on starts the setup hotspot. **FORGET SAVED NETWORKS** removes every saved profile and starts the setup hotspot.
 
 ### Night
 
-In Night, **Sunrise and sunset** hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates, entered in that section, not as the map centre. The page then shows tonight's dim and bright times for that location, using the device's clock time zone. You cannot save that mode until a valid location is entered. A unit already using sunrise/sunset without a location keeps its current hours until one is entered.
+In Night, **Sunrise and sunset** hides the custom From/Until hours and needs a US ZIP code (looked up offline on the device) or exact coordinates, entered in that section, not as the map centre. The page then shows tonight's dim and bright times for that location, using the device's clock time zone. You cannot save that mode until a valid location is entered.
 
 ### Updates
 
@@ -275,13 +275,8 @@ The first-install rows below are for when `push-update.sh` cannot reach the Pi. 
 | `sudo: a terminal is required` | Use the `push-update.sh` from this release (1.0.6 and later). Run it in a real Terminal window, not a pipe. |
 | Safari turned the download into `.tar` | That is fine. Pass the `.tar` path to `push-update.sh`. |
 | The display is blank or the wrong size after the first install | Reboot so the Waveshare overlay loads. Confirm the board is 4inch DSI LCD (C), not 4-DSI-TOUCH-C. |
-| The display hangs on the title or home screen and the program never opens | Power-cycle the unit. This boot hang was fixed in 1.0.16; on an older release, open the setup page when you can and run **CHECK FOR UPDATES**. |
-| The glass is white after an update, or the setup hotspot never starts | That could happen after the 1.0.16 update on some units. If the unit still has a saved network, bring that network in range — a phone hotspot with the same name and password works — then open the setup page and run **CHECK FOR UPDATES**. 1.0.18 and later also refresh the display service units during an update, so the display opens even if the local server is late. |
 | No Wi-Fi after the software is installed | Use the on-screen FlightTracker-Setup QR, then save the home network at `http://10.42.0.1/`. On the setup hotspot, `http://flighttracker.local/` also resolves to the unit. **MNU → WI-FI SETUP** starts the setup network immediately when saved Wi-Fi is out of range. |
-| The unit keeps trying a Wi-Fi network that is no longer valid | On the setup page Wi-Fi section, forget that network, or tap **FORGET SAVED NETWORKS** to clear every saved profile and start the setup hotspot. Then join a network that is in range. From 1.0.18, after a short grace period at boot the setup hotspot stays up instead of repeatedly retrying the old network. |
-| Brightness (BRT) does not change the panel after an update | Run **CHECK FOR UPDATES** and install 1.0.19 or later, which adds the backlight permission the panel needs. Until then, the glass still dims itself so BRT is not a no-op. |
 | An update never appears | Tap **CHECK FOR UPDATES** on the Software card. The automatic check is at 9:00 AM Eastern. |
-| The display does not come back after an update | Open the setup page and tap **RESTART DISPLAY**, or power-cycle the unit. Then confirm the Software card shows the new version. |
 
 ## What the glass shows
 
