@@ -30,7 +30,7 @@ OLD_MAKERWORLD = "https://makerworld.com/en/models/3666834-flight-tracker-instru
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1014(self) -> None:
-        # 1.0.19 moved on; test_v1019 pins the exact number.
+        # 1.0.20 moved on; test_v1020 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 14))
 

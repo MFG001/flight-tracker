@@ -40,7 +40,7 @@ QUADRATURE = (0, 1, -1, 0, -1, 0, 0, 1, 1, 0, 0, -1, 0, -1, 1, 0)
 SWEEP_DEFAULT_SEC = 8
 SWEEP_MIN_SEC = 3
 SWEEP_MAX_SEC = 16
-CONFIG_SCHEMA = 5
+CONFIG_SCHEMA = 6
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "schema": CONFIG_SCHEMA,
@@ -74,7 +74,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "watch": {"enabled": False, "tails": []},
     "alerts": {"watch": False, "military": False, "emergency": False, "chime": False},
     "trails": {"enabled": False, "minutes": 5},
-    "night": {"mode": "off", "fromHour": 22, "toHour": 6, "from": "2200", "to": "0600", "brightness": 25},
+    "night": {"mode": "off", "fromHour": 22, "toHour": 6, "from": "2200", "to": "0600", "brightness": 25, "loc": "zip", "zip": "", "lat": None, "lon": None},
     "icons": "maverick",
     "updates": {
         "url": PUBLIC_MANIFEST_URL,
@@ -763,6 +763,46 @@ def sanitize_config(payload: Any) -> tuple[dict[str, Any], list[str]]:
                     cfg["night"][text_key] = hours_to_hhmm(whole)
         if level is not None:
             cfg["night"]["brightness"] = int(round(_clamp(level, 5, 80)))
+        loc = str(night.get("loc") or night.get("locMode") or "zip").strip().lower()
+        cfg["night"]["loc"] = "ll" if loc in ("ll", "coords", "latlon", "lat/lon") else "zip"
+        raw_zip = night.get("zip")
+        zip_text = "" if raw_zip is None else str(raw_zip).strip()
+        cfg["night"]["zip"] = zip_text
+        if zip_text and cfg["night"]["loc"] == "zip":
+            try:
+                from zcta import lookup_zip, zip_error
+            except ImportError:
+                from server.zcta import lookup_zip, zip_error
+            found = lookup_zip(zip_text)
+            if found is None:
+                errors.append(zip_error(zip_text) or "That ZIP code was not found.")
+            else:
+                cfg["night"]["zip"] = found["zip"]
+                if cfg["night"]["loc"] == "zip":
+                    cfg["night"]["lat"] = found["lat"]
+                    cfg["night"]["lon"] = found["lon"]
+        lat = _number(night.get("lat"))
+        lon = _number(night.get("lon"))
+        if cfg["night"]["loc"] == "ll":
+            if lat is None or lon is None:
+                cfg["night"]["lat"] = None
+                cfg["night"]["lon"] = None
+            elif not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                errors.append("Night latitude must be between -90 and 90, and longitude between -180 and 180.")
+            else:
+                cfg["night"]["lat"] = round(lat, 6)
+                cfg["night"]["lon"] = round(lon, 6)
+        elif not zip_text:
+            cfg["night"]["lat"] = None
+            cfg["night"]["lon"] = None
+        if cfg["night"]["mode"] == "sun":
+            try:
+                from night import resolve_night_location
+            except ImportError:
+                from server.night import resolve_night_location
+            _loc, loc_error = resolve_night_location(cfg["night"])
+            if _loc is None:
+                errors.append(loc_error or "Enter a US ZIP code or exact coordinates to use sunrise/sunset.")
     else:
         errors.append("Night settings must be an object.")
 

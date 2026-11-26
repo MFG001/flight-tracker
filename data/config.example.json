@@ -1,5 +1,5 @@
 {
-  "schema": 5,
+  "schema": 6,
   "home": {
     "name": "KJFK",
     "lat": 40.6399,
@@ -55,7 +55,11 @@
     "toHour": 6,
     "from": "2200",
     "to": "0600",
-    "brightness": 25
+    "brightness": 25,
+    "loc": "zip",
+    "zip": "",
+    "lat": null,
+    "lon": null
   },
   "icons": "maverick",
   "updates": {

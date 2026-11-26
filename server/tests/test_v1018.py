@@ -15,11 +15,11 @@ import updater as up  # noqa: E402
 
 class VersionPinTests(unittest.TestCase):
     def test_version_is_at_least_1018(self) -> None:
-        # 1.0.19 moved on; test_v1019 pins the exact number.
+        # 1.0.20 moved on; test_v1020 pins the exact number.
         version = (ROOT / "VERSION").read_text().strip()
         self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 18))
-        self.assertEqual(CONFIG_SCHEMA, 5)
-        self.assertEqual(DEFAULT_CONFIG["schema"], 5)
+        self.assertEqual(CONFIG_SCHEMA, 6)
+        self.assertEqual(DEFAULT_CONFIG["schema"], 6)
 
 
 class FeaturePresenceTests(unittest.TestCase):

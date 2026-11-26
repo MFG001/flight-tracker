@@ -45,7 +45,7 @@ export interface AppConfig {
   watch: { enabled: boolean; tails: string[] };
   alerts: { watch: boolean; military: boolean; emergency: boolean; chime: boolean };
   trails: { enabled: boolean; minutes: number };
-  night: { mode: "off" | "sun" | "schedule"; fromHour: number; toHour: number; from?: string; to?: string; brightness: number };
+  night: { mode: "off" | "sun" | "schedule"; fromHour: number; toHour: number; from?: string; to?: string; brightness: number; loc?: "zip" | "ll"; zip?: string; lat?: number | null; lon?: number | null };
   display?: { rotation: number; output: string; touchDevice: string; touchMatrix: boolean };
   wifi?: { country: string };
   icons: "maverick";

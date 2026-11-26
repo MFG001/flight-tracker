@@ -100,6 +100,13 @@
       #nets .net-meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
       #nets .net-bars { font-family: "IBM Plex Mono", ui-monospace, monospace; color: #ffd089; }
       .note { font-size: 13px; letter-spacing: 0; color: var(--ink); min-height: 1.2em; margin: 8px 0; }
+      #night-sun-fields .modes { grid-template-columns: 1fr; margin-top: 10px; }
+      #night-sun-fields .modes button { min-height: 44px; white-space: normal; line-height: 1.25; letter-spacing: .06em; }
+      #night-save:disabled { opacity: 0.4; }
+      #night-schedule-fields[hidden],
+      #night-sun-fields[hidden],
+      #night-zip-fields[hidden],
+      #night-ll-fields[hidden] { display: none !important; }
       .warn { font-size: 12px; letter-spacing: 0; line-height: 1.35; color: #ffd089; margin: 10px 0 0; }
       .small { font-size: 12px; letter-spacing: 0; color: var(--muted); margin: 4px 0; }
       /* Save feedback: pressed while saving, then a clear result. */
@@ -512,9 +519,26 @@
               <option value="schedule">Fixed hours</option>
             </select>
           </label>
-          <div class="row">
+          <div id="night-schedule-fields" class="row" hidden>
             <label>From (HHMM) <input id="night-from" inputmode="numeric" maxlength="4" pattern="([01][0-9]|2[0-3])[0-5][0-9]" placeholder="2200" /></label>
             <label>Until (HHMM) <input id="night-to" inputmode="numeric" maxlength="4" pattern="([01][0-9]|2[0-3])[0-5][0-9]" placeholder="0600" /></label>
+          </div>
+          <div id="night-sun-fields" hidden>
+            <p class="note">Tonight's times use this unit's location and clock, not the map center.</p>
+            <div class="modes" role="group" aria-label="Night location">
+              <button id="night-loc-zip" type="button" aria-pressed="true">US ZIP CODE</button>
+              <button id="night-loc-ll" type="button" aria-pressed="false">OUTSIDE THE US / EXACT COORDINATES</button>
+            </div>
+            <div id="night-zip-fields">
+              <label>US ZIP code <input id="night-zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" placeholder="US ZIP" autocomplete="off" /></label>
+            </div>
+            <div id="night-ll-fields" hidden>
+              <div class="row">
+                <label>Latitude <input id="night-lat" inputmode="decimal" placeholder="Lat" autocomplete="off" /></label>
+                <label>Longitude <input id="night-lon" inputmode="decimal" placeholder="Lon" autocomplete="off" /></label>
+              </div>
+            </div>
+            <p id="night-sun-times" class="note"></p>
           </div>
           <label>Night brightness <span id="night-label">25%</span><input id="night-level" type="range" min="5" max="80" step="1" /></label>
           <button id="night-save" class="primary" type="button">SAVE NIGHT</button>
@@ -737,6 +761,11 @@
         $("night-to").value = night.to || pad(night.toHour);
         $("night-level").value = night.brightness;
         $("night-label").textContent = $("night-level").value + "%";
+        $("night-zip").value = night.zip || "";
+        $("night-lat").value = night.lat == null || night.lat === "" ? "" : String(night.lat);
+        $("night-lon").value = night.lon == null || night.lon === "" ? "" : String(night.lon);
+        setNightLocMode(night.loc === "ll" ? "ll" : "zip");
+        syncNightUi();
         $("brightness").value = String(Math.min(100, Math.max(20, Math.round((Number(cfg.brightness) || 100) / 10) * 10)));
         $("brt-label").textContent = $("brightness").value + "%";
         $("orientation").value = cfg.orientation === "track" ? "track" : "north";
@@ -1380,6 +1409,104 @@
         await saveSlice({ trails: want });
         return want.enabled ? "Trails on: " + want.minutes + " min behind each aircraft. They build up as aircraft move." : "Trails off.";
       }, $("trails-status")));
+      let nightLocMode = "zip";
+      let nightLocOk = false;
+
+      function hhmmClock(value) {
+        const raw = String(value || "").trim();
+        if (/^\d{4}$/.test(raw)) return raw.slice(0, 2) + ":" + raw.slice(2);
+        return raw;
+      }
+
+      function setNightLocMode(next) {
+        nightLocMode = next === "ll" ? "ll" : "zip";
+        $("night-loc-zip").setAttribute("aria-pressed", String(nightLocMode === "zip"));
+        $("night-loc-ll").setAttribute("aria-pressed", String(nightLocMode === "ll"));
+        $("night-zip-fields").hidden = nightLocMode !== "zip";
+        $("night-ll-fields").hidden = nightLocMode !== "ll";
+      }
+
+      function nightPayload() {
+        const from = $("night-from").value.trim();
+        const to = $("night-to").value.trim();
+        const lat = $("night-lat").value.trim();
+        const lon = $("night-lon").value.trim();
+        return {
+          mode: $("night-mode").value,
+          from,
+          to,
+          fromHour: Number((from || "2200").slice(0, 2)),
+          toHour: Number((to || "0600").slice(0, 2)),
+          brightness: Number($("night-level").value),
+          loc: nightLocMode,
+          zip: $("night-zip").value.trim(),
+          lat: lat === "" ? null : Number(lat),
+          lon: lon === "" ? null : Number(lon)
+        };
+      }
+
+      async function previewNightSun() {
+        const times = $("night-sun-times");
+        const save = $("night-save");
+        nightLocOk = false;
+        if ($("night-mode").value !== "sun") {
+          times.textContent = "";
+          save.disabled = false;
+          return;
+        }
+        const payload = nightPayload();
+        if (payload.loc === "zip") {
+          if (!payload.zip) {
+            times.textContent = "Enter your ZIP code to use sunrise/sunset.";
+            save.disabled = true;
+            return;
+          }
+          if (!/^\d{5}$/.test(payload.zip)) {
+            times.textContent = "Enter a 5-digit US ZIP code.";
+            save.disabled = true;
+            return;
+          }
+        } else {
+          if (payload.lat == null || payload.lon == null || Number.isNaN(payload.lat) || Number.isNaN(payload.lon)) {
+            times.textContent = "Enter latitude and longitude to use sunrise/sunset.";
+            save.disabled = true;
+            return;
+          }
+        }
+        try {
+          const query = payload.loc === "zip"
+            ? ("zip=" + encodeURIComponent(payload.zip))
+            : ("lat=" + encodeURIComponent(String(payload.lat)) + "&lon=" + encodeURIComponent(String(payload.lon)));
+          const body = await api("/api/solar?" + query);
+          if (!body.ok) {
+            times.textContent = body.detail || "That ZIP code was not found.";
+            save.disabled = true;
+            return;
+          }
+          nightLocOk = true;
+          save.disabled = false;
+          const fallback = (body.usingScheduleFallback)
+            ? " Until a location is entered, night dim uses the saved hours " + hhmmClock($("night-from").value) + " to " + hhmmClock($("night-to").value) + "."
+            : "";
+          const tz = body.tzNote ? " " + body.tzNote : "";
+          times.textContent = (body.label || "This location") + ": dim at sunset " + body.sunsetAt + ", bright at sunrise " + body.sunriseAt + "." + tz + fallback;
+        } catch (error) {
+          times.textContent = error.message || "Could not calculate sunrise and sunset.";
+          save.disabled = true;
+        }
+      }
+
+      function syncNightUi() {
+        const mode = $("night-mode").value;
+        $("night-schedule-fields").hidden = mode !== "schedule";
+        $("night-sun-fields").hidden = mode !== "sun";
+        if (mode === "sun") previewNightSun();
+        else {
+          $("night-sun-times").textContent = "";
+          $("night-save").disabled = false;
+        }
+      }
+
       $("night-level").addEventListener("input", () => { $("night-label").textContent = $("night-level").value + "%"; });
       $("opacity").addEventListener("input", () => { $("wx-label").textContent = $("opacity").value + "%"; });
       $("opacity").addEventListener("change", () => pending("wx-status"));
@@ -1388,12 +1515,33 @@
         await refreshWeatherState();
         return $("wx-on").checked ? "Weather radar on at " + $("opacity").value + "% opacity." : "Weather radar off.";
       }, $("wx-status")));
+      $("night-mode").addEventListener("change", () => syncNightUi());
+      $("night-loc-zip").addEventListener("click", () => { setNightLocMode("zip"); previewNightSun(); });
+      $("night-loc-ll").addEventListener("click", () => { setNightLocMode("ll"); previewNightSun(); });
+      $("night-zip").addEventListener("input", () => { previewNightSun(); });
+      $("night-lat").addEventListener("input", () => { previewNightSun(); });
+      $("night-lon").addEventListener("input", () => { previewNightSun(); });
       $("night-save").addEventListener("click", () => withSave($("night-save"), async () => {
-        const from = $("night-from").value.trim();
-        const to = $("night-to").value.trim();
-        if (!HHMM.test(from) || !HHMM.test(to)) throw new Error("Use 4-digit 24-hour times, like 2200 and 0600.");
-        await saveSlice({ night: { mode: $("night-mode").value, from, to, fromHour: Number(from.slice(0, 2)), toHour: Number(to.slice(0, 2)), brightness: Number($("night-level").value) } });
-        return "Night dimming saved.";
+        const night = nightPayload();
+        if (night.mode === "schedule") {
+          if (!HHMM.test(night.from) || !HHMM.test(night.to)) throw new Error("Use 4-digit 24-hour times, like 2200 and 0600.");
+        } else if (!HHMM.test(night.from) || !HHMM.test(night.to)) {
+          night.from = night.from || "2200";
+          night.to = night.to || "0600";
+          night.fromHour = Number(night.from.slice(0, 2));
+          night.toHour = Number(night.to.slice(0, 2));
+        }
+        if (night.mode === "sun" && !nightLocOk) {
+          throw new Error($("night-sun-times").textContent || "Enter your ZIP code to use sunrise/sunset.");
+        }
+        await saveSlice({ night });
+        syncNightUi();
+        if (night.mode === "sun") {
+          const times = $("night-sun-times").textContent;
+          return times || "Night dimming saved.";
+        }
+        if (night.mode === "schedule") return "Night dimming uses " + hhmmClock(night.from) + " to " + hhmmClock(night.to) + ".";
+        return "Night dimming is off.";
       }, $("night-status")));
       $("wx-on").addEventListener("change", () => pending("wx-status"));
       for (const sw of document.querySelectorAll(".swatch")) {

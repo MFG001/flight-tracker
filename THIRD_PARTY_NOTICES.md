@@ -2,6 +2,12 @@
 
 Flight Tracker is licensed under the Maverick Field Gear Flight Tracker License (see LICENSE). The built files in `dist/` include the third-party components below, which stay under their own licenses.
 
+## US Census Bureau ZCTA Gazetteer (night-dim ZIP centroids)
+
+`data/zcta-centroids.tsv.gz` is derived from the U.S. Census Bureau 2025 ZIP Code Tabulation Areas Gazetteer (`2025_Gaz_zcta_national.zip`): https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip
+
+Works of the United States government are not subject to domestic copyright protection (17 U.S.C. § 105). The Census Bureau asks that you cite it as the source. This software is not affiliated with, endorsed by, or certified by the U.S. Census Bureau. The bundled table keeps only the ZCTA code and internal-point latitude and longitude; regenerate it with `scripts/build-zcta.py`. A ZCTA is not identical to every USPS ZIP code, so some real ZIP codes have no entry.
+
 ## node-qrcode (QR codes on the setup and Wi-Fi screens)
 
 https://github.com/soldair/node-qrcode

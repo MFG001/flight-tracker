@@ -49,7 +49,7 @@ except ImportError:
     from server.backlight import list_nodes, write_nodes
 
 ROOT = Path(__file__).resolve().parent.parent
-USER_AGENT = "FlightTracker/1.0.19 (personal flight display; Maverick Field Gear)"
+USER_AGENT = "FlightTracker/1.0.20 (personal flight display; Maverick Field Gear)"
 TILE_LIMIT = 2_000_000
 FEED_LIMIT = 6_000_000
 
@@ -590,34 +590,13 @@ class App:
             return min(day, float(night["brightness"]))
         return day
 
-    def night_status_only(self) -> dict[str, Any]:
+    def night_status_only(self, when=None) -> dict[str, Any]:
         """Night flag without writing the backlight (used to compute the level)."""
-        from datetime import datetime
-
         try:
-            from solar import is_night, schedule_night, solar_hours
+            from night import compute_night_status
         except ImportError:
-            from server.solar import is_night, schedule_night, solar_hours
-        cfg = self.snapshot()
-        night = cfg.get("night") or {}
-        mode = str(night.get("mode") or "off")
-        local = datetime.now().astimezone()
-        offset = local.utcoffset()
-        tz_hours = 0.0 if offset is None else offset.total_seconds() / 3600
-        events = solar_hours(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local.date(), tz_hours)
-        hour = local.hour + local.minute / 60
-        active = False
-        if mode == "sun":
-            active = bool(is_night(float(cfg["home"]["lat"]), float(cfg["home"]["lon"]), local))
-        elif mode == "schedule":
-            active = schedule_night(hour, _night_hours(night, "from", "fromHour"), _night_hours(night, "to", "toHour"))
-        return {
-            "mode": mode,
-            "night": active,
-            "brightness": int(night.get("brightness") or 25),
-            "sunrise": None if not events else round(events[0], 2),
-            "sunset": None if not events else round(events[1], 2),
-        }
+            from server.night import compute_night_status
+        return compute_night_status(self.snapshot(), when)
 
     def apply_effective_brightness(self) -> bool:
         percent = self.effective_brightness()
@@ -1327,6 +1306,28 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 return
             if path == "/api/night":
                 self._json(app.night_status())
+                return
+            if path == "/api/solar":
+                try:
+                    from night import solar_preview
+                except ImportError:
+                    from server.night import solar_preview
+                zip_code = query.get("zip", [""])[0]
+                lat_s = query.get("lat", [""])[0]
+                lon_s = query.get("lon", [""])[0]
+                self._json(solar_preview(zip_code, lat_s or None, lon_s or None))
+                return
+            if path == "/api/zip":
+                try:
+                    from zcta import lookup_zip, zip_error
+                except ImportError:
+                    from server.zcta import lookup_zip, zip_error
+                raw = query.get("q", query.get("zip", [""]))[0]
+                found = lookup_zip(raw)
+                if found:
+                    self._json({"ok": True, **found})
+                    return
+                self._json({"ok": False, "detail": zip_error(raw) or "That ZIP code was not found."}, 404 if str(raw).strip() else 200)
                 return
             if path == "/api/nearest":
                 from airports import nearest_airport

@@ -4,7 +4,7 @@
 
 **[README](../README.md)** · [Build guide](BUILD.md) · **Software** · [Signed updates](tokenless-updates.md) · [Wi-Fi QR test](wifi-qr-test.md)
 
-How to install, set up, and run Flight Tracker 1.0.19 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
+How to install, set up, and run Flight Tracker 1.0.20 — including the desktop demo, the display overlay, live aircraft data, and signed updates. For printing and assembling the case, start with the [build guide](BUILD.md). Print files are on the [MakerWorld listing](https://makerworld.com/en/models/3669492-aircraft-flight-tracker-desktop-ads-b-radar).
 
 ---
 
@@ -203,7 +203,7 @@ Each function has one place. The eight glass keys match the printed bezel and do
 | Watch list | Setup page, Watch | Tails or hex. Off by default. Glass shows only a WATCH count |
 | Alerts | Setup page, Alerts | Flash and optional chime. Off by default |
 | Trails | Setup page, Trails | Fading history, off by default |
-| Night dim | Setup page, Night | Sunrise or a fixed schedule |
+| Night dim | Setup page, Night | Sunrise and sunset at a US ZIP code or exact coordinates, or a fixed schedule |
 | Receiver | Setup page, Receiver | Rate, count, signal if present, last-message age |
 
 The status chips on the glass (N-UP, altitude band, WATCH count) only show the current state. They are not second copies of the keys.
@@ -218,7 +218,7 @@ The watch list accepts a US N-number, which converts to the ICAO address offline
 
 The flight card does not show origin or destination. No keyless, licence-compatible route feed was reliable enough to depend on, so the card does not guess a route.
 
-Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from the home coordinates, or the hours you set. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
+Alerts flash inside the glass and play a short tone only when an audio device accepts it. Night dim uses an offline sunrise calculation from a US ZIP code or exact coordinates for this unit (not the map center), or the hours you set. An empty scope shows the time, the nearest airport from the onboard database, and the METAR, then returns to the map when traffic is back.
 
 ## Bezel
 

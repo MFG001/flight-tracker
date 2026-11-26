@@ -49,9 +49,9 @@ async function stubPage(page) {
     if (/\/api\/wifi$/.test(url) || url.endsWith("/api/wifi?")) return json(SAVED.wifi);
     if (url.includes("/api/auth")) return json({ required: false });
     if (url.includes("/api/config")) return json({ wifi: { country: "US" }, home: { lat: 40.64, lon: -73.78 } });
-    if (url.includes("/api/updates")) return json({ state: "idle", current: "1.0.19" });
+    if (url.includes("/api/updates")) return json({ state: "idle", current: "1.0.20" });
     if (url.includes("/api/weather")) return json({ ok: true, frames: [1], attribution: "demo", error: "" });
-    if (url.includes("/api/health")) return json({ ok: true, version: "1.0.19" });
+    if (url.includes("/api/health")) return json({ ok: true, version: "1.0.20" });
     return req.continue();
   });
 }

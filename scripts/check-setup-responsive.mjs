@@ -94,7 +94,7 @@ async function applyFixtures(page) {
     if (typeof showSoftware === "function") {
       showSoftware({
         version: "1.0.13",
-        latest: "1.0.19",
+        latest: "1.0.20",
         available: true,
         url,
         notes,
@@ -112,7 +112,7 @@ async function applyFixtures(page) {
       const notesEl = document.getElementById("sw-notes");
       const urlEl = document.getElementById("sw-url");
       if (banner) { banner.hidden = false; banner.dataset.tone = "ready"; }
-      if (title) title.textContent = "Update ready: Version 1.0.19";
+      if (title) title.textContent = "Update ready: Version 1.0.20";
       if (detail) detail.textContent = "Tap INSTALL UPDATE below.";
       if (notesEl) { notesEl.hidden = false; notesEl.textContent = notes; }
       if (urlEl) urlEl.textContent = url;
@@ -350,9 +350,9 @@ try {
       if (typeof showSoftware === "function") {
         showSoftware({
           version: "1.0.13",
-          latest: "1.0.19",
+          latest: "1.0.20",
           available: true,
-          target: "1.0.19",
+          target: "1.0.20",
           state: "installing",
           step: 2,
           steps: 4,
@@ -367,7 +367,7 @@ try {
         const prog = document.getElementById("sw-progress");
         const bar = document.getElementById("sw-progress-bar");
         if (banner) { banner.hidden = false; banner.dataset.tone = "busy"; }
-        if (title) title.textContent = "Installing Version 1.0.19…";
+        if (title) title.textContent = "Installing Version 1.0.20…";
         if (detail) detail.textContent = "Step 2 of 4 · Copying files…";
         if (prog) prog.hidden = false;
         if (bar) bar.style.width = "45%";

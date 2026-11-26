@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA = 5
+SCHEMA = 6
 PUBLIC_REPO = "MFG001/flight-tracker"
 PUBLIC_MANIFEST_URL = f"https://github.com/{PUBLIC_REPO}/releases/latest/download/manifest.json"
 OLD_SWEEP_SEC = 4
@@ -126,6 +126,25 @@ def migrate_config(cfg: dict[str, Any], path_exists: Any = None) -> dict[str, An
         # rollback stays valid.
         cfg["icons"] = "maverick"
         cfg["schema"] = 5
+        schema = 5
+    if schema < 6:
+        # Night dim can use a US ZIP or exact coordinates, stored separately
+        # from the map center. Existing sunrise/sunset settings stay on sun
+        # mode; a missing location is filled in as empty so the unit keeps
+        # using the saved hours until a ZIP or coordinates are entered.
+        night = cfg.get("night")
+        if not isinstance(night, dict):
+            night = {"mode": "off", "fromHour": 22, "toHour": 6, "from": "2200", "to": "0600", "brightness": 25}
+            cfg["night"] = night
+        loc = str(night.get("loc") or "zip").strip().lower()
+        night["loc"] = "ll" if loc in ("ll", "coords", "latlon", "lat/lon") else "zip"
+        if "zip" not in night or night.get("zip") is None:
+            night["zip"] = ""
+        if "lat" not in night:
+            night["lat"] = None
+        if "lon" not in night:
+            night["lon"] = None
+        cfg["schema"] = 6
     return cfg
 
 

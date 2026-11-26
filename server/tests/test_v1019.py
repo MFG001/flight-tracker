@@ -1,7 +1,6 @@
 """1.0.19: saved Wi-Fi networks, backlight writes, and Maverick-only icons."""
 from __future__ import annotations
 
-import json
 import sys
 import unittest
 from pathlib import Path
@@ -14,14 +13,12 @@ from server.logic import CONFIG_SCHEMA, DEFAULT_CONFIG  # noqa: E402
 
 
 class VersionPinTests(unittest.TestCase):
-    def test_version_is_1019_everywhere(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "1.0.19")
-        self.assertEqual(json.loads((ROOT / "package.json").read_text())["version"], "1.0.19")
-        lock = json.loads((ROOT / "package-lock.json").read_text())
-        self.assertEqual((lock["version"], lock["packages"][""]["version"]), ("1.0.19", "1.0.19"))
-        self.assertIn("FlightTracker/1.0.19 ", (ROOT / "server/flighttracker.py").read_text())
-        self.assertEqual(CONFIG_SCHEMA, 5)
-        self.assertEqual(DEFAULT_CONFIG["schema"], 5)
+    def test_version_is_at_least_1019(self) -> None:
+        # 1.0.20 moved on; test_v1020 pins the exact number.
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertGreaterEqual(tuple(int(x) for x in version.split(".")), (1, 0, 19))
+        self.assertEqual(CONFIG_SCHEMA, 6)
+        self.assertEqual(DEFAULT_CONFIG["schema"], 6)
         self.assertEqual(DEFAULT_CONFIG["icons"], "maverick")
 
 
@@ -67,6 +64,7 @@ class FeaturePresenceTests(unittest.TestCase):
         self.assertNotIn("Icon set", html)
         migrate = (ROOT / "server/migrate.py").read_text()
         self.assertIn("if schema < 5:", migrate)
+        self.assertIn("if schema < 6:", migrate)
         self.assertIn('cfg["icons"] = "maverick"', migrate)
         types = (ROOT / "src/types.ts").read_text()
         self.assertIn('icons: "maverick"', types)
@@ -80,14 +78,18 @@ class MigrationIdempotentTests(unittest.TestCase):
         from server.migrate import migrate_config
 
         first = migrate_config({"schema": 4, "icons": "linecut", "rangeNm": 20})
-        self.assertEqual(first["schema"], 5)
+        self.assertEqual(first["schema"], 6)
         self.assertEqual(first["icons"], "maverick")
         again = migrate_config(dict(first))
-        self.assertEqual(again["schema"], 5)
+        self.assertEqual(again["schema"], 6)
         self.assertEqual(again["icons"], "maverick")
         already = migrate_config({"schema": 5, "icons": "maverick", "rangeNm": 20})
-        self.assertEqual(already["schema"], 5)
+        self.assertEqual(already["schema"], 6)
         self.assertEqual(already["icons"], "maverick")
+        self.assertEqual(already["night"]["loc"], "zip")
+        self.assertEqual(already["night"]["zip"], "")
+        again5 = migrate_config(dict(already))
+        self.assertEqual(again5["schema"], 6)
 
 
 if __name__ == "__main__":
